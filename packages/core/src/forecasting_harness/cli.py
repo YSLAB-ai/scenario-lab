@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import typer
@@ -11,7 +12,7 @@ from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.simulation.engine import SimulationEngine
-from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft
+from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
 
 
@@ -58,12 +59,29 @@ def _service(root: Path) -> WorkflowService:
     return WorkflowService(RunRepository(root))
 
 
+def _repair_run_record(repo: RunRepository, run_id: str, domain_pack: str) -> None:
+    run_dir = repo.run_dir(run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "events.jsonl").touch(exist_ok=True)
+    repo.save_run_record(
+        RunRecord(
+            run_id=run_id,
+            domain_pack=domain_pack,
+            created_at=datetime.now(timezone.utc),
+        )
+    )
+    repo.append_event(run_id, "run-started", {"run_id": run_id})
+
+
 def _ensure_demo_run_record(root: Path, repo: RunRepository, domain_pack: str) -> None:
     run_id = "demo-run"
     try:
         existing_run = repo.load_run_record(run_id)
     except FileNotFoundError:
-        _service(root).start_run(run_id=run_id, domain_pack=domain_pack)
+        if repo.run_dir(run_id).exists():
+            _repair_run_record(repo, run_id=run_id, domain_pack=domain_pack)
+        else:
+            _service(root).start_run(run_id=run_id, domain_pack=domain_pack)
         return
 
     (repo.run_dir(run_id) / "events.jsonl").touch(exist_ok=True)

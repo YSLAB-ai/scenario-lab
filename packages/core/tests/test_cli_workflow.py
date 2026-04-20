@@ -43,6 +43,18 @@ def test_demo_run_can_refresh_existing_root(tmp_path: Path) -> None:
     assert second_events == first_events
 
 
+def test_demo_run_repairs_missing_run_record_in_existing_directory(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    run_dir = root / "runs" / "demo-run"
+    run_dir.mkdir(parents=True)
+
+    result = CliRunner().invoke(app, ["demo-run", "--root", str(root)])
+
+    assert result.exit_code == 0
+    assert RunRepository(root).load_run_record("demo-run").domain_pack == "generic-event"
+    assert len((run_dir / "events.jsonl").read_text(encoding="utf-8").splitlines()) == 1
+
+
 def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"
