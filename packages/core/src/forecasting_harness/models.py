@@ -59,3 +59,7 @@ class BeliefState(BaseModel):
     unknowns: list[str]
     current_epoch: str
     horizon: str
+    revision_id: str | None = None
+    domain_pack: str | None = None
+    phase: str | None = None
+    approved_evidence_ids: list[str] = Field(default_factory=list)

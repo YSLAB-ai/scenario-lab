@@ -97,3 +97,27 @@ def test_belief_state_tracks_interaction_model() -> None:
     )
 
     assert state.interaction_model is InteractionModel.EVENT_DRIVEN
+
+
+def test_belief_state_tracks_revision_metadata() -> None:
+    state = BeliefState(
+        run_id="run-1",
+        interaction_model=InteractionModel.EVENT_DRIVEN,
+        actors=[Actor(actor_id="a1", name="Actor 1")],
+        fields={},
+        objectives={},
+        capabilities={},
+        constraints={},
+        unknowns=[],
+        current_epoch="2026-W16",
+        horizon="2026-W20",
+        revision_id="rev-1",
+        domain_pack="generic-event",
+        phase="intake",
+        approved_evidence_ids=["ev-1"],
+    )
+
+    assert state.revision_id == "rev-1"
+    assert state.domain_pack == "generic-event"
+    assert state.phase == "intake"
+    assert state.approved_evidence_ids == ["ev-1"]
