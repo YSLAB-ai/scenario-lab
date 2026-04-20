@@ -95,6 +95,20 @@ def test_draft_evidence_packet_enforces_a_total_cap() -> None:
     assert [item.evidence_id for item in packet.items] == ["r1:s1:1", "r1:s1:2", "r1:s2:1"]
 
 
+def test_draft_evidence_packet_total_cap_prefers_higher_ranked_hits_across_sources() -> None:
+    hits = [
+        {"source_id": "s1", "title": "Doc 1", "content": "alpha", "published_at": "2026-04-20", "score": 0.91},
+        {"source_id": "s1", "title": "Doc 1", "content": "beta", "published_at": "2026-04-20", "score": 0.52},
+        {"source_id": "s2", "title": "Doc 2", "content": "gamma", "published_at": "2026-04-20", "score": 0.83},
+        {"source_id": "s3", "title": "Doc 3", "content": "delta", "published_at": "2026-04-20", "score": 0.74},
+    ]
+
+    packet = draft_evidence_packet("r1", hits, max_per_source=2, max_total=2)
+
+    assert [item.evidence_id for item in packet.items] == ["r1:s1:1", "r1:s2:1"]
+    assert [item.raw_passages for item in packet.items] == [["alpha"], ["gamma"]]
+
+
 def test_compile_belief_state_includes_primary_and_suggested_actors(monkeypatch) -> None:
     from forecasting_harness.workflow import compiler as workflow_compiler
 
@@ -108,9 +122,9 @@ def test_compile_belief_state_includes_primary_and_suggested_actors(monkeypatch)
         time_horizon="30d",
         known_constraints=["sanctions"],
         known_unknowns=["timing"],
-        suggested_actors=["China"],
+        suggested_actors=["China", "Russia"],
     )
-    assumptions = AssumptionSummary(summary=["China matters"], suggested_actors=["China", "US"])
+    assumptions = AssumptionSummary(summary=["China matters"], suggested_actors=["China", "EU", "US"])
 
     state = compile_belief_state(
         run_id="crisis-1",
@@ -128,7 +142,7 @@ def test_compile_belief_state_includes_primary_and_suggested_actors(monkeypatch)
     assert state.current_epoch == "trigger"
     assert state.horizon == "30d"
     assert state.interaction_model is InteractionModel.EVENT_DRIVEN
-    assert [actor.name for actor in state.actors] == ["US", "Iran", "China"]
+    assert [actor.name for actor in state.actors] == ["US", "Iran", "China", "Russia", "EU"]
     assert state.fields["event_framing"].status == "observed"
     assert state.fields["event_framing"].value == "Assess escalation"
     assert state.fields["event_framing"].normalized_value == "Assess escalation"

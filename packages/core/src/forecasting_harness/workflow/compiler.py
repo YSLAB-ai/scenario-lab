@@ -39,7 +39,9 @@ def compile_belief_state(
             f"unsupported phase {intake.current_phase!r} for domain pack {pack.slug()!r}; "
             f"expected one of: {', '.join(canonical_phases)}"
         )
-    actor_names = _dedupe_preserving_order([*intake.primary_actors, *assumptions.suggested_actors])
+    actor_names = _dedupe_preserving_order(
+        [*intake.primary_actors, *intake.suggested_actors, *assumptions.suggested_actors]
+    )
     now = datetime.now(timezone.utc)
     return BeliefState(
         run_id=run_id,
