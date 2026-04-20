@@ -28,6 +28,14 @@ def test_should_reuse_node_rejects_unsupported_dependency_keys() -> None:
         should_reuse_node(node, compatibility)
 
 
+def test_should_reuse_node_rejects_unsupported_dependency_keys_when_incompatible() -> None:
+    node = {"node_id": "n1", "dependencies": {"fields": ["fuel_days"], "metrics": ["economic_stress"]}}
+    compatibility = {"changed_fields": [], "compatible": False}
+
+    with pytest.raises(ValueError, match="unsupported dependency keys"):
+        should_reuse_node(node, compatibility)
+
+
 def test_should_reuse_node_allows_disjoint_field_dependencies() -> None:
     node = {"node_id": "n1", "dependencies": {"fields": ["fuel_days"]}}
     compatibility = {"changed_fields": ["morale"], "compatible": True}
