@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from forecasting_harness.models import BeliefState, ObjectiveProfile
+    from forecasting_harness.workflow.models import IntakeDraft
 
 
 class InteractionModel(StrEnum):
@@ -22,6 +23,15 @@ class DomainPack(ABC):
     @abstractmethod
     def interaction_model(self) -> InteractionModel:
         raise NotImplementedError
+
+    def canonical_phases(self) -> list[str]:
+        return []
+
+    def suggest_related_actors(self, intake: "IntakeDraft") -> list[str]:
+        return []
+
+    def retrieval_filters(self, intake: "IntakeDraft") -> dict[str, str]:
+        return {}
 
     @abstractmethod
     def extend_schema(self) -> dict[str, Any]:
