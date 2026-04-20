@@ -14,11 +14,12 @@ def _base_branch_id(action_context: dict[str, Any]) -> str:
     return branch_id
 
 
-def _resolved_branch_id(action_context: dict[str, Any], transition_index: int) -> str:
-    branch_id = _base_branch_id(action_context)
-    if transition_index == 0:
+def _resolved_branch_id(branch_id: str, seen_branch_ids: dict[str, int]) -> str:
+    occurrence = seen_branch_ids.get(branch_id, 0) + 1
+    seen_branch_ids[branch_id] = occurrence
+    if occurrence == 1:
         return branch_id
-    return f"{branch_id}-{transition_index + 1}"
+    return f"{branch_id}-{occurrence}"
 
 
 class SimulationEngine:
@@ -39,14 +40,14 @@ class SimulationEngine:
             raise ValueError(f"invalid state: {'; '.join(validation_errors)}")
 
         branches: list[dict[str, Any]] = []
+        seen_branch_ids: dict[str, int] = {}
         for action_context in self.domain_pack.propose_actions(state):
-            for transition_index, next_state in enumerate(
-                self.domain_pack.sample_transition(state, action_context)
-            ):
+            branch_id = _base_branch_id(action_context)
+            for next_state in self.domain_pack.sample_transition(state, action_context):
                 metrics = self.domain_pack.score_state(next_state)
                 branches.append(
                     {
-                        "branch_id": _resolved_branch_id(action_context, transition_index),
+                        "branch_id": _resolved_branch_id(branch_id, seen_branch_ids),
                         "label": action_context.get("label"),
                         "metrics": metrics,
                         "score": scalarize_node_value(metrics, self.objective_profile),

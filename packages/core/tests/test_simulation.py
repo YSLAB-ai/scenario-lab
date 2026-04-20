@@ -198,3 +198,43 @@ def test_simulation_engine_assigns_deterministic_fallback_branch_ids() -> None:
         "stabilize-front",
         "signal-negotiation-2",
     ]
+
+
+def test_simulation_engine_makes_shared_fallback_branch_ids_globally_unique() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            return [
+                {"action_id": "signal-negotiation", "label": "Signal negotiation A"},
+                {"action_id": "signal-negotiation", "label": "Signal negotiation B"},
+            ]
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            if action_context["label"] == "Signal negotiation A":
+                return [SimpleNamespace(score_metrics={"escalation": 0.2, "negotiation": 0.8})]
+            return [SimpleNamespace(score_metrics={"escalation": 0.1, "negotiation": 0.4})]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+    profile = ObjectiveProfile(
+        name="avoid-escalation",
+        metric_weights={"escalation": -1.0, "negotiation": 0.5},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    state = SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN)
+
+    result = engine.run(state)
+
+    assert sorted(branch["branch_id"] for branch in result["branches"]) == [
+        "signal-negotiation",
+        "signal-negotiation-2",
+    ]
