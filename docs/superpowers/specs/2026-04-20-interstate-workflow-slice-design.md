@@ -4,12 +4,23 @@ Date: 2026-04-20
 
 ## Summary
 
-This document defines the next milestone for the forecasting harness after the current core vertical slice. The goal of this milestone is to build the first real analyst workflow for `interstate crisis escalation` while preserving the existing architecture choice:
+This document defines the next milestone for the forecasting harness after the current core vertical slice. The goal of this milestone is to build the first real analyst workflow while preserving the existing architecture choice:
 
 - `skill-driven conversation flow` for the user-facing experience
 - `CLI/API core` for deterministic state transitions and durable artifacts
 
 This milestone is intentionally workflow-first, but it is not domain-free. It uses one reference domain pack, `interstate crisis escalation`, to pressure-test the workflow with a real forecasting problem.
+
+The workflow defined here is meant to be reusable across future domains. Domain packs should be able to replace:
+
+- actor suggestions
+- intake follow-up prompts
+- evidence selection heuristics
+- phase templates
+- transition logic
+- scoring logic
+
+without changing the core run lifecycle, revision model, approval flow, or adapter/core boundary.
 
 ## Goal
 
@@ -29,7 +40,7 @@ Deliver the first usable forecasting workflow that can:
 
 This milestone does not attempt to deliver:
 
-- a fully general multi-domain workflow
+- multiple production-ready domain packs
 - a high-fidelity war simulator
 - automatic rule extraction from sources
 - open-web retrieval
@@ -40,6 +51,8 @@ This milestone does not attempt to deliver:
 ## Product Boundary
 
 The adapter remains conversational. The core remains deterministic.
+
+The workflow contracts in this milestone are intended to be domain-reusable. Interstate crisis is the first `reference validation pack`, not a special-case architecture.
 
 The adapter is responsible for:
 
@@ -63,13 +76,15 @@ The core is responsible for:
 
 The adapter may propose. The core records and executes.
 
+That means a future domain pack such as `corporate strategic response` or `market shock` should reuse the same run lifecycle and revision machinery while swapping in different intake prompts, actors, evidence heuristics, and simulation logic.
+
 ## Reference Domain Pack
 
-The first real workflow milestone is built around `interstate crisis escalation`.
+The first real workflow milestone is validated with `interstate crisis escalation`.
 
 ### Domain choice
 
-This pack is the first reference pack because it matches the original project intent and forces the workflow to handle:
+This pack is the first reference pack because it matches the original project intent and forces the reusable workflow to handle:
 
 - multiple strategic actors
 - escalation and de-escalation
@@ -113,6 +128,8 @@ These phases are canonical for `v1`, but they should remain owned by the domain 
 ## Workflow Architecture
 
 The next milestone is a `balanced workflow slice`.
+
+The workflow itself is generic. The interstate-crisis pack is the first pack used to validate that the workflow contracts are strong enough for a real forecasting problem.
 
 ### User-facing layer
 
@@ -162,9 +179,11 @@ That means required sections are fixed, while the follow-up questions inside tho
 - `known constraints`
 - `known unknowns`
 
+These are workflow-level sections. Future domain packs may reinterpret their contents, but should not need a different approval lifecycle.
+
 ### Adaptive follow-ups
 
-The interstate-crisis pack may insert follow-ups such as:
+Domain packs may insert adaptive follow-ups. For the interstate-crisis reference pack, examples include:
 
 - suggested third parties
 - leader style prompts
@@ -208,6 +227,8 @@ Evidence is approved as `one grouped packet`, not split into multiple separate a
 ### Retrieval model
 
 The adapter retrieves candidate documents and passages from the local corpus after intake drafting. It then creates a grouped evidence packet for user approval.
+
+This retrieval-and-approval flow is reusable across domains. Only the retrieval heuristics and ranking criteria should vary by domain pack.
 
 ### Packet sizing
 
@@ -259,6 +280,8 @@ If material new evidence is discovered:
 ## Run Artifacts and Revision Model
 
 This milestone extends the current artifact model into a revisioned run record.
+
+The artifact model is intentionally domain-neutral.
 
 Each run should contain:
 
@@ -369,7 +392,7 @@ Suggested operation set:
 - `compile-belief-state`
   Compile the approved inputs into a structured belief-state snapshot.
 - `simulate`
-  Run the interstate-crisis pack over the approved snapshot.
+  Run the selected domain pack over the approved snapshot.
 - `generate-report`
   Write report and workbench outputs for that revision.
 
@@ -400,12 +423,14 @@ The next implementation plan should include tests for:
 - grouped assumption approval
 - grouped evidence packet approval
 - revision creation and immutability
-- interstate-crisis canonical phase handling
+- reference-pack canonical phase handling
 - suggested third-party drafting and approval
 - approved objective profile persistence
 - pause-and-rerun behavior for material new evidence
 - report generation with coverage and credibility notes
 - adapter-to-core boundaries that keep state transitions deterministic
+
+It should also include at least one check that the workflow contracts remain domain-neutral at the core layer, with interstate-specific behavior confined to the reference pack and adapter prompts.
 
 ## Success Criteria
 
@@ -432,4 +457,4 @@ It avoids two failure modes:
 - deepening domain knowledge before the workflow is real
 - building a generic workflow with no domain pressure
 
-This milestone establishes the harness. Later domain packs and richer knowledge work can then plug into something operational instead of something hypothetical.
+This milestone establishes the reusable harness. Later domain packs and richer knowledge work can then plug into something operational instead of something hypothetical.
