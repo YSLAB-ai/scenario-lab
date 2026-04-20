@@ -180,6 +180,33 @@ def test_compile_belief_state_rejects_unsupported_phases() -> None:
         )
 
 
+def test_compile_belief_state_dedupes_actor_names_by_normalized_actor_id(monkeypatch) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        primary_actors=["North Korea", "US"],
+        trigger="Exchange of strikes",
+        current_phase="trigger",
+        time_horizon="30d",
+        suggested_actors=["North-Korea"],
+    )
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=StubPack(),
+        intake=intake,
+        assumptions=AssumptionSummary(suggested_actors=["north korea"]),
+        approved_evidence_ids=[],
+    )
+
+    assert [actor.name for actor in state.actors] == ["North Korea", "US"]
+    assert [actor.actor_id for actor in state.actors] == ["north-korea", "us"]
+
+
 def test_domain_pack_workflow_hooks_default_to_empty_collections() -> None:
     pack = StubPack()
     intake = IntakeDraft(

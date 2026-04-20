@@ -8,20 +8,21 @@ from forecasting_harness.models import Actor, BeliefField, BeliefState
 from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
 
 
-def _dedupe_preserving_order(values: list[str]) -> list[str]:
-    seen: set[str] = set()
-    unique_values: list[str] = []
-    for value in values:
-        if value in seen:
-            continue
-        seen.add(value)
-        unique_values.append(value)
-    return unique_values
-
-
 def _actor_id_from_name(name: str) -> str:
     actor_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
     return actor_id or name.lower()
+
+
+def _dedupe_actor_names(values: list[str]) -> list[str]:
+    seen_actor_ids: set[str] = set()
+    unique_values: list[str] = []
+    for value in values:
+        actor_id = _actor_id_from_name(value)
+        if actor_id in seen_actor_ids:
+            continue
+        seen_actor_ids.add(actor_id)
+        unique_values.append(value)
+    return unique_values
 
 
 def compile_belief_state(
@@ -39,7 +40,7 @@ def compile_belief_state(
             f"unsupported phase {intake.current_phase!r} for domain pack {pack.slug()!r}; "
             f"expected one of: {', '.join(canonical_phases)}"
         )
-    actor_names = _dedupe_preserving_order(
+    actor_names = _dedupe_actor_names(
         [*intake.primary_actors, *intake.suggested_actors, *assumptions.suggested_actors]
     )
     now = datetime.now(timezone.utc)
