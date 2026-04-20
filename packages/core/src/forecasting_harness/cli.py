@@ -105,7 +105,7 @@ def demo_run(root: Path = typer.Option(Path(".forecast"))) -> None:
     objective_profile = _objective_profile_for_pack(pack)
     engine = SimulationEngine(pack, objective_profile)
     result = engine.run(state)
-    repo.write_json("demo-run", "run.json", {"run_id": "demo-run", "domain_pack": pack.slug()})
+    _service(root).start_run(run_id="demo-run", domain_pack=pack.slug())
     repo.save_belief_state("demo-run", state)
     _write_standard_outputs(repo, "demo-run", pack, result)
     print("demo-run complete")

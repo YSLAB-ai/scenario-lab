@@ -3,6 +3,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
+from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.cli import app
 
 
@@ -20,6 +21,7 @@ def test_demo_run_creates_report_and_workbench(tmp_path: Path) -> None:
     top_branch_label = tree_summary["branches"][0]["label"]
     assert top_branch_label in (run_dir / "report.md").read_text(encoding="utf-8")
     assert "Objective profile: balanced" in (run_dir / "workbench.md").read_text(encoding="utf-8")
+    assert RunRepository(tmp_path / ".forecast").load_run_record("demo-run").domain_pack == "generic-event"
 
 
 def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
