@@ -95,6 +95,13 @@ def test_run_repository_initializes_runs_and_persists_run_records(tmp_path: Path
 
 def test_run_repository_writes_revision_snapshots_and_loads_models(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
+    repository.init_run(
+        RunRecord(
+            run_id="run-1",
+            domain_pack="interstate-crisis",
+            created_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+        )
+    )
 
     path = repository.write_revision_json(
         "run-1",
@@ -121,6 +128,13 @@ def test_run_repository_writes_revision_snapshots_and_loads_models(tmp_path: Pat
 
 def test_run_repository_writes_revision_markdown_and_appends_events(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
+    repository.init_run(
+        RunRecord(
+            run_id="run-1",
+            domain_pack="interstate-crisis",
+            created_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+        )
+    )
 
     report_path = repository.write_revision_markdown("run-1", "r1", "report.md", "# Report\n")
     repository.append_event("run-1", "run-started", {"revision_id": "r1"})
@@ -132,3 +146,47 @@ def test_run_repository_writes_revision_markdown_and_appends_events(tmp_path: Pa
     assert report_path.name == "r1.report.md"
     assert [event["event_type"] for event in events] == ["run-started", "run-updated"]
     assert [event["payload"]["revision_id"] for event in events] == ["r1", "r2"]
+
+
+@pytest.mark.parametrize(
+    ("operation", "args", "kwargs"),
+    [
+        ("write_revision_json", ("run-1", "intake", "r1", {"value": 1}), {"approved": True}),
+        ("write_revision_markdown", ("run-1", "r1", "report.md", "# Report\n"), {}),
+        ("append_event", ("run-1", "run-started", {"revision_id": "r1"}), {}),
+    ],
+)
+def test_run_repository_rejects_writes_for_uninitialized_runs(
+    tmp_path: Path,
+    operation: str,
+    args: tuple[object, ...],
+    kwargs: dict[str, object],
+) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+
+    with pytest.raises(FileNotFoundError, match="run.json"):
+        getattr(repository, operation)(*args, **kwargs)
+
+    assert not repository.run_dir("run-1").exists()
+
+
+def test_run_repository_rejects_path_traversal_in_revision_inputs(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    run = RunRecord(
+        run_id="run-1",
+        domain_pack="interstate-crisis",
+        created_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+    )
+    repository.init_run(run)
+
+    with pytest.raises(ValueError, match="path traversal"):
+        repository.write_revision_json("../escape", "intake", "r1", {"value": 1}, approved=True)
+
+    with pytest.raises(ValueError, match="path traversal"):
+        repository.write_revision_json("run-1", "../escape", "r1", {"value": 1}, approved=True)
+
+    with pytest.raises(ValueError, match="path traversal"):
+        repository.write_revision_json("run-1", "intake", "../escape", {"value": 1}, approved=True)
+
+    with pytest.raises(ValueError, match="path traversal"):
+        repository.write_revision_markdown("run-1", "../escape", "report.md", "# Report\n")

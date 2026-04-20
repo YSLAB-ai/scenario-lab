@@ -69,9 +69,9 @@ class RunRepository:
         *,
         approved: bool,
     ) -> Path:
-        run_dir = self.run_dir(run_id)
         self._validate_path_segment(section, "section")
         self._validate_path_segment(revision_id, "revision_id")
+        run_dir = self._require_initialized_run(run_id)
         section_dir = run_dir / section
         section_dir.mkdir(parents=True, exist_ok=True)
         suffix = "approved" if approved else "draft"
@@ -97,9 +97,9 @@ class RunRepository:
         return model_type.model_validate_json(path.read_text(encoding="utf-8"))
 
     def write_revision_markdown(self, run_id: str, revision_id: str, name: str, content: str) -> Path:
-        run_dir = self.run_dir(run_id)
         self._validate_path_segment(revision_id, "revision_id")
         self._validate_artifact_name(name)
+        run_dir = self._require_initialized_run(run_id)
         section_dir = run_dir / "reports"
         section_dir.mkdir(parents=True, exist_ok=True)
         path = section_dir / f"{revision_id}.{name}"
@@ -107,8 +107,7 @@ class RunRepository:
         return path
 
     def append_event(self, run_id: str, event_type: str, payload: dict[str, object]) -> None:
-        run_dir = self.run_dir(run_id)
-        run_dir.mkdir(parents=True, exist_ok=True)
+        run_dir = self._require_initialized_run(run_id)
         event = {
             "event_type": event_type,
             "recorded_at": datetime.now(timezone.utc).isoformat(),
@@ -128,3 +127,9 @@ class RunRepository:
         RunRepository._validate_path_segment(value, "artifact name")
         if value in RESERVED_ARTIFACT_NAMES:
             raise ValueError(f"artifact name is reserved: {value!r}")
+
+    def _require_initialized_run(self, run_id: str) -> Path:
+        run_dir = self.run_dir(run_id)
+        if not (run_dir / "run.json").exists():
+            raise FileNotFoundError(run_dir / "run.json")
+        return run_dir
