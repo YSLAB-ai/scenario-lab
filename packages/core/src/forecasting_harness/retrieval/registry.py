@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import re
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +38,7 @@ class CorpusRegistry:
         content: str,
     ) -> None:
         with self._connect() as connection:
+            connection.execute("DELETE FROM chunks WHERE source_id = ?", (source_id,))
             connection.execute(
                 """
                 INSERT INTO chunks (source_id, title, published_at, source_type, tags, content)
@@ -56,15 +58,24 @@ class CorpusRegistry:
         if not text.strip():
             query = "SELECT source_id, title, published_at, source_type, tags, content FROM chunks"
             parameters: tuple[Any, ...] = ()
+        elif not re.fullmatch(r"[A-Za-z0-9\s]+", text):
+            return []
         else:
+            tokens = re.findall(r"[A-Za-z0-9]+", text)
+            if not tokens:
+                return []
+            safe_query = " AND ".join(tokens)
             query = (
                 "SELECT source_id, title, published_at, source_type, tags, content "
                 "FROM chunks WHERE chunks MATCH ?"
             )
-            parameters = (text,)
+            parameters = (safe_query,)
 
-        with self._connect() as connection:
-            rows = connection.execute(query, parameters).fetchall()
+        try:
+            with self._connect() as connection:
+                rows = connection.execute(query, parameters).fetchall()
+        except sqlite3.OperationalError:
+            return []
 
         results: list[dict[str, Any]] = []
         for row in rows:

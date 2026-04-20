@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 
@@ -30,3 +32,56 @@ def test_query_api_summarizes_top_branches_without_loading_full_tree():
         ],
         limit=1,
     ) == [{"branch_id": "b1", "label": "de-escalation", "score": 0.7}]
+
+
+def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Recent logistics report",
+        source_type="markdown",
+        published_at="2026-04-18",
+        tags={"domain": "conflict", "actor": "state-a"},
+        content="# Report\nFuel stockpiles are strained.\n",
+    )
+
+    assert registry.search_chunks("state-a") == []
+    assert registry.search_chunks("(") == []
+    assert registry.search_chunks("-") == []
+
+
+def test_registry_re_registering_source_id_replaces_existing_rows(tmp_path: Path):
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Recent logistics report",
+        source_type="markdown",
+        published_at="2026-04-18",
+        tags={"domain": "conflict", "actor": "state-a"},
+        content="# Report\nFuel stockpiles are strained.\n",
+    )
+    registry.register_document(
+        source_id="src-1",
+        title="Updated logistics report",
+        source_type="markdown",
+        published_at="2026-04-19",
+        tags={"domain": "conflict", "actor": "state-a"},
+        content="# Report\nFuel stockpiles are still strained.\n",
+    )
+
+    hits = SearchEngine(registry).search(
+        RetrievalQuery(text="fuel stockpiles", filters={"domain": "conflict"})
+    )
+
+    assert [hit["source_id"] for hit in hits] == ["src-1"]
+    assert hits[0]["title"] == "Updated logistics report"
+
+
+def test_freshness_multiplier_clamps_future_dates_and_rejects_malformed_dates(tmp_path: Path):
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    engine = SearchEngine(registry)
+
+    assert engine.freshness_multiplier("2100-01-01") == 1.0
+
+    with pytest.raises(ValueError):
+        engine.freshness_multiplier("not-a-date")
