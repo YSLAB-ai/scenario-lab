@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from forecasting_harness.models import BeliefState, ObjectiveProfile
 
 
 class InteractionModel(StrEnum):
@@ -47,5 +50,7 @@ class DomainPack(ABC):
     def freshness_policy(self) -> dict[str, float]:
         return {}
 
-    def default_objective_profile(self) -> dict[str, Any]:
-        return {}
+    def default_objective_profile(self) -> "ObjectiveProfile":
+        from forecasting_harness.objectives import default_objective_profile as _default_objective_profile
+
+        return _default_objective_profile()
