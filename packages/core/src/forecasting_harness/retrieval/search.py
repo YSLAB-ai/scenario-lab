@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any
 
-from forecasting_harness.retrieval.registry import CorpusRegistry
+from forecasting_harness.retrieval.registry import CorpusRegistry, parse_published_at
 
 
 @dataclass(frozen=True)
@@ -18,11 +18,7 @@ class SearchEngine:
         self.registry = registry
 
     def freshness_multiplier(self, published_at: str) -> float:
-        try:
-            published_date = datetime.strptime(published_at, "%Y-%m-%d").date()
-        except ValueError as exc:
-            raise ValueError(f"invalid published_at date: {published_at!r}") from exc
-
+        published_date = datetime.strptime(parse_published_at(published_at), "%Y-%m-%d").date()
         age_days = (date.today() - published_date).days
         return min(1.0, max(0.2, 1 - (age_days / 365)))
 

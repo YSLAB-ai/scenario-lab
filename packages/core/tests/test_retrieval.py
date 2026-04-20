@@ -3,7 +3,7 @@ import sqlite3
 
 import pytest
 
-from forecasting_harness.query_api import summarize_top_branches
+from forecasting_harness.query_api import get_evidence_for_assumption, summarize_top_branches
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 
 
@@ -98,6 +98,22 @@ def test_freshness_multiplier_clamps_future_dates_and_rejects_malformed_dates(tm
         engine.freshness_multiplier("not-a-date")
 
 
+def test_registry_rejects_malformed_published_at_during_registration(tmp_path: Path):
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+
+    with pytest.raises(ValueError, match="invalid published_at date"):
+        registry.register_document(
+            source_id="src-1",
+            title="Recent logistics report",
+            source_type="markdown",
+            published_at="not-a-date",
+            tags={"domain": "conflict", "actor": "state-a"},
+            content="# Report\nFuel stockpiles are strained.\n",
+        )
+
+    assert SearchEngine(registry).search(RetrievalQuery(text="fuel")) == []
+
+
 def test_query_api_defaults_missing_scores_consistently():
     assert summarize_top_branches(
         [
@@ -121,4 +137,17 @@ def test_query_api_normalizes_none_scores_before_sorting():
     ) == [
         {"branch_id": "b2", "label": "limited strike", "score": 0.3},
         {"branch_id": "b1", "label": "de-escalation", "score": 0},
+    ]
+
+
+def test_get_evidence_for_assumption_supports_singular_and_plural_links():
+    evidence_items = [
+        {"evidence_id": "ev-1", "assumption_id": "a-1"},
+        {"evidence_id": "ev-2", "assumption_ids": ["a-1", "a-2"]},
+        {"evidence_id": "ev-3", "assumption_ids": ["a-3"]},
+    ]
+
+    assert get_evidence_for_assumption(evidence_items, "a-1") == [
+        {"evidence_id": "ev-1", "assumption_id": "a-1"},
+        {"evidence_id": "ev-2", "assumption_ids": ["a-1", "a-2"]},
     ]

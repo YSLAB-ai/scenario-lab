@@ -3,8 +3,17 @@ from __future__ import annotations
 import json
 import sqlite3
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+
+def parse_published_at(published_at: str) -> str:
+    try:
+        datetime.strptime(published_at, "%Y-%m-%d")
+    except ValueError as exc:
+        raise ValueError(f"invalid published_at date: {published_at!r}") from exc
+    return published_at
 
 
 class CorpusRegistry:
@@ -37,6 +46,8 @@ class CorpusRegistry:
         tags: dict[str, str],
         content: str,
     ) -> None:
+        normalized_published_at = parse_published_at(published_at)
+
         with self._connect() as connection:
             connection.execute("DELETE FROM chunks WHERE source_id = ?", (source_id,))
             connection.execute(
@@ -47,7 +58,7 @@ class CorpusRegistry:
                 (
                     source_id,
                     title,
-                    published_at,
+                    normalized_published_at,
                     source_type,
                     json.dumps(tags, sort_keys=True),
                     content,

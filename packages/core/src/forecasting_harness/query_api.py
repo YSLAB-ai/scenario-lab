@@ -24,4 +24,17 @@ def get_evidence_for_assumption(
     evidence_items: list[dict[str, Any]],
     assumption_id: str,
 ) -> list[dict[str, Any]]:
-    return [item for item in evidence_items if item.get("assumption_id") == assumption_id]
+    matches: list[dict[str, Any]] = []
+    for item in evidence_items:
+        if item.get("assumption_id") == assumption_id:
+            matches.append(item)
+            continue
+
+        linked_assumption_ids = item.get("assumption_ids")
+        if isinstance(linked_assumption_ids, str) and linked_assumption_ids == assumption_id:
+            matches.append(item)
+            continue
+        if isinstance(linked_assumption_ids, (list, tuple, set)) and assumption_id in linked_assumption_ids:
+            matches.append(item)
+
+    return matches

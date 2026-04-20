@@ -62,6 +62,9 @@ def test_simulation_engine_sorts_branches_by_score() -> None:
         def interaction_model(self) -> InteractionModel:
             return InteractionModel.EVENT_DRIVEN
 
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return [
                 {"branch_id": "b-1", "label": "low", "dependencies": {"fields": ["fuel_days"]}},
@@ -96,6 +99,9 @@ def test_simulation_engine_rejects_interaction_model_mismatch() -> None:
         def interaction_model(self) -> InteractionModel:
             return InteractionModel.EVENT_DRIVEN
 
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return []
 
@@ -117,3 +123,78 @@ def test_simulation_engine_rejects_interaction_model_mismatch() -> None:
 
     with pytest.raises(ValueError, match="interaction model mismatch"):
         engine.run(state)
+
+
+def test_simulation_engine_rejects_invalid_state_before_generating_branches() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return ["fuel_days must be non-negative"]
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            raise AssertionError("propose_actions should not run for invalid state")
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            raise AssertionError("sample_transition should not run for invalid state")
+
+        def score_state(self, state: object) -> dict[str, float]:
+            raise AssertionError("score_state should not run for invalid state")
+
+    profile = ObjectiveProfile(
+        name="avoid-escalation",
+        metric_weights={"escalation": -1.0, "negotiation": 0.5},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    state = SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN)
+
+    with pytest.raises(ValueError, match="invalid state"):
+        engine.run(state)
+
+
+def test_simulation_engine_assigns_deterministic_fallback_branch_ids() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            return [
+                {"action_id": "signal-negotiation", "label": "Signal negotiation"},
+                {"action_id": "stabilize-front", "label": "Stabilize front"},
+            ]
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            if action_context["action_id"] == "signal-negotiation":
+                return [
+                    SimpleNamespace(score_metrics={"escalation": 0.2, "negotiation": 0.6}),
+                    SimpleNamespace(score_metrics={"escalation": 0.4, "negotiation": 0.4}),
+                ]
+            return [SimpleNamespace(score_metrics={"escalation": 0.3, "negotiation": 0.5})]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+    profile = ObjectiveProfile(
+        name="avoid-escalation",
+        metric_weights={"escalation": -1.0, "negotiation": 0.5},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    state = SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN)
+
+    result = engine.run(state)
+
+    assert [branch["branch_id"] for branch in result["branches"]] == [
+        "signal-negotiation",
+        "stabilize-front",
+        "signal-negotiation-2",
+    ]
