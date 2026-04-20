@@ -24,6 +24,18 @@ def test_demo_run_creates_report_and_workbench(tmp_path: Path) -> None:
     assert RunRepository(tmp_path / ".forecast").load_run_record("demo-run").domain_pack == "generic-event"
 
 
+def test_demo_run_can_refresh_existing_root(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    first = runner.invoke(app, ["demo-run", "--root", str(root)])
+    second = runner.invoke(app, ["demo-run", "--root", str(root)])
+
+    assert first.exit_code == 0
+    assert second.exit_code == 0
+    assert RunRepository(root).load_run_record("demo-run").domain_pack == "generic-event"
+
+
 def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

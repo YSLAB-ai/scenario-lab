@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import typer
@@ -11,7 +12,7 @@ from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.simulation.engine import SimulationEngine
-from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft
+from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
 
 
@@ -56,6 +57,19 @@ def _pack_for_slug(domain_pack: str) -> GenericEventPack | InterstateCrisisPack:
 
 def _service(root: Path) -> WorkflowService:
     return WorkflowService(RunRepository(root))
+
+
+def _upsert_run_record(repo: RunRepository, run_id: str, domain_pack: str) -> None:
+    run_dir = repo.run_dir(run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "events.jsonl").touch(exist_ok=True)
+    repo.save_run_record(
+        RunRecord(
+            run_id=run_id,
+            domain_pack=domain_pack,
+            created_at=datetime.now(timezone.utc),
+        )
+    )
 
 
 def _initial_state(run_id: str, pack: GenericEventPack | InterstateCrisisPack) -> BeliefState:
@@ -105,7 +119,7 @@ def demo_run(root: Path = typer.Option(Path(".forecast"))) -> None:
     objective_profile = _objective_profile_for_pack(pack)
     engine = SimulationEngine(pack, objective_profile)
     result = engine.run(state)
-    _service(root).start_run(run_id="demo-run", domain_pack=pack.slug())
+    _upsert_run_record(repo, run_id="demo-run", domain_pack=pack.slug())
     repo.save_belief_state("demo-run", state)
     _write_standard_outputs(repo, "demo-run", pack, result)
     print("demo-run complete")
