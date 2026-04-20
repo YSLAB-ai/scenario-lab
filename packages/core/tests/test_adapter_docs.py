@@ -30,6 +30,12 @@ def test_adapter_install_docs_mention_demo_run() -> None:
     assert "Python 3.12+" in claude_doc
     assert "pip install -e 'packages/core[dev]'" in codex_doc
     assert "pip install -e 'packages/core[dev]'" in claude_doc
+    assert "checked-out forecasting harness repo/workspace" in codex_skill
+    assert "checked-out forecasting harness repo/workspace" in claude_skill
+    assert "Python 3.12+" in codex_skill
+    assert "Python 3.12+" in claude_skill
+    assert "pip install -e 'packages/core[dev]'" in codex_skill
+    assert "pip install -e 'packages/core[dev]'" in claude_skill
     assert "query-style commands" not in codex_skill
     assert "query-style commands" not in claude_skill
     assert "query-style commands" not in codex_doc
