@@ -64,9 +64,9 @@ class WorkflowService:
         return run
 
     def simulate_revision(self, run_id: str, revision_id: str, *, pack: Any) -> dict[str, object]:
-        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=True)
         assumptions = self.repository.load_revision_model(run_id, "assumptions", revision_id, AssumptionSummary, approved=True)
-        evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
+        evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=True)
 
         state = compile_belief_state(
             run_id=run_id,
@@ -87,7 +87,7 @@ class WorkflowService:
             revision_id,
             simulation=result,
             evidence_count=len(evidence.items),
-            unsupported_count=0,
+            unsupported_count=len(assumptions.summary),
         )
         self.repository.append_event(run_id, "simulation-complete", {"revision_id": revision_id})
         return result

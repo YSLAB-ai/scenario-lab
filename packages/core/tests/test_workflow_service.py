@@ -239,8 +239,11 @@ def test_simulate_revision_writes_belief_state_summary_and_report(tmp_path: Path
     assert repository.run_dir("crisis-1").joinpath("simulation", "r1.approved.json").exists()
     report_path = repository.run_dir("crisis-1").joinpath("reports", "r1.report.md")
     assert report_path.exists()
-    assert "# Scenario Report" in report_path.read_text(encoding="utf-8")
-    assert "- Revision: r1" in report_path.read_text(encoding="utf-8")
+    report = report_path.read_text(encoding="utf-8")
+    assert "# Scenario Report" in report
+    assert "- Revision: r1" in report
+    assert "- Unsupported assumptions: 1" in report
+    assert "low-credibility exploratory run" not in report
 
 
 def test_generate_report_writes_revision_specific_reports_and_credibility_note(tmp_path: Path) -> None:
