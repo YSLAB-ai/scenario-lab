@@ -51,10 +51,11 @@ def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
     assert registry.search_chunks("-") == []
 
 
-def test_registry_search_chunks_raises_for_missing_table(tmp_path: Path):
+def test_registry_search_chunks_raises_for_malformed_schema(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
     with registry._connect() as connection:
         connection.execute("DROP TABLE chunks")
+        connection.execute("CREATE TABLE chunks (source_id TEXT)")
 
     with pytest.raises(sqlite3.OperationalError):
         registry.search_chunks("fuel")

@@ -76,7 +76,7 @@ class CorpusRegistry:
                 rows = connection.execute(query, parameters).fetchall()
         except sqlite3.OperationalError as exc:
             message = str(exc).lower()
-            if "fts5" in message or "syntax error" in message or "no such column" in message:
+            if message.startswith("fts5: syntax error"):
                 return []
             raise
 
