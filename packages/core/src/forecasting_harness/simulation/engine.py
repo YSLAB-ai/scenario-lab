@@ -13,7 +13,12 @@ class SimulationEngine:
         self.objective_profile = objective_profile
 
     def run(self, state: Any) -> dict[str, list[dict[str, Any]]]:
-        assert self.domain_pack.interaction_model() == state.interaction_model
+        expected_interaction_model = self.domain_pack.interaction_model()
+        if expected_interaction_model != state.interaction_model:
+            raise ValueError(
+                "interaction model mismatch: "
+                f"domain_pack={expected_interaction_model!r}, state={state.interaction_model!r}"
+            )
 
         branches: list[dict[str, Any]] = []
         for action_context in self.domain_pack.propose_actions(state):
