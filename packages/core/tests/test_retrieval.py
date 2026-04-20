@@ -1,4 +1,5 @@
 from pathlib import Path
+import sqlite3
 
 import pytest
 
@@ -50,6 +51,15 @@ def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
     assert registry.search_chunks("-") == []
 
 
+def test_registry_search_chunks_raises_for_missing_table(tmp_path: Path):
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    with registry._connect() as connection:
+        connection.execute("DROP TABLE chunks")
+
+    with pytest.raises(sqlite3.OperationalError):
+        registry.search_chunks("fuel")
+
+
 def test_registry_re_registering_source_id_replaces_existing_rows(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
     registry.register_document(
@@ -85,3 +95,16 @@ def test_freshness_multiplier_clamps_future_dates_and_rejects_malformed_dates(tm
 
     with pytest.raises(ValueError):
         engine.freshness_multiplier("not-a-date")
+
+
+def test_query_api_defaults_missing_scores_consistently():
+    assert summarize_top_branches(
+        [
+            {"branch_id": "b1", "score": 0.7, "label": "de-escalation"},
+            {"branch_id": "b2", "label": "limited strike"},
+        ],
+        limit=2,
+    ) == [
+        {"branch_id": "b1", "label": "de-escalation", "score": 0.7},
+        {"branch_id": "b2", "label": "limited strike", "score": 0},
+    ]

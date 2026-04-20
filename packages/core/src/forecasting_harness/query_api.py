@@ -9,7 +9,7 @@ def summarize_top_branches(branches: list[dict[str, Any]], limit: int = 3) -> li
         {
             "branch_id": branch["branch_id"],
             "label": branch["label"],
-            "score": branch["score"],
+            "score": branch.get("score", 0),
         }
         for branch in top_branches
     ]

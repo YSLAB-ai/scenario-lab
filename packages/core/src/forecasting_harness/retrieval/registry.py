@@ -74,8 +74,11 @@ class CorpusRegistry:
         try:
             with self._connect() as connection:
                 rows = connection.execute(query, parameters).fetchall()
-        except sqlite3.OperationalError:
-            return []
+        except sqlite3.OperationalError as exc:
+            message = str(exc).lower()
+            if "fts5" in message or "syntax error" in message or "no such column" in message:
+                return []
+            raise
 
         results: list[dict[str, Any]] = []
         for row in rows:
