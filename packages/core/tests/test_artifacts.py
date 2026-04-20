@@ -1,9 +1,11 @@
+from pathlib import Path
+
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.base import InteractionModel
 from forecasting_harness.models import BeliefState
 
 
-def test_run_repository_persists_belief_state(tmp_path) -> None:
+def test_run_repository_persists_belief_state(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     state = BeliefState(
         run_id="run-1",
