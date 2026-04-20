@@ -20,7 +20,9 @@ class RunRepository:
 
     def init_run(self, run: RunRecord) -> None:
         run_dir = self.run_dir(run.run_id)
-        run_dir.mkdir(parents=True, exist_ok=True)
+        if run_dir.exists():
+            raise FileExistsError(run_dir)
+        run_dir.mkdir(parents=True, exist_ok=False)
         (run_dir / "run.json").write_text(run.model_dump_json(indent=2), encoding="utf-8")
         (run_dir / "events.jsonl").touch(exist_ok=True)
 

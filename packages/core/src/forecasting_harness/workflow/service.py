@@ -21,6 +21,8 @@ class WorkflowService:
         self.repository.append_event(run_id, "intake-drafted", {"revision_id": revision_id})
 
     def save_evidence_draft(self, run_id: str, revision_id: str, packet: EvidencePacket) -> None:
+        if packet.revision_id != revision_id:
+            raise ValueError(f"revision_id mismatch: expected {revision_id!r}, got {packet.revision_id!r}")
         self.repository.write_revision_json(
             run_id,
             "evidence",

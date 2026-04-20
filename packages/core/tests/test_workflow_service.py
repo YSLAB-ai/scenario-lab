@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
 
@@ -109,6 +110,24 @@ def test_start_run_initializes_the_run_and_records_a_started_event(monkeypatch: 
     assert repository.appended_events == [("run-1", "run-started", {"run_id": "run-1"})]
 
 
+def test_start_run_rejects_duplicate_run_ids_with_real_repository(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from forecasting_harness.workflow import service as workflow_service
+
+    monkeypatch.setattr(workflow_service, "datetime", _FrozenDateTime)
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+
+    first_run = service.start_run("run-1", "interstate-crisis")
+
+    assert first_run.run_id == "run-1"
+
+    with pytest.raises(FileExistsError):
+        service.start_run("run-1", "interstate-crisis")
+
+    loaded = repository.load_run_record("run-1")
+    assert loaded == first_run
+
+
 def test_save_intake_draft_writes_the_intake_snapshot_and_records_an_event() -> None:
     repository = _FakeRepository()
     service = WorkflowService(repository)
@@ -133,6 +152,18 @@ def test_save_evidence_draft_writes_the_evidence_snapshot_and_records_an_event()
         ("run-1", "evidence", "rev-1", packet.model_dump(mode="json"), False)
     ]
     assert repository.appended_events == [("run-1", "evidence-drafted", {"revision_id": "rev-1"})]
+
+
+def test_save_evidence_draft_rejects_revision_id_mismatches() -> None:
+    repository = _FakeRepository()
+    service = WorkflowService(repository)
+    packet = _make_evidence(revision_id="rev-2")
+
+    with pytest.raises(ValueError, match="revision_id"):
+        service.save_evidence_draft("run-1", "rev-1", packet)
+
+    assert repository.written_revision_json == []
+    assert repository.appended_events == []
 
 
 def test_approve_revision_freezes_revision_artifacts_and_advances_the_run() -> None:
