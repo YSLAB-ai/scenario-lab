@@ -8,6 +8,7 @@ import pytest
 
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
+from forecasting_harness.models import BeliefState
 from forecasting_harness.workflow.models import (
     AssumptionSummary,
     EvidencePacket,
@@ -301,3 +302,30 @@ def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None
     assert report_dir.joinpath("r1.report.md").exists()
     assert report_dir.joinpath("r2.report.md").exists()
     assert repository.load_run_record("crisis-1").current_revision_id == "r2"
+
+
+def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    mutated_intake = intake.model_copy(update={"current_phase": "escalation", "trigger": "mutated trigger"})
+    mutated_evidence = EvidencePacket(revision_id="r1", items=[])
+    service.save_intake_draft("crisis-1", "r1", mutated_intake)
+    service.save_evidence_draft("crisis-1", "r1", mutated_evidence)
+
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    approved_state = repository.load_revision_model("crisis-1", "belief-state", "r1", BeliefState, approved=True)
+    report = repository.run_dir("crisis-1").joinpath("reports", "r1.report.md").read_text(encoding="utf-8")
+
+    assert approved_state.phase == "trigger"
+    assert approved_state.fields["trigger"].value == "policy change"
+    assert approved_state.approved_evidence_ids == ["r1-ev-0"]
+    assert "- Approved evidence items: 1" in report
