@@ -33,6 +33,12 @@ def compile_belief_state(
     assumptions: AssumptionSummary,
     approved_evidence_ids: list[str],
 ) -> BeliefState:
+    canonical_phases = pack.canonical_phases()
+    if canonical_phases and intake.current_phase not in canonical_phases:
+        raise ValueError(
+            f"unsupported phase {intake.current_phase!r} for domain pack {pack.slug()!r}; "
+            f"expected one of: {', '.join(canonical_phases)}"
+        )
     actor_names = _dedupe_preserving_order([*intake.primary_actors, *assumptions.suggested_actors])
     now = datetime.now(timezone.utc)
     return BeliefState(

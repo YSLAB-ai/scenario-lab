@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from forecasting_harness.domain.base import DomainPack, InteractionModel
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.evidence import draft_evidence_packet
@@ -57,6 +59,42 @@ def test_draft_evidence_packet_limits_entries_per_source_and_preserves_raw_passa
     assert len([item for item in packet.items if item.source_id == "s1"]) == 2
 
 
+def test_draft_evidence_packet_is_deterministic_across_input_order() -> None:
+    hits_a = [
+        {"source_id": "s2", "title": "Doc 2", "content": "beta", "published_at": "2026-04-20", "score": 0.7},
+        {"source_id": "s1", "title": "Doc 1", "content": "alpha", "published_at": "2026-04-20", "score": 1.0},
+        {"source_id": "s1", "title": "Doc 1", "content": "gamma", "published_at": "2026-04-20", "score": 0.8},
+        {"source_id": "s2", "title": "Doc 2", "content": "delta", "published_at": "2026-04-20", "score": 0.6},
+    ]
+    hits_b = [
+        {"source_id": "s1", "title": "Doc 1", "content": "gamma", "published_at": "2026-04-20", "score": 0.8},
+        {"source_id": "s2", "title": "Doc 2", "content": "delta", "published_at": "2026-04-20", "score": 0.6},
+        {"source_id": "s1", "title": "Doc 1", "content": "alpha", "published_at": "2026-04-20", "score": 1.0},
+        {"source_id": "s2", "title": "Doc 2", "content": "beta", "published_at": "2026-04-20", "score": 0.7},
+    ]
+
+    packet_a = draft_evidence_packet("r1", hits_a, max_per_source=2)
+    packet_b = draft_evidence_packet("r1", hits_b, max_per_source=2)
+
+    assert [item.evidence_id for item in packet_a.items] == [item.evidence_id for item in packet_b.items]
+    assert [item.source_id for item in packet_a.items] == [item.source_id for item in packet_b.items]
+    assert [item.raw_passages for item in packet_a.items] == [item.raw_passages for item in packet_b.items]
+
+
+def test_draft_evidence_packet_enforces_a_total_cap() -> None:
+    hits = [
+        {"source_id": "s1", "title": "Doc 1", "content": "alpha", "published_at": "2026-04-20", "score": 1.0},
+        {"source_id": "s1", "title": "Doc 1", "content": "beta", "published_at": "2026-04-20", "score": 0.9},
+        {"source_id": "s2", "title": "Doc 2", "content": "gamma", "published_at": "2026-04-20", "score": 0.8},
+        {"source_id": "s2", "title": "Doc 2", "content": "delta", "published_at": "2026-04-20", "score": 0.7},
+    ]
+
+    packet = draft_evidence_packet("r1", hits, max_per_source=2, max_total=3)
+
+    assert len(packet.items) == 3
+    assert [item.evidence_id for item in packet.items] == ["r1:s1:1", "r1:s1:2", "r1:s2:1"]
+
+
 def test_compile_belief_state_includes_primary_and_suggested_actors(monkeypatch) -> None:
     from forecasting_harness.workflow import compiler as workflow_compiler
 
@@ -102,6 +140,30 @@ def test_compile_belief_state_includes_primary_and_suggested_actors(monkeypatch)
     assert list(state.constraints.values()) == ["sanctions"]
     assert state.unknowns == ["timing"]
     assert state.approved_evidence_ids == ["ev-1"]
+
+
+def test_compile_belief_state_rejects_unsupported_phases() -> None:
+    class PhasePack(StubPack):
+        def canonical_phases(self) -> list[str]:
+            return ["trigger", "signaling"]
+
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        primary_actors=["US", "Iran"],
+        trigger="Exchange of strikes",
+        current_phase="improvise",
+        time_horizon="30d",
+    )
+
+    with pytest.raises(ValueError, match="unsupported phase"):
+        compile_belief_state(
+            run_id="crisis-1",
+            revision_id="r1",
+            pack=PhasePack(),
+            intake=intake,
+            assumptions=AssumptionSummary(),
+            approved_evidence_ids=[],
+        )
 
 
 def test_domain_pack_workflow_hooks_default_to_empty_collections() -> None:
