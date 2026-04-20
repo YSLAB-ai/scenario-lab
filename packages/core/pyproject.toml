@@ -1,10 +1,11 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "forecasting-harness"
 version = "0.1.0"
+description = "Local-first forecasting harness core"
 requires-python = ">=3.12"
 dependencies = [
   "pydantic>=2.7,<3",
