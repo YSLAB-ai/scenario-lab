@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from typer.testing import CliRunner
 
@@ -10,5 +11,12 @@ def test_demo_run_creates_report_and_workbench(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     run_dir = tmp_path / ".forecast" / "runs" / "demo-run"
+    assert (run_dir / "belief-state.json").exists()
+    assert (run_dir / "tree-summary.json").exists()
     assert (run_dir / "report.md").exists()
     assert (run_dir / "workbench.md").exists()
+
+    tree_summary = json.loads((run_dir / "tree-summary.json").read_text(encoding="utf-8"))
+    top_branch_label = tree_summary["branches"][0]["label"]
+    assert top_branch_label in (run_dir / "report.md").read_text(encoding="utf-8")
+    assert "Objective profile: balanced" in (run_dir / "workbench.md").read_text(encoding="utf-8")
