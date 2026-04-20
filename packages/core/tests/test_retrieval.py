@@ -108,3 +108,16 @@ def test_query_api_defaults_missing_scores_consistently():
         {"branch_id": "b1", "label": "de-escalation", "score": 0.7},
         {"branch_id": "b2", "label": "limited strike", "score": 0},
     ]
+
+
+def test_query_api_normalizes_none_scores_before_sorting():
+    assert summarize_top_branches(
+        [
+            {"branch_id": "b1", "score": None, "label": "de-escalation"},
+            {"branch_id": "b2", "score": 0.3, "label": "limited strike"},
+        ],
+        limit=2,
+    ) == [
+        {"branch_id": "b2", "label": "limited strike", "score": 0.3},
+        {"branch_id": "b1", "label": "de-escalation", "score": 0},
+    ]
