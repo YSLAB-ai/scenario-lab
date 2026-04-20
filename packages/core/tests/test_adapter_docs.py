@@ -6,6 +6,31 @@ def test_adapter_install_docs_mention_demo_run() -> None:
 
     codex_doc = (docs_root / "install-codex.md").read_text()
     claude_doc = (docs_root / "install-claude-code.md").read_text()
+    codex_skill = (
+        Path(__file__).resolve().parents[3]
+        / "adapters"
+        / "codex"
+        / "forecast-harness"
+        / "skills"
+        / "forecast-harness"
+        / "SKILL.md"
+    ).read_text()
+    claude_skill = (
+        Path(__file__).resolve().parents[3]
+        / "adapters"
+        / "claude"
+        / "skills"
+        / "forecast-harness"
+        / "SKILL.md"
+    ).read_text()
 
     assert "forecast-harness demo-run" in codex_doc
     assert "forecast-harness demo-run" in claude_doc
+    assert "Python 3.12+" in codex_doc
+    assert "Python 3.12+" in claude_doc
+    assert "pip install -e 'packages/core[dev]'" in codex_doc
+    assert "pip install -e 'packages/core[dev]'" in claude_doc
+    assert "query-style commands" not in codex_skill
+    assert "query-style commands" not in claude_skill
+    assert "query-style commands" not in codex_doc
+    assert "query-style commands" not in claude_doc
