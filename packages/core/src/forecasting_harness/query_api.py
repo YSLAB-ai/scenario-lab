@@ -38,3 +38,10 @@ def get_evidence_for_assumption(
             matches.append(item)
 
     return matches
+
+
+def summarize_revision_change(previous_revision_id: str, next_revision_id: str) -> dict[str, str]:
+    return {
+        "from_revision": previous_revision_id,
+        "to_revision": next_revision_id,
+    }

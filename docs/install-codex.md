@@ -6,5 +6,8 @@
 4. Verify the shared CLI works with:
    - `forecast-harness demo-run`
    - `forecast-harness start-run --help`
+   - `forecast-harness save-intake-draft --help`
+   - `forecast-harness save-evidence-draft --help`
+   - `forecast-harness approve-revision --help`
    - `forecast-harness simulate --help`
    - `forecast-harness generate-report --help`

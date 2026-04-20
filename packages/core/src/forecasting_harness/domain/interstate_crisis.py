@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
+from forecasting_harness.workflow.models import IntakeDraft
+
+if TYPE_CHECKING:
+    from forecasting_harness.models import BeliefState
 
 
 class InterstateCrisisPack(DomainPack):
@@ -24,12 +28,12 @@ class InterstateCrisisPack(DomainPack):
     def canonical_phases(self) -> list[str]:
         return list(self.PHASES)
 
-    def suggest_related_actors(self, intake: Any) -> list[str]:
-        if set(getattr(intake, "primary_actors", [])) == {"US", "Iran"}:
+    def suggest_related_actors(self, intake: IntakeDraft) -> list[str]:
+        if set(intake.primary_actors) == {"US", "Iran"}:
             return ["China", "Israel", "Gulf States", "Russia"]
         return []
 
-    def retrieval_filters(self, intake: Any) -> dict[str, str]:
+    def retrieval_filters(self, intake: IntakeDraft) -> dict[str, str]:
         return {"domain": "interstate-crisis"}
 
     def suggest_questions(self) -> list[str]:
@@ -46,7 +50,7 @@ class InterstateCrisisPack(DomainPack):
             return [f"unsupported phase: {phase}"]
         return []
 
-    def propose_actions(self, state: Any) -> list[dict[str, Any]]:
+    def propose_actions(self, state: "BeliefState") -> list[dict[str, Any]]:
         return [
             {
                 "action_id": "signal",
@@ -68,11 +72,13 @@ class InterstateCrisisPack(DomainPack):
             },
         ]
 
-    def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
+    def sample_transition(
+        self, state: "BeliefState", action_context: dict[str, Any]
+    ) -> list["BeliefState"]:
         return [state]
 
-    def score_state(self, state: Any) -> dict[str, float]:
+    def score_state(self, state: "BeliefState") -> dict[str, float]:
         return {"escalation": 0.3, "negotiation": 0.4, "economic_stress": 0.2}
 
-    def validate_state(self, state: Any) -> list[str]:
-        return self.validate_phase(getattr(state, "phase", ""))
+    def validate_state(self, state: "BeliefState") -> list[str]:
+        return self.validate_phase(state.phase or "")
