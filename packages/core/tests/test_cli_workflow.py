@@ -29,11 +29,18 @@ def test_demo_run_can_refresh_existing_root(tmp_path: Path) -> None:
     root = tmp_path / ".forecast"
 
     first = runner.invoke(app, ["demo-run", "--root", str(root)])
+    first_run = RunRepository(root).load_run_record("demo-run")
+    first_events = (root / "runs" / "demo-run" / "events.jsonl").read_text(encoding="utf-8").splitlines()
     second = runner.invoke(app, ["demo-run", "--root", str(root)])
+    second_run = RunRepository(root).load_run_record("demo-run")
+    second_events = (root / "runs" / "demo-run" / "events.jsonl").read_text(encoding="utf-8").splitlines()
 
     assert first.exit_code == 0
     assert second.exit_code == 0
-    assert RunRepository(root).load_run_record("demo-run").domain_pack == "generic-event"
+    assert second_run.domain_pack == "generic-event"
+    assert second_run.created_at == first_run.created_at
+    assert len(first_events) == 1
+    assert second_events == first_events
 
 
 def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
