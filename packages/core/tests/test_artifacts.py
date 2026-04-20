@@ -59,3 +59,10 @@ def test_run_repository_rejects_path_traversal_in_artifact_name(tmp_path: Path) 
 
     with pytest.raises(ValueError, match="path traversal"):
         repository.write_markdown("run-1", "../escape.md", "content")
+
+
+def test_run_repository_rejects_reserved_canonical_artifact_name(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+
+    with pytest.raises(ValueError, match="reserved"):
+        repository.write_json("run-1", "belief-state.json", {"ok": True})

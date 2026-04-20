@@ -5,6 +5,8 @@ from pathlib import Path
 
 from forecasting_harness.models import BeliefState
 
+RESERVED_ARTIFACT_NAMES = {"belief-state.json"}
+
 
 class RunRepository:
     def __init__(self, root: Path) -> None:
@@ -29,13 +31,13 @@ class RunRepository:
 
     def write_markdown(self, run_id: str, name: str, content: str) -> None:
         run_dir = self.run_dir(run_id)
-        self._validate_path_segment(name, "artifact name")
+        self._validate_artifact_name(name)
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / name).write_text(content, encoding="utf-8")
 
     def write_json(self, run_id: str, name: str, payload: object) -> None:
         run_dir = self.run_dir(run_id)
-        self._validate_path_segment(name, "artifact name")
+        self._validate_artifact_name(name)
         run_dir.mkdir(parents=True, exist_ok=True)
         (run_dir / name).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
@@ -44,3 +46,9 @@ class RunRepository:
         path = Path(value)
         if path.is_absolute() or len(path.parts) != 1 or path.parts[0] in {".", ".."}:
             raise ValueError(f"{label} path traversal is not allowed: {value!r}")
+
+    @staticmethod
+    def _validate_artifact_name(value: str) -> None:
+        RunRepository._validate_path_segment(value, "artifact name")
+        if value in RESERVED_ARTIFACT_NAMES:
+            raise ValueError(f"artifact name is reserved: {value!r}")
