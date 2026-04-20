@@ -66,10 +66,26 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     ).read_text(encoding="utf-8")
 
     assert "forecast-harness start-run" in codex_doc
+    assert "forecast-harness save-intake-draft" in codex_doc
+    assert "forecast-harness save-evidence-draft" in codex_doc
+    assert "forecast-harness approve-revision" in codex_doc
     assert "forecast-harness simulate" in codex_doc
+    assert "forecast-harness generate-report" in codex_doc
     assert "forecast-harness start-run" in claude_doc
+    assert "forecast-harness save-intake-draft" in claude_doc
+    assert "forecast-harness save-evidence-draft" in claude_doc
+    assert "forecast-harness approve-revision" in claude_doc
     assert "forecast-harness simulate" in claude_doc
+    assert "forecast-harness generate-report" in claude_doc
     assert "forecast-harness start-run" in codex_skill
+    assert "forecast-harness save-intake-draft" in codex_skill
+    assert "forecast-harness save-evidence-draft" in codex_skill
+    assert "forecast-harness approve-revision" in codex_skill
     assert "forecast-harness simulate" in codex_skill
+    assert "forecast-harness generate-report" in codex_skill
     assert "forecast-harness start-run" in claude_skill
+    assert "forecast-harness save-intake-draft" in claude_skill
+    assert "forecast-harness save-evidence-draft" in claude_skill
+    assert "forecast-harness approve-revision" in claude_skill
     assert "forecast-harness simulate" in claude_skill
+    assert "forecast-harness generate-report" in claude_skill
