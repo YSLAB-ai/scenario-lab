@@ -27,6 +27,11 @@ def compare_state_slices(
         if previous_value == current_value:
             continue
 
+        if isinstance(previous_value, bool) or isinstance(current_value, bool):
+            changed_fields.append(field)
+            compatible = False
+            continue
+
         changed_fields.append(field)
 
         tolerance = tolerances.get(field, 0.0)
