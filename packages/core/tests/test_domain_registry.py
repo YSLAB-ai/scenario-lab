@@ -10,6 +10,7 @@ def test_default_registry_lists_builtin_domain_packs() -> None:
         "generic-event",
         "interstate-crisis",
         "market-shock",
+        "pandemic-response",
         "regulatory-enforcement",
         "supply-chain-disruption",
     ]

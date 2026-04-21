@@ -5,7 +5,7 @@ Date: 2026-04-21
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
-- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, seven domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, and a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`.
+- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, and a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`.
 - Domain packs are now discovered through a registry instead of hardcoded CLI branching.
 - The workflow now supports generic intake fields with compatibility aliases:
   - `focus_entities`
@@ -38,11 +38,12 @@ Date: 2026-04-21
 - The market-shock pack now infers `contagion_risk` and `policy_optionality` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The regulatory-enforcement pack now infers `remedy_severity` and `litigation_readiness` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The supply-chain-disruption pack now infers `supplier_concentration` and `customer_penalty_pressure` from approved evidence and uses them inside action priors, transitions, and scoring.
+- The new pandemic-response pack now infers `hospital_strain`, `policy_alignment`, `public_compliance`, `testing_capacity`, `transmission_pressure`, and `vaccine_readiness` from approved evidence and uses them inside action priors, transitions, and scoring.
 - Corpus registration now disambiguates repeated `source_id` stems by file path instead of silently replacing earlier unrelated documents.
 - Evidence drafting and ingestion planning now scope same-domain corpus reuse to the current run and primary actors instead of borrowing stale material from other scenarios.
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
 - The domain registry now exposes reusable domain template packs for company action, election shock, market shock, supply-chain disruption, and regulatory enforcement in addition to the existing generic and interstate packs.
-- The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for six high-value domains.
+- The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for seven high-value domains.
 - The repo now also includes a repo-owned replay library under `knowledge/replays/`.
 - The replay library is now split into domain-scoped files under `knowledge/replays/`, and the core can summarize that corpus directly.
 - The repo-owned manifests now load through a typed `forecasting_harness.knowledge` module instead of remaining documentation-only files.
@@ -55,7 +56,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `197 passed`
+  - Result: `201 passed`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -89,6 +90,14 @@ Date: 2026-04-21
   - `forecast-harness run-builtin-replay-suite` -> `root_strategy_accuracy = 1.0`
   - `forecast-harness summarize-builtin-replay-corpus` -> `files = 6`
   - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
+- The pandemic from-zero benchmark pass on 2026-04-21 also verified:
+  - `forecast-harness summarize-builtin-replay-corpus` -> `case_count = 12`
+  - `forecast-harness summarize-builtin-replay-corpus` -> `files = 7`
+  - `forecast-harness summarize-builtin-replay-corpus` includes domain `pandemic-response`
+  - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `count = 2`
+  - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `top_branch_accuracy = 1.0`
+  - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `root_strategy_accuracy = 1.0`
+  - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `average_inferred_field_coverage = 1.0`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
@@ -109,6 +118,13 @@ Date: 2026-04-21
   - replay evaluation that depended on ad hoc input files instead of a repo-owned calibration library
   - package initialization that risked circular imports once replay loading moved into the shared knowledge layer
   - a monolithic replay corpus file that would not scale cleanly as the library grows by domain
+- A from-zero domain benchmark now also exists inside the repo:
+  - new domain: `pandemic-response`
+  - new manifest: `knowledge/domains/pandemic-response.json`
+  - new replay file: `knowledge/replays/pandemic-response.json`
+  - verified retrospective cases:
+    - `pandemic-first-wave` -> `Containment push (coordination holds)`
+    - `pandemic-vaccine-wave` -> `Vaccine acceleration (uptake improves)`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -171,6 +187,7 @@ Date: 2026-04-21
   - `generic-event`
   - `interstate-crisis`
   - `market-shock`
+  - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
 - A retrieval verification on 2026-04-20 also confirmed a semantic-only local match:

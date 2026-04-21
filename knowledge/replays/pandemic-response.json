@@ -1,0 +1,68 @@
+[
+  {
+    "run_id": "pandemic-first-wave",
+    "domain_pack": "pandemic-response",
+    "intake": {
+      "event_framing": "Assess national response choices as a novel respiratory virus spreads rapidly and hospitals begin to strain.",
+      "focus_entities": ["National Government", "Public Health System"],
+      "current_development": "Community transmission accelerates, hospital admissions rise, and officials debate school closures and travel limits.",
+      "current_stage": "trigger",
+      "time_horizon": "90d",
+      "known_constraints": ["Testing capacity is limited", "Business shutdowns carry large economic costs"],
+      "known_unknowns": ["How quickly households will comply with distancing guidance"],
+      "suggested_entities": ["Hospitals", "Regional Governments"]
+    },
+    "assumptions": {
+      "summary": ["Officials will accept near-term economic pain to avoid hospital overload"],
+      "suggested_actors": ["Hospitals", "Regional Governments"]
+    },
+    "documents": {
+      "first-wave-hospitals.md": "Hospital admissions rise quickly, intensive care capacity tightens, and testing shortages obscure the full spread of the virus.",
+      "first-wave-restrictions.md": "Officials debate school closures, travel limits, and distancing rules as community transmission accelerates."
+    },
+    "expected_top_branch": "Containment push (coordination holds)",
+    "expected_root_strategy": "Containment push",
+    "expected_evidence_sources": ["first-wave-hospitals", "first-wave-restrictions"],
+    "expected_inferred_fields": [
+      "hospital_strain",
+      "policy_alignment",
+      "public_compliance",
+      "testing_capacity",
+      "transmission_pressure",
+      "vaccine_readiness"
+    ]
+  },
+  {
+    "run_id": "pandemic-vaccine-wave",
+    "domain_pack": "pandemic-response",
+    "intake": {
+      "event_framing": "Assess response choices during a renewed winter wave when vaccines exist but uptake and logistics lag.",
+      "focus_entities": ["National Government", "Public Health System"],
+      "current_development": "A winter wave lifts hospital pressure while vaccine supply exists, booster uptake lags, and officials debate targeted mandates.",
+      "current_stage": "trigger",
+      "time_horizon": "120d",
+      "known_constraints": ["Public fatigue reduces compliance with blanket restrictions", "Cold-chain logistics and staffing limit rapid rollout"],
+      "known_unknowns": ["Whether booster uptake can rise before hospital strain peaks"],
+      "suggested_entities": ["Hospitals", "Pharmacies"]
+    },
+    "assumptions": {
+      "summary": ["Officials prefer targeted public-health measures over another broad lockdown"],
+      "suggested_actors": ["Hospitals", "Pharmacies"]
+    },
+    "documents": {
+      "vaccine-rollout.md": "Vaccine supply is available but booster uptake lags, logistics are uneven, and health agencies push acceleration plans.",
+      "winter-wave.md": "A winter wave drives renewed hospital strain while public fatigue weakens compliance with broad restrictions."
+    },
+    "expected_top_branch": "Vaccine acceleration (uptake improves)",
+    "expected_root_strategy": "Vaccine acceleration",
+    "expected_evidence_sources": ["vaccine-rollout", "winter-wave"],
+    "expected_inferred_fields": [
+      "hospital_strain",
+      "policy_alignment",
+      "public_compliance",
+      "testing_capacity",
+      "transmission_pressure",
+      "vaccine_readiness"
+    ]
+  }
+]
