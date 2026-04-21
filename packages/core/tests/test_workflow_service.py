@@ -15,6 +15,7 @@ from forecasting_harness.domain.regulatory_enforcement import RegulatoryEnforcem
 from forecasting_harness.models import BeliefState
 from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.query_api import summarize_top_branches
+from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.models import (
     ApprovalPacket,
     AssumptionSummary,
@@ -271,6 +272,239 @@ def test_draft_intake_guidance_uses_domain_pack_hooks(tmp_path: Path) -> None:
     assert guidance.current_stage == "trigger"
     assert "China" in guidance.suggested_entities
     assert "military_posture" in guidance.pack_field_schema
+
+
+def test_compile_belief_state_infers_actor_behavior_profiles_from_interstate_signals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess whether domestic resolve and alliance signaling drive the next Taiwan Strait phase.",
+            focus_entities=["China", "Taiwan"],
+            current_development=(
+                "Beijing is signaling resolve ahead of domestic political meetings while Taipei emphasizes"
+                " alliance coordination and US security support."
+            ),
+            current_stage="signaling",
+            time_horizon="30d",
+            known_constraints=["Leaders face domestic audience costs."],
+            suggested_entities=["US"],
+        ),
+        assumptions=AssumptionSummary(
+            summary=[
+                "Chinese leaders are sensitive to domestic resolve narratives.",
+                "Taiwan is relying on alliance signaling and US backing."
+            ],
+            suggested_actors=["Japan"],
+        ),
+        approved_evidence_ids=["ev-1", "ev-2"],
+        approved_evidence_items=[
+            EvidencePacketItem(
+                evidence_id="ev-1",
+                source_id="src-1",
+                source_title="Resolve signal",
+                reason="Supports domestic resolve pressure",
+                raw_passages=[
+                    "Chinese officials framed the exercise as a resolve signal for domestic audiences before party meetings."
+                ],
+            ),
+            EvidencePacketItem(
+                evidence_id="ev-2",
+                source_id="src-2",
+                source_title="Alliance signal",
+                reason="Supports alliance dependence",
+                raw_passages=[
+                    "Taiwanese officials highlighted alliance coordination, US support, and broader security commitments."
+                ],
+            ),
+        ],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["China"].behavior_profile is not None
+    assert actors["China"].behavior_profile.domestic_sensitivity is not None
+    assert actors["China"].behavior_profile.domestic_sensitivity > 0.6
+    assert actors["Taiwan"].behavior_profile is not None
+    assert actors["Taiwan"].behavior_profile.alliance_dependence is not None
+    assert actors["Taiwan"].behavior_profile.alliance_dependence > 0.6
+
+
+def test_compile_belief_state_does_not_match_us_actor_from_russia_substring(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling.",
+            focus_entities=["US", "Russia"],
+            current_development="Russia is discussing alliance coordination and domestic resolve.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(),
+        approved_evidence_ids=["ev-1"],
+        approved_evidence_items=[
+            EvidencePacketItem(
+                evidence_id="ev-1",
+                source_id="src-1",
+                source_title="Russia note",
+                reason="Only mentions Russia",
+                raw_passages=[
+                    "Russia signaled domestic resolve and alliance coordination after the latest move."
+                ],
+            )
+        ],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["Russia"].behavior_profile is not None
+    assert actors["US"].behavior_profile is None
+
+
+def test_compile_belief_state_does_not_fabricate_profile_from_suggested_entity_listing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess escalation around the strait.",
+            focus_entities=["China", "Taiwan"],
+            current_development="Military signaling continues without naming outside backers.",
+            current_stage="signaling",
+            time_horizon="30d",
+            suggested_entities=["United States"],
+        ),
+        assumptions=AssumptionSummary(),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["United States"].behavior_profile is None
+
+
+def test_compile_belief_state_matches_united_states_and_us_aliases_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    united_states_state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["United States", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["US security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+    us_state = compile_belief_state(
+        run_id="crisis-2",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["US", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["United States security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    united_states_actor = {actor.name: actor for actor in united_states_state.actors}["United States"]
+    us_actor = {actor.name: actor for actor in us_state.actors}["US"]
+
+    assert united_states_actor.behavior_profile is not None
+    assert united_states_actor.behavior_profile.alliance_dependence is not None
+    assert us_actor.behavior_profile is not None
+    assert us_actor.behavior_profile.alliance_dependence is not None
+
+
+def test_compile_belief_state_matches_us_punctuation_variant_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    punctuated_state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["U.S.", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["United States security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+    united_states_state = compile_belief_state(
+        run_id="crisis-2",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["United States", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["U.S. security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    punctuated_actor = {actor.name: actor for actor in punctuated_state.actors}["U.S."]
+    united_states_actor = {actor.name: actor for actor in united_states_state.actors}["United States"]
+
+    assert punctuated_actor.behavior_profile is not None
+    assert punctuated_actor.behavior_profile.alliance_dependence is not None
+    assert united_states_actor.behavior_profile is not None
+    assert united_states_actor.behavior_profile.alliance_dependence is not None
 
 
 def test_draft_approval_packet_summarizes_evidence_and_warnings(tmp_path: Path) -> None:

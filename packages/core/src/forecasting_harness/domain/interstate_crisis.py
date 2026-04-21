@@ -189,13 +189,13 @@ class InterstateCrisisPack(DomainPack):
             text=text,
             slug=self.slug(),
             field_values={
-            "alliance_pressure": round(bounded(alliance_pressure), 3),
-            "leader_style": leader_style,
-            "geographic_flashpoint": round(bounded(geographic_flashpoint), 3),
-            "mediation_window": round(bounded(mediation_window), 3),
-            "military_posture": military_posture,
-            "tension_index": round(bounded(tension_index), 3),
-            "diplomatic_channel": round(bounded(diplomatic_channel), 3),
+                "alliance_pressure": round(bounded(alliance_pressure), 3),
+                "leader_style": leader_style,
+                "geographic_flashpoint": round(bounded(geographic_flashpoint), 3),
+                "mediation_window": round(bounded(mediation_window), 3),
+                "military_posture": military_posture,
+                "tension_index": round(bounded(tension_index), 3),
+                "diplomatic_channel": round(bounded(diplomatic_channel), 3),
             },
         )
 
@@ -203,6 +203,35 @@ class InterstateCrisisPack(DomainPack):
         if phase not in self.PHASES:
             return [f"unsupported phase: {phase}"]
         return []
+
+    def recommend_objective_profile(self, intake: IntakeDraft, state: "BeliefState"):
+        from forecasting_harness.objectives import objective_profile_by_name
+
+        domestic_focus_actor = max(
+            (
+                actor
+                for actor in getattr(state, "actors", [])
+                if getattr(getattr(actor, "behavior_profile", None), "domestic_sensitivity", None) is not None
+            ),
+            key=lambda actor: actor.behavior_profile.domestic_sensitivity or 0.0,
+            default=None,
+        )
+        alliance_salient = any(
+            (getattr(actor.behavior_profile, "alliance_dependence", 0.0) or 0.0) >= 0.7
+            for actor in getattr(state, "actors", [])
+            if getattr(actor, "behavior_profile", None) is not None
+        )
+        text = " ".join([intake.event_framing, intake.current_development]).lower()
+        if (
+            domestic_focus_actor is not None
+            and (domestic_focus_actor.behavior_profile.domestic_sensitivity or 0.0) >= 0.7
+            and alliance_salient
+            and any_term_matches(text, ["domestic", "resolve", "alliance", "security"])
+        ):
+            return objective_profile_by_name("domestic-politics-first").model_copy(
+                update={"focal_actor_id": domestic_focus_actor.actor_id}
+            )
+        return self.default_objective_profile()
 
     def is_terminal(self, state: "BeliefState", depth: int) -> bool:
         return getattr(state, "phase", None) == "settlement-stalemate"

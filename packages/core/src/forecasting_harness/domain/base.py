@@ -81,3 +81,10 @@ class DomainPack(ABC):
         from forecasting_harness.objectives import default_objective_profile as _default_objective_profile
 
         return _default_objective_profile()
+
+    def recommend_objective_profile(
+        self,
+        intake: "IntakeDraft",
+        state: "BeliefState",
+    ) -> "ObjectiveProfile":
+        return self.default_objective_profile()

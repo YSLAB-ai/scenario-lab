@@ -8,7 +8,34 @@ from forecasting_harness.domain import (
     InteractionModel,
     InterstateCrisisPack,
 )
+from forecasting_harness.models import Actor, BehaviorProfile, ObjectiveProfile
 from forecasting_harness.workflow.models import IntakeDraft
+
+
+class _StubPack(DomainPack):
+    def slug(self) -> str:
+        return "stub"
+
+    def interaction_model(self) -> InteractionModel:
+        return InteractionModel.EVENT_DRIVEN
+
+    def extend_schema(self) -> dict[str, str]:
+        return {}
+
+    def suggest_questions(self) -> list[str]:
+        return []
+
+    def propose_actions(self, state: object) -> list[dict[str, object]]:
+        return []
+
+    def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+        return []
+
+    def score_state(self, state: object) -> dict[str, float]:
+        return {}
+
+    def validate_state(self, state: object) -> list[str]:
+        return []
 
 
 def test_domain_package_exports_requested_pack_surface() -> None:
@@ -125,3 +152,56 @@ def test_pack_limited_response_can_branch_into_multiple_outcomes() -> None:
 
     assert isinstance(outcomes, list)
     assert len(outcomes) >= 2
+
+
+def test_domain_pack_recommend_objective_profile_defaults_to_balanced_system() -> None:
+    pack = _StubPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        focus_entities=["A", "B"],
+        current_development="A trigger event occurred.",
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+    state = type("State", (), {"actors": []})()
+
+    profile = pack.recommend_objective_profile(intake, state)
+
+    assert isinstance(profile, ObjectiveProfile)
+    assert profile.name == "balanced-system"
+    assert profile.aggregation_mode == "balanced-system"
+
+
+def test_interstate_pack_can_recommend_domestic_politics_first_profile() -> None:
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Domestic resolve and alliance signaling are central to the next crisis move.",
+        focus_entities=["China", "Taiwan"],
+        current_development="Both sides are publicly framing resolve and alliance commitments.",
+        current_stage="signaling",
+        time_horizon="30d",
+    )
+    state = type(
+        "State",
+        (),
+        {
+            "actors": [
+                Actor(
+                    actor_id="china",
+                    name="China",
+                    behavior_profile=BehaviorProfile(domestic_sensitivity=0.82, reputational_sensitivity=0.71),
+                ),
+                Actor(
+                    actor_id="taiwan",
+                    name="Taiwan",
+                    behavior_profile=BehaviorProfile(alliance_dependence=0.86, negotiation_openness=0.44),
+                ),
+            ]
+        },
+    )()
+
+    profile = pack.recommend_objective_profile(intake, state)
+
+    assert profile.name == "domestic-politics-first"
+    assert profile.aggregation_mode == "focal-actor"
+    assert profile.focal_actor_id == "china"
