@@ -15,6 +15,7 @@ from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.workflow.models import (
     ApprovalPacket,
     AssumptionSummary,
+    ConversationTurn,
     EvidencePacket,
     EvidencePacketItem,
     IntakeGuidance,
@@ -325,6 +326,92 @@ def test_summarize_revision_returns_available_sections_and_top_branches(tmp_path
     assert summary.top_branches[0]["label"] == summarize_top_branches(
         json.loads((repository.run_dir("crisis-1") / "simulation" / "r1.approved.json").read_text(encoding="utf-8"))["branches"]
     )[0]["label"]
+
+
+def test_draft_conversation_turn_returns_intake_stage_when_revision_is_empty(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r0", _make_intake())
+    turn = service.draft_conversation_turn("crisis-1", "r-empty")
+
+    assert isinstance(turn, ConversationTurn)
+    assert turn.stage == "intake"
+    assert turn.recommended_command == "forecast-harness save-intake-draft"
+    assert turn.available_sections == []
+
+
+def test_draft_conversation_turn_returns_evidence_stage_from_intake_draft(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = _make_intake()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "evidence"
+    assert turn.recommended_command == "forecast-harness draft-evidence-packet"
+    assert turn.context["domain_pack"] == "interstate-crisis"
+
+
+def test_draft_conversation_turn_returns_approval_stage_from_evidence_draft(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, _ = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "approval"
+    assert turn.recommended_command == "forecast-harness approve-revision"
+    assert turn.context["revision_id"] == "r1"
+
+
+def test_draft_conversation_turn_returns_simulation_stage_from_approved_revision(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "simulation"
+    assert turn.recommended_command == "forecast-harness simulate"
+    assert turn.context["evidence_item_count"] == 1
+
+
+def test_draft_conversation_turn_returns_report_stage_from_simulated_revision(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "report"
+    assert turn.recommended_command == "forecast-harness begin-revision-update"
+    assert turn.context["revision_id"] == "r1"
+    assert turn.context["top_branches"][0]["label"] == "Signal resolve"
 
 
 def test_approve_revision_freezes_revision_artifacts_and_advances_the_run() -> None:

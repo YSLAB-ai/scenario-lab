@@ -15,6 +15,7 @@ from forecasting_harness.workflow.evidence import draft_evidence_packet as build
 from forecasting_harness.workflow.models import (
     ApprovalPacket,
     AssumptionSummary,
+    ConversationTurn,
     EvidencePacket,
     IntakeDraft,
     IntakeGuidance,
@@ -58,6 +59,24 @@ class WorkflowService:
     def _pack_for_run(self, run_id: str) -> DomainPack:
         run = self.repository.load_run_record(run_id)
         return self.domain_registry.resolve(run.domain_pack)
+
+    def _artifact_path(self, run_id: str, section: str, revision_id: str, *, approved: bool) -> str:
+        suffix = "approved" if approved else "draft"
+        return str(self.repository.run_dir(run_id) / section / f"{revision_id}.{suffix}.json")
+
+    def _artifact_exists(self, run_id: str, section: str, revision_id: str, *, approved: bool) -> bool:
+        suffix = "approved" if approved else "draft"
+        return (self.repository.run_dir(run_id) / section / f"{revision_id}.{suffix}.json").exists()
+
+    def _available_sections(self, run_id: str, revision_id: str) -> list[str]:
+        run_dir = self.repository.run_dir(run_id)
+        available_sections: list[str] = []
+        for section in ("intake", "evidence", "assumptions", "belief-state", "simulation"):
+            draft_path = run_dir / section / f"{revision_id}.draft.json"
+            approved_path = run_dir / section / f"{revision_id}.approved.json"
+            if draft_path.exists() or approved_path.exists():
+                available_sections.append(section)
+        return available_sections
 
     def _ensure_revision_record(
         self,
@@ -341,6 +360,80 @@ class WorkflowService:
         self.repository.append_event(run_id, "report-generated", {"revision_id": revision_id})
         return content
 
+    def draft_conversation_turn(self, run_id: str, revision_id: str) -> ConversationTurn:
+        self.repository.load_run_record(run_id)
+        available_sections = self._available_sections(run_id, revision_id)
+
+        if self._artifact_exists(run_id, "simulation", revision_id, approved=True):
+            summary = self.summarize_revision(run_id, revision_id)
+            return ConversationTurn(
+                run_id=run_id,
+                revision_id=revision_id,
+                stage="report",
+                headline="Review simulation report",
+                user_message="Simulation is complete. Review the top branches and decide whether to update the revision.",
+                recommended_command="forecast-harness begin-revision-update",
+                available_sections=available_sections,
+                context=summary.model_dump(mode="json"),
+            )
+
+        if self._artifact_exists(run_id, "assumptions", revision_id, approved=True):
+            evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=True)
+            assumptions = self.repository.load_revision_model(
+                run_id, "assumptions", revision_id, AssumptionSummary, approved=True
+            )
+            return ConversationTurn(
+                run_id=run_id,
+                revision_id=revision_id,
+                stage="simulation",
+                headline="Ready to simulate",
+                user_message="Revision is approved and ready to simulate.",
+                recommended_command="forecast-harness simulate",
+                available_sections=available_sections,
+                context={
+                    "revision_id": revision_id,
+                    "evidence_item_count": len(evidence.items),
+                    "assumption_count": len(assumptions.summary),
+                },
+            )
+
+        if self._artifact_exists(run_id, "evidence", revision_id, approved=False):
+            packet = self.draft_approval_packet(run_id, revision_id)
+            return ConversationTurn(
+                run_id=run_id,
+                revision_id=revision_id,
+                stage="approval",
+                headline="Review approval packet",
+                user_message="Evidence draft is ready. Review warnings, assumptions, and evidence summary before approval.",
+                recommended_command="forecast-harness approve-revision",
+                available_sections=available_sections,
+                context=packet.model_dump(mode="json"),
+            )
+
+        if self._artifact_exists(run_id, "intake", revision_id, approved=False):
+            guidance = self.draft_intake_guidance(run_id, revision_id)
+            return ConversationTurn(
+                run_id=run_id,
+                revision_id=revision_id,
+                stage="evidence",
+                headline="Draft evidence packet",
+                user_message="Intake draft saved. Review suggested entities and follow-up questions, then draft evidence.",
+                recommended_command="forecast-harness draft-evidence-packet",
+                available_sections=available_sections,
+                context=guidance.model_dump(mode="json"),
+            )
+
+        return ConversationTurn(
+            run_id=run_id,
+            revision_id=revision_id,
+            stage="intake",
+            headline="Draft intake",
+            user_message="Revision is ready for intake. Capture the event framing and core entities first.",
+            recommended_command="forecast-harness save-intake-draft",
+            available_sections=available_sections,
+            context={},
+        )
+
     def summarize_run(self, run_id: str) -> RunSummary:
         run = self.repository.load_run_record(run_id)
         revisions = self.repository.list_revision_records(run_id)
@@ -354,16 +447,10 @@ class WorkflowService:
     def summarize_revision(self, run_id: str, revision_id: str) -> RevisionSummary:
         record = self.repository.load_revision_record(run_id, revision_id)
         run_dir = self.repository.run_dir(run_id)
-        available_sections: list[str] = []
+        available_sections = self._available_sections(run_id, revision_id)
         evidence_item_count = 0
         assumption_count = 0
         top_branches: list[dict[str, object]] = []
-
-        for section in ("intake", "evidence", "assumptions", "belief-state", "simulation"):
-            draft_path = run_dir / section / f"{revision_id}.draft.json"
-            approved_path = run_dir / section / f"{revision_id}.approved.json"
-            if draft_path.exists() or approved_path.exists():
-                available_sections.append(section)
 
         evidence_path = run_dir / "evidence" / f"{revision_id}.draft.json"
         if not evidence_path.exists():

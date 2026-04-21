@@ -559,6 +559,65 @@ def test_summarize_run_and_revision_commands_return_narrow_json(tmp_path: Path) 
     assert revision_payload["top_branches"][0]["label"] == "Signal resolve"
 
 
+def test_draft_conversation_turn_command_returns_report_stage_for_simulated_revision(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+    assumptions_path = tmp_path / "assumptions.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {"revision_id": "r1", "items": [{"evidence_id": "r1-ev-1", "source_id": "doc-1", "source_title": "Doc 1", "reason": "Relevant context"}]},
+        ),
+        encoding="utf-8",
+    )
+    assumptions_path.write_text(json.dumps({"summary": ["Maintain limited signaling"]}), encoding="utf-8")
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["approve-revision", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(assumptions_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["simulate", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["draft-conversation-turn", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["stage"] == "report"
+    assert payload["recommended_command"] == "forecast-harness begin-revision-update"
+    assert payload["context"]["revision_id"] == "r1"
+
+
 def test_curate_evidence_draft_command_filters_existing_packet(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

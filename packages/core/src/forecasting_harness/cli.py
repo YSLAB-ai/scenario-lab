@@ -428,6 +428,15 @@ def draft_approval_packet(
     print(_service(root).draft_approval_packet(run_id, revision_id).model_dump_json())
 
 
+@app.command("draft-conversation-turn")
+def draft_conversation_turn(
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+) -> None:
+    print(_service(root).draft_conversation_turn(run_id, revision_id).model_dump_json())
+
+
 @app.command("curate-evidence-draft")
 def curate_evidence_draft(
     root: Path = typer.Option(Path(".forecast")),
