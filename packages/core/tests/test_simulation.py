@@ -225,7 +225,7 @@ def test_simulation_engine_assigns_deterministic_fallback_branch_ids() -> None:
             return []
 
         def is_terminal(self, state: object, depth: int) -> bool:
-            return True
+            return depth > 0
 
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return [
@@ -272,7 +272,7 @@ def test_simulation_engine_makes_shared_fallback_branch_ids_globally_unique() ->
             return []
 
         def is_terminal(self, state: object, depth: int) -> bool:
-            return True
+            return depth > 0
 
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return [
@@ -315,7 +315,7 @@ def test_simulation_engine_supports_weighted_transition_outcomes() -> None:
             return []
 
         def is_terminal(self, state: object, depth: int) -> bool:
-            return True
+            return depth > 0
 
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return [{"branch_id": "signal", "label": "Signal", "prior": 0.5}]
