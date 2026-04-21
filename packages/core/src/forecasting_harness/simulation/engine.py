@@ -537,21 +537,25 @@ class SimulationEngine:
                     ancestor.stats.metric_sums[name] = ancestor.stats.metric_sums.get(name, 0.0) + metric_value
 
         root_children = self._expand_node(root)
+        branch_rows: list[dict[str, Any]] = []
+        for child in root_children:
+            branch = {
+                "branch_id": child.branch_id,
+                "label": child.label,
+                "metrics": _mean_metrics(child),
+                "score": child.mean_value,
+                "visits": child.visits,
+                "prior": child.prior,
+                "dependencies": child.dependencies,
+                **self._synthesize_branch(child, config, root_visits=root.visits),
+            }
+            if child.visits == 0:
+                branch["metrics"] = dict(branch["terminal_metrics"])
+                branch["score"] = scalarize_node_value(branch["terminal_metrics"], self.objective_profile)
+            branch_rows.append(branch)
         branches = sorted(
-            [
-                {
-                    "branch_id": child.branch_id,
-                    "label": child.label,
-                    "metrics": _mean_metrics(child),
-                    "score": child.mean_value,
-                    "visits": child.visits,
-                    "prior": child.prior,
-                    "dependencies": child.dependencies,
-                    **self._synthesize_branch(child, config, root_visits=root.visits),
-                }
-                for child in root_children
-            ],
-            key=lambda item: (item["score"], item["prior"], item["branch_id"]),
+            branch_rows,
+            key=lambda item: (item["visits"] > 0, item["score"], item["visits"], item["prior"], item["branch_id"]),
             reverse=True,
         )
 

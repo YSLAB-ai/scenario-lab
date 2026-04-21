@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, integer_field, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, integer_field, numeric_field, string_field, with_updates
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -45,6 +45,7 @@ class SupplyChainDisruptionPack(DomainPack):
     def extend_schema(self) -> dict[str, Any]:
         return {
             "customer_penalty_pressure": "float",
+            "disruption_mode": "str",
             "inventory_cover_days": "int",
             "substitution_flexibility": "float",
             "supplier_concentration": "float",
@@ -98,8 +99,18 @@ class SupplyChainDisruptionPack(DomainPack):
         )
         customer_penalty_pressure += 0.08 * count_term_matches(text, ["thin inventory", "priority customers"])
 
+        transport_matches = count_term_matches(text, ["flooding", "port delays", "logistics disruption", "rerouting"])
+        source_matches = count_term_matches(text, ["rare-earth", "specialized", "single-source", "export restrictions"])
+        if source_matches >= 1 and source_matches >= transport_matches:
+            disruption_mode = "source"
+        elif transport_matches >= 1:
+            disruption_mode = "transport"
+        else:
+            disruption_mode = "mixed"
+
         return {
             "customer_penalty_pressure": round(bounded(customer_penalty_pressure), 3),
+            "disruption_mode": disruption_mode,
             "inventory_cover_days": int(inventory_cover_days),
             "substitution_flexibility": round(bounded(substitution_flexibility), 3),
             "supplier_concentration": round(bounded(supplier_concentration), 3),
@@ -112,35 +123,38 @@ class SupplyChainDisruptionPack(DomainPack):
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
         customer_pressure = numeric_field(state, "customer_penalty_pressure", 0.25)
+        disruption_mode = string_field(state, "disruption_mode", "mixed")
         inventory = integer_field(state, "inventory_cover_days", 18)
         concentration = numeric_field(state, "supplier_concentration", 0.4)
         transport = numeric_field(state, "transport_reliability", 0.55)
         substitution = numeric_field(state, "substitution_flexibility", 0.4)
+        transport_bias = 0.24 if disruption_mode == "transport" else 0.0
+        source_bias = 0.24 if disruption_mode == "source" else 0.0
         if phase == "trigger":
             return [
                 {
                     "action_id": "allocate-inventory",
                     "label": "Allocate inventory",
-                    "prior": bounded(0.12 + max(0, 14 - inventory) * 0.025 + customer_pressure * 0.16),
-                    "dependencies": {"fields": ["customer_penalty_pressure", "inventory_cover_days"]},
+                    "prior": bounded(0.1 + max(0, 14 - inventory) * 0.02 + customer_pressure * 0.16 + (0.08 if disruption_mode == "transport" else 0.0)),
+                    "dependencies": {"fields": ["customer_penalty_pressure", "disruption_mode", "inventory_cover_days"]},
                 },
                 {
                     "action_id": "expedite-alternatives",
                     "label": "Expedite alternatives",
-                    "prior": bounded(0.1 + max(0.0, 0.65 - substitution) * 0.14 + concentration * 0.2),
-                    "dependencies": {"fields": ["substitution_flexibility", "supplier_concentration"]},
+                    "prior": bounded(0.08 + max(0.0, 0.65 - substitution) * 0.14 + concentration * 0.18 + source_bias - transport_bias),
+                    "dependencies": {"fields": ["disruption_mode", "substitution_flexibility", "supplier_concentration"]},
                 },
                 {
                     "action_id": "customer-prioritization",
                     "label": "Customer prioritization",
-                    "prior": bounded(0.08 + customer_pressure * 0.24 + max(0, 12 - inventory) * 0.015 + max(0.0, 0.55 - transport) * 0.08),
-                    "dependencies": {"fields": ["customer_penalty_pressure", "inventory_cover_days", "transport_reliability"]},
+                    "prior": bounded(0.08 + customer_pressure * 0.22 + max(0, 12 - inventory) * 0.015 + max(0.0, 0.55 - transport) * 0.08 + transport_bias * 0.8),
+                    "dependencies": {"fields": ["customer_penalty_pressure", "disruption_mode", "inventory_cover_days", "transport_reliability"]},
                 },
                 {
                     "action_id": "reserve-logistics",
                     "label": "Reserve logistics",
-                    "prior": bounded(0.1 + max(0.0, 0.6 - transport) * 0.16 + concentration * 0.08),
-                    "dependencies": {"fields": ["supplier_concentration", "transport_reliability"]},
+                    "prior": bounded(0.08 + max(0.0, 0.6 - transport) * 0.2 + concentration * 0.06 + transport_bias * 1.05),
+                    "dependencies": {"fields": ["disruption_mode", "supplier_concentration", "transport_reliability"]},
                 },
             ]
         if phase == "triage":
@@ -163,6 +177,7 @@ class SupplyChainDisruptionPack(DomainPack):
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
         action_id = action_context.get("action_id") or action_context.get("branch_id")
         customer_pressure = numeric_field(state, "customer_penalty_pressure", 0.25)
+        disruption_mode = string_field(state, "disruption_mode", "mixed")
         inventory = integer_field(state, "inventory_cover_days", 18)
         concentration = numeric_field(state, "supplier_concentration", 0.4)
         substitution = numeric_field(state, "substitution_flexibility", 0.4)
@@ -176,17 +191,33 @@ class SupplyChainDisruptionPack(DomainPack):
                     phase="triage",
                     field_updates={
                         "customer_penalty_pressure": min(1.0, customer_pressure + 0.03),
+                        "disruption_mode": disruption_mode,
                         "inventory_cover_days": max(1, inventory - 4),
                         "transport_reliability": transport,
                     },
                 )
             ]
         if phase == "trigger" and action_id == "expedite-alternatives":
+            if disruption_mode == "transport":
+                return [
+                    with_updates(
+                        state,
+                        phase="triage",
+                        field_updates={
+                            "disruption_mode": disruption_mode,
+                            "customer_penalty_pressure": min(1.0, customer_pressure + 0.02),
+                            "inventory_cover_days": max(1, inventory - 4),
+                            "substitution_flexibility": substitution + 0.05,
+                            "supplier_concentration": max(0.0, concentration - 0.04),
+                        },
+                    )
+                ]
             return [
                 with_updates(
                     state,
                     phase="rerouting",
                     field_updates={
+                        "disruption_mode": disruption_mode,
                         "inventory_cover_days": max(1, inventory - 2),
                         "substitution_flexibility": substitution + 0.15,
                         "supplier_concentration": max(0.0, concentration - 0.1),
@@ -200,17 +231,32 @@ class SupplyChainDisruptionPack(DomainPack):
                     phase="triage",
                     field_updates={
                         "customer_penalty_pressure": max(0.0, customer_pressure - 0.04),
+                        "disruption_mode": disruption_mode,
                         "inventory_cover_days": max(1, inventory - 3),
                         "transport_reliability": transport + 0.03,
                     },
                 )
             ]
         if phase == "trigger" and action_id == "reserve-logistics":
+            if disruption_mode == "transport":
+                return [
+                    with_updates(
+                        state,
+                        phase="rerouting",
+                        field_updates={
+                            "customer_penalty_pressure": max(0.0, customer_pressure - 0.03),
+                            "disruption_mode": disruption_mode,
+                            "inventory_cover_days": max(1, inventory - 1),
+                            "transport_reliability": transport + 0.2,
+                        },
+                    )
+                ]
             return [
                 with_updates(
                     state,
                     phase="rerouting",
                     field_updates={
+                        "disruption_mode": disruption_mode,
                         "inventory_cover_days": max(1, inventory - 2),
                         "transport_reliability": transport + 0.12,
                     },

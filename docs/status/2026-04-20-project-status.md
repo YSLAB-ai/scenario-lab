@@ -27,7 +27,7 @@ Date: 2026-04-21
 - The simulation engine now performs deterministic multi-step MCTS over `BeliefState` and preserves top-level `branches` for workflow compatibility.
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
-- The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, evidence-source accuracy, and inferred-field coverage metrics.
+- The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -50,7 +50,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `193 passed`
+  - Result: `194 passed`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -74,14 +74,16 @@ Date: 2026-04-21
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
 - The next deepening pass on 2026-04-21 also verified richer evidence-conditioned state construction and replay coverage for:
+  - `election-shock`
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
 - That same pass verified these top branches on the realistic smoke campaign:
+  - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
   - `Regulator ad-tech` -> `Internal remediation`
   - `Supply rare-earth` -> `Expedite alternatives`
-  - `Supplier flooding` -> `Expedite alternatives`
+  - `Supplier flooding` -> `Reserve logistics`
 - The 2026-04-21 smoke campaign exposed and the current code now fixes:
   - natural-language source-role and evidence-category matching that was too brittle for realistic wording
   - source-id collisions when different directories contained the same filename stem
@@ -90,6 +92,9 @@ Date: 2026-04-21
   - pack-field compilation that ignored approved evidence unless the user manually filled `pack_fields`
   - interstate scenarios collapsing onto the same alliance-mediated first move
   - company scenarios collapsing onto the same stakeholder-reset first move
+  - supply scenarios collapsing onto the same root strategy because transport and source disruptions were not separated strongly enough
+  - replay summaries that could not distinguish exact top-branch accuracy from root-strategy accuracy
+  - branch reports that let unvisited root children outrank explored branches with a default `0.0` score
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`

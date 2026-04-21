@@ -20,6 +20,7 @@ class ReplayCase(BaseModel):
     assumptions: AssumptionSummary
     documents: dict[str, str] = Field(default_factory=dict)
     expected_top_branch: str | None = None
+    expected_root_strategy: str | None = None
     expected_evidence_sources: list[str] = Field(default_factory=list)
     expected_inferred_fields: list[str] = Field(default_factory=list)
 
@@ -30,6 +31,9 @@ class ReplayCaseResult(BaseModel):
     top_branch: str | None = None
     expected_top_branch: str | None = None
     top_branch_match: bool | None = None
+    root_strategy: str | None = None
+    expected_root_strategy: str | None = None
+    root_strategy_match: bool | None = None
     evidence_sources: list[str] = Field(default_factory=list)
     expected_evidence_sources: list[str] = Field(default_factory=list)
     evidence_source_match: bool | None = None
@@ -43,8 +47,10 @@ class ReplayCaseResult(BaseModel):
 class ReplaySuiteResult(BaseModel):
     case_count: int
     top_branch_accuracy: float
+    root_strategy_accuracy: float
     evidence_source_accuracy: float
     average_inferred_field_coverage: float
+    domain_breakdown: dict[str, dict[str, float | int]] = Field(default_factory=dict)
     results: list[ReplayCaseResult] = Field(default_factory=list)
 
 
@@ -53,6 +59,12 @@ def _safe_accuracy(values: list[bool | None]) -> float:
     if not observed:
         return 0.0
     return round(sum(1 for value in observed if value) / len(observed), 3)
+
+
+def _root_strategy_for_label(label: str | None) -> str | None:
+    if not label:
+        return None
+    return label.split(" (", 1)[0].strip() or None
 
 
 def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult:
@@ -81,6 +93,7 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
         top_branch = branches[0].get("label")
         if not isinstance(top_branch, str):
             top_branch = None
+    root_strategy = _root_strategy_for_label(top_branch)
 
     evidence_sources = sorted(item.source_id for item in packet.items)
     inferred_fields = sorted(
@@ -97,6 +110,10 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
     if case.expected_top_branch is not None:
         top_branch_match = top_branch == case.expected_top_branch
 
+    root_strategy_match = None
+    if case.expected_root_strategy is not None:
+        root_strategy_match = root_strategy == case.expected_root_strategy
+
     evidence_source_match = None
     if case.expected_evidence_sources:
         evidence_source_match = sorted(case.expected_evidence_sources) == evidence_sources
@@ -107,6 +124,9 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
         top_branch=top_branch,
         expected_top_branch=case.expected_top_branch,
         top_branch_match=top_branch_match,
+        root_strategy=root_strategy,
+        expected_root_strategy=case.expected_root_strategy,
+        root_strategy_match=root_strategy_match,
         evidence_sources=evidence_sources,
         expected_evidence_sources=sorted(case.expected_evidence_sources),
         evidence_source_match=evidence_source_match,
@@ -127,14 +147,32 @@ def run_replay_suite(cases: list[ReplayCase], *, workspace_root: Path | None = N
         case_root.mkdir(parents=True, exist_ok=True)
         results.append(_run_single_case(case, case_root))
 
+    domain_breakdown: dict[str, dict[str, float | int]] = {}
+    for domain_pack in sorted({result.domain_pack for result in results}):
+        domain_results = [result for result in results if result.domain_pack == domain_pack]
+        domain_breakdown[domain_pack] = {
+            "count": len(domain_results),
+            "top_branch_accuracy": _safe_accuracy([result.top_branch_match for result in domain_results]),
+            "root_strategy_accuracy": _safe_accuracy([result.root_strategy_match for result in domain_results]),
+            "evidence_source_accuracy": _safe_accuracy([result.evidence_source_match for result in domain_results]),
+            "average_inferred_field_coverage": round(
+                sum(result.inferred_field_coverage for result in domain_results) / len(domain_results),
+                3,
+            )
+            if domain_results
+            else 0.0,
+        }
+
     return ReplaySuiteResult(
         case_count=len(results),
         top_branch_accuracy=_safe_accuracy([result.top_branch_match for result in results]),
+        root_strategy_accuracy=_safe_accuracy([result.root_strategy_match for result in results]),
         evidence_source_accuracy=_safe_accuracy([result.evidence_source_match for result in results]),
         average_inferred_field_coverage=round(
             sum(result.inferred_field_coverage for result in results) / len(results), 3
         )
         if results
         else 0.0,
+        domain_breakdown=domain_breakdown,
         results=results,
     )

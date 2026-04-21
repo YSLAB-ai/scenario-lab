@@ -115,17 +115,19 @@ Verified current progress:
 - The supply-chain-disruption pack now infers richer causal state fields from approved evidence:
   - `supplier_concentration`
   - `customer_penalty_pressure`
-- The checked-in 10-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate and company templates instead of collapsing those scenarios into one repeated root strategy.
+- The checked-in 10-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate, company, and supply templates instead of collapsing those scenarios into one repeated root strategy.
 - The latest verified smoke campaign on 2026-04-21 produced these top branches:
   - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
   - `Japan-China Strait` -> `Signal resolve (managed signal)`
   - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
+  - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
   - `Regulator ad-tech` -> `Internal remediation`
   - `Supply rare-earth` -> `Expedite alternatives`
-  - `Supplier flooding` -> `Expedite alternatives`
+  - `Supplier flooding` -> `Reserve logistics`
+- The replay suite now measures both exact top-branch matches and root-strategy matches per domain.
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:

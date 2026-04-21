@@ -161,7 +161,13 @@ SCENARIOS = [
             "turnout-rescue.md": "Campaign organizers launch a turnout rescue plan to keep early vote mobilization from collapsing.",
         },
         "expected_sources": {"debate-fallout", "turnout-rescue"},
-        "expected_fields": {"message_discipline", "poll_margin", "turnout_energy"},
+        "expected_fields": {
+            "coalition_fragility",
+            "donor_confidence",
+            "message_discipline",
+            "poll_margin",
+            "turnout_energy",
+        },
     },
     {
         "run_id": "market-rate-shock",
@@ -352,6 +358,37 @@ def test_company_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path)
 
     top_root_labels: set[str] = set()
     for scenario in SCENARIOS[3:5]:
+        pack = registry.resolve(str(scenario["domain"]))
+        run_id = str(scenario["run_id"])
+        service.start_run(run_id, pack.slug())
+        intake = IntakeDraft.model_validate(scenario["intake"])
+        service.save_intake_draft(run_id, "r1", intake)
+
+        docs_dir = tmp_path / run_id
+        docs_dir.mkdir()
+        for filename, content in dict(scenario["docs"]).items():
+            (docs_dir / filename).write_text(str(content), encoding="utf-8")
+
+        service.batch_ingest_recommended_files(run_id, "r1", pack=pack, path=docs_dir, max_files=5)
+        service.draft_evidence_packet(run_id, "r1", pack=pack)
+        assumptions = AssumptionSummary(summary=list(scenario["assumptions"]), suggested_actors=intake.suggested_entities)
+        service.approve_revision(run_id, "r1", assumptions)
+        simulation = service.simulate_revision(run_id, "r1", pack=pack)
+
+        top_label = str(simulation["branches"][0]["label"])
+        top_root_labels.add(top_label.split(" (", 1)[0])
+
+    assert len(top_root_labels) >= 2
+
+
+def test_supply_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    registry = build_default_registry()
+    service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
+
+    top_root_labels: set[str] = set()
+    for scenario in SCENARIOS[8:10]:
         pack = registry.resolve(str(scenario["domain"]))
         run_id = str(scenario["run_id"])
         service.start_run(run_id, pack.slug())
