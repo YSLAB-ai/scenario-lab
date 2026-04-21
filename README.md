@@ -52,7 +52,7 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `146 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `153 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -65,6 +65,9 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
+- The repo-owned domain manifests now affect retrieval directly by supplying:
+  - domain-specific semantic alias groups for local semantic search
+  - evidence-category term maps used to diversify drafted evidence packets
 - The simulation engine now runs deterministic multi-step MCTS over `BeliefState` and writes simulation payloads with:
   - `search_mode = "mcts"`
   - `iterations`
@@ -95,6 +98,8 @@ Verified current progress:
   - the rerun reported transposition metadata (`transposition_hits = 37`, `state_table_size = 14`, `node_count = 40`)
 - A direct CLI check now verifies `forecast-harness list-domain-packs` returns all seven built-in domain templates.
 - The retrieval layer now supports semantic-only local matches where exact FTS terms would miss, for example `ceo response` retrieving a chunk about a `chief executive`.
+- The workflow can now use manifest-specific semantic aliases, for example matching `military buildup` to a chunk about `force posture` inside the `interstate-crisis` domain without exact lexical overlap.
+- Evidence drafting can now label and diversify packets using manifest evidence categories such as `force posture` and `diplomatic signaling`.
 
 ## Remaining Gaps
 
@@ -105,4 +110,5 @@ Verified current progress:
 - The semantic retrieval layer is a deterministic local baseline, not a neural embedding model.
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The source manifests define what to ingest, but they do not yet populate the local corpus automatically.
+- The source manifests now guide retrieval, but they do not yet drive automatic query planning beyond alias expansion and category coverage.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.

@@ -3,6 +3,13 @@
   "description": "Template for analyzing company strategic responses to crises, product issues, financing stress, or reputation shocks.",
   "actor_categories": ["company", "board", "regulator", "creditors", "customers", "competitors"],
   "evidence_categories": ["financial resilience", "leadership behavior", "customer reaction", "regulatory pressure", "operational resilience"],
+  "evidence_category_terms": {
+    "financial resilience": ["cash runway", "liquidity", "balance sheet", "leverage"],
+    "leadership behavior": ["chief executive", "ceo", "management tone", "board response"],
+    "customer reaction": ["customer churn", "returns", "complaints", "demand response"],
+    "regulatory pressure": ["enforcement", "investigation", "agency pressure", "consent order"],
+    "operational resilience": ["plant disruption", "supply continuity", "production recovery", "operations"]
+  },
   "key_state_fields": ["cash_runway_months", "brand_sentiment", "regulatory_pressure"],
   "canonical_stages": ["trigger", "board-response", "market-response", "restructuring", "resolution"],
   "recommended_source_types": ["company filings", "earnings transcripts", "press releases", "enforcement notices", "industry analysis"],
@@ -17,4 +24,12 @@
     "leadership response analogs from prior company crises"
   ],
   "freshness_notes": "Current filings and management statements generally dominate older materials. Historical crisis analogs remain useful for executive style and board behavior."
+  ,
+  "semantic_alias_groups": [
+    ["ceo", "chief executive", "management"],
+    ["cash crunch", "liquidity stress", "funding pressure"],
+    ["customer backlash", "customer reaction", "consumer response"],
+    ["factory outage", "operational disruption", "production interruption"],
+    ["regulatory scrutiny", "regulatory pressure", "agency pressure"]
+  ]
 }

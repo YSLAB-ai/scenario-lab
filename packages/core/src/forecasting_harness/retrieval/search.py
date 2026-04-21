@@ -30,6 +30,7 @@ class SearchEngine:
         query: RetrievalQuery,
         *,
         freshness_policy: dict[str, float] | None = None,
+        alias_groups: list[tuple[str, ...]] | None = None,
     ) -> list[dict[str, Any]]:
         freshness_policy = freshness_policy or {}
         merged: dict[tuple[str, str], dict[str, Any]] = {}
@@ -41,7 +42,7 @@ class SearchEngine:
             result["semantic_score"] = 0.0
             merged[key] = result
 
-        for row in self.registry.search_semantic_chunks(query.text):
+        for row in self.registry.search_semantic_chunks(query.text, alias_groups=alias_groups):
             key = (str(row["source_id"]), str(row["chunk_id"]))
             if key in merged:
                 merged[key]["semantic_score"] = float(row.get("semantic_score", 0.0))

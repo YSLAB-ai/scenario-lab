@@ -550,6 +550,66 @@ def test_draft_evidence_packet_from_corpus_persists_a_revision_draft(tmp_path: P
     assert [item.source_id for item in stored_packet.items] == ["doc-1"]
 
 
+def test_draft_evidence_packet_uses_manifest_categories_for_diverse_packet_reasons(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="doc-1",
+        title="Posture shift",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Force posture hardens near the strait after the naval transit.",
+    )
+    corpus.register_document(
+        source_id="doc-2",
+        title="Backchannel warning",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Diplomatic signaling intensifies through private backchannel warnings.",
+    )
+    corpus.register_document(
+        source_id="doc-3",
+        title="Second posture note",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Additional force posture changes are visible around the theater.",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    packet = service.draft_evidence_packet(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        query_text="military buildup and backchannel warnings",
+        max_total=2,
+    )
+
+    assert "doc-2" in [item.source_id for item in packet.items]
+    assert any(item.source_id in {"doc-1", "doc-3"} for item in packet.items)
+    assert {item.reason for item in packet.items} == {
+        "Candidate passage for approved evidence packet: diplomatic signaling",
+        "Candidate passage for approved evidence packet: force posture",
+    }
+
+
 def test_curate_evidence_draft_keeps_requested_ids_and_records_event() -> None:
     repository = _FakeRepository(run_record=_make_run("crisis-1"))
     packet = EvidencePacket(

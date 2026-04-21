@@ -148,8 +148,8 @@ class CorpusRegistry:
                         source_id,
                         chunk["chunk_id"],
                         EMBEDDING_VERSION,
-                        serialize_vector(encode_text(chunk["content"])[0]),
-                        encode_text(chunk["content"])[1],
+                        serialize_vector((encoded := encode_text(chunk["content"]))[0]),
+                        encoded[1],
                     )
                     for chunk in normalized_chunks
                 ],
@@ -216,8 +216,14 @@ class CorpusRegistry:
             results.append(result)
         return results
 
-    def search_semantic_chunks(self, text: str, *, limit: int = 20) -> list[dict[str, Any]]:
-        query_vector, token_count = encode_text(text)
+    def search_semantic_chunks(
+        self,
+        text: str,
+        *,
+        limit: int = 20,
+        alias_groups: list[tuple[str, ...]] | None = None,
+    ) -> list[dict[str, Any]]:
+        query_vector, token_count = encode_text(text, alias_groups=alias_groups)
         if token_count == 0:
             return []
 
@@ -246,7 +252,12 @@ class CorpusRegistry:
         scored: list[dict[str, Any]] = []
         for row in rows:
             result = dict(row)
-            similarity = cosine_similarity(query_vector, deserialize_vector(result.pop("vector_json")))
+            if alias_groups:
+                row_vector = encode_text(str(result.get("content", "")), alias_groups=alias_groups)[0]
+                result.pop("vector_json")
+            else:
+                row_vector = deserialize_vector(result.pop("vector_json"))
+            similarity = cosine_similarity(query_vector, row_vector)
             if similarity <= 0.0:
                 continue
             tags = result.get("tags")

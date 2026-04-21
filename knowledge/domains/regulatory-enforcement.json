@@ -3,6 +3,13 @@
   "description": "Template for agency investigations, settlement negotiations, remedies, and enforcement escalation affecting a target entity.",
   "actor_categories": ["agency", "target entity", "external counsel", "monitor", "industry peers", "state enforcers"],
   "evidence_categories": ["enforcement momentum", "compliance posture", "public attention", "settlement precedent", "remedy severity"],
+  "evidence_category_terms": {
+    "enforcement momentum": ["enforcement momentum", "investigation pace", "agency escalation", "subpoena"],
+    "compliance posture": ["compliance posture", "remediation", "controls", "monitoring"],
+    "public attention": ["public attention", "headline risk", "media scrutiny", "political pressure"],
+    "settlement precedent": ["settlement precedent", "consent order", "prior case", "precedent"],
+    "remedy severity": ["remedy severity", "penalty", "injunction", "monitor", "structural remedy"]
+  },
   "key_state_fields": ["enforcement_momentum", "compliance_posture", "public_attention"],
   "canonical_stages": ["trigger", "inquiry", "negotiation", "remedy", "resolution"],
   "recommended_source_types": ["agency complaints", "consent orders", "settlement announcements", "compliance reports", "industry enforcement histories"],
@@ -16,5 +23,12 @@
     "recent precedent against similar conduct",
     "target-specific compliance and remediation signals"
   ],
-  "freshness_notes": "Official case materials and comparable precedent should drive the near-term state. Older enforcement history is most useful for pattern and remedy analogs."
+  "freshness_notes": "Official case materials and comparable precedent should drive the near-term state. Older enforcement history is most useful for pattern and remedy analogs.",
+  "semantic_alias_groups": [
+    ["enforcement momentum", "agency escalation", "investigation pressure"],
+    ["compliance posture", "remediation posture", "control environment"],
+    ["public attention", "headline pressure", "media scrutiny"],
+    ["settlement precedent", "precedent case", "comparable settlement"],
+    ["remedy severity", "penalty severity", "structural remedy"]
+  ]
 }

@@ -3,6 +3,13 @@
   "description": "Template for material disruptions in supply, transport, or production capacity and the resulting recovery or rerouting decisions.",
   "actor_categories": ["manufacturer", "supplier", "logistics provider", "customer", "port or transport node", "alternate supplier"],
   "evidence_categories": ["inventory cover", "substitution flexibility", "transport reliability", "capacity recovery", "customer prioritization"],
+  "evidence_category_terms": {
+    "inventory cover": ["inventory cover", "days of inventory", "stockout", "safety stock"],
+    "substitution flexibility": ["alternate supplier", "substitution flexibility", "dual sourcing", "material substitution"],
+    "transport reliability": ["transport reliability", "port congestion", "shipping delay", "route closure"],
+    "capacity recovery": ["capacity recovery", "plant restart", "throughput", "output restoration"],
+    "customer prioritization": ["customer prioritization", "allocation", "priority customer", "order rationing"]
+  },
   "key_state_fields": ["inventory_cover_days", "substitution_flexibility", "transport_reliability"],
   "canonical_stages": ["trigger", "triage", "rerouting", "capacity-rebuild", "resolution"],
   "recommended_source_types": ["company disclosures", "shipping and transport data", "supplier notices", "inventory reports", "industry operations analysis"],
@@ -16,5 +23,12 @@
     "inventory and allocation indicators",
     "historical analogs for comparable disruption and rerouting patterns"
   ],
-  "freshness_notes": "Operational and transport signals are highly time-sensitive. Historical cases are useful for rerouting and recovery timelines but should not override current node-specific evidence."
+  "freshness_notes": "Operational and transport signals are highly time-sensitive. Historical cases are useful for rerouting and recovery timelines but should not override current node-specific evidence.",
+  "semantic_alias_groups": [
+    ["inventory cover", "stock cover", "safety stock"],
+    ["substitution flexibility", "alternate sourcing", "supplier substitution"],
+    ["transport reliability", "shipping reliability", "logistics reliability"],
+    ["capacity recovery", "plant recovery", "output recovery"],
+    ["customer prioritization", "allocation priority", "order rationing"]
+  ]
 }

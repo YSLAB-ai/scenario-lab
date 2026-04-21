@@ -29,10 +29,13 @@ Date: 2026-04-20
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
 - The domain registry now exposes reusable domain template packs for company action, election shock, market shock, supply-chain disruption, and regulatory enforcement in addition to the existing generic and interstate packs.
 - The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for six high-value domains.
+- The repo-owned manifests now load through a typed `forecasting_harness.knowledge` module instead of remaining documentation-only files.
+- The retrieval layer now accepts manifest-specific semantic alias groups during search.
+- Evidence packet drafting now uses manifest evidence-category terms to diversify packet coverage and emit category-aware reasons.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `148 passed`
+  - Result: `153 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -96,6 +99,14 @@ Date: 2026-04-20
   - query `ceo response`
   - content `The chief executive stabilized messaging quickly.`
   - result returned with `semantic_score > 0` and `lexical_score = 0.0`
+- A retrieval verification on 2026-04-20 also confirmed a manifest-specific semantic-only local match:
+  - domain `interstate-crisis`
+  - query `military buildup`
+  - content `Force posture hardens near the strait.`
+  - result returned with `semantic_score > 0` and `lexical_score = 0.0`
+- A workflow verification on 2026-04-20 also confirmed manifest-aware evidence drafting can cover multiple evidence categories in one packet:
+  - `diplomatic signaling`
+  - `force posture`
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -118,6 +129,8 @@ Date: 2026-04-20
   - `docs/superpowers/plans/2026-04-20-generalized-harness-v2-implementation.md`
   - `docs/superpowers/specs/2026-04-20-corpus-ingestion-v1-design.md`
   - `docs/superpowers/plans/2026-04-20-corpus-ingestion-v1-implementation.md`
+  - `docs/superpowers/specs/2026-04-20-manifest-retrieval-v1-design.md`
+  - `docs/superpowers/plans/2026-04-20-manifest-retrieval-v1-implementation.md`
 
 ## Current Gaps
 
@@ -127,6 +140,7 @@ Date: 2026-04-20
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
   - calibrated real-world probabilities
 - The built-in domain packs are templates rather than mature validated models.
+- The manifests now guide retrieval, but they do not yet drive automatic ingestion, query decomposition, or explicit evidence coverage quotas per domain.
 - The system does not yet implement:
   - local neural embeddings
   - OCR-backed PDF ingestion
@@ -170,8 +184,8 @@ Date: 2026-04-20
 - `20ea8d9` `feat: add deterministic mcts simulation engine`
 - `51eac3d` `feat: add reusable domain template packs`
 - `668952b` `docs: add domain knowledge manifests`
-- `3e19855` `feat: add local semantic vector index`
+  - `3e19855` `feat: add local semantic vector index`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, a repo-owned knowledge-manifest scaffold, local corpus ingestion, fully local hybrid lexical/semantic retrieval, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, a repo-owned knowledge-manifest scaffold, typed manifest loading, fully local hybrid lexical/semantic retrieval with manifest-specific alias expansion, manifest-aware evidence packet drafting, local corpus ingestion, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.

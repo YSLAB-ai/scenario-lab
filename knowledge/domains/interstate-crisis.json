@@ -3,6 +3,13 @@
   "description": "Template for interstate crisis escalation, signaling, limited force, deterrence, and negotiated de-escalation.",
   "actor_categories": ["state", "ally", "external power", "military command", "regional bloc"],
   "evidence_categories": ["force posture", "diplomatic signaling", "alliance commitments", "leader behavior", "economic constraints"],
+  "evidence_category_terms": {
+    "force posture": ["force posture", "military buildup", "troop movement", "deployment", "readiness"],
+    "diplomatic signaling": ["diplomatic signaling", "backchannel", "warning", "red line", "official statement"],
+    "alliance commitments": ["alliance commitment", "treaty obligation", "mutual defense", "security guarantee"],
+    "leader behavior": ["leader behavior", "decision style", "personal rhetoric", "crisis management style"],
+    "economic constraints": ["sanctions", "trade exposure", "economic constraint", "energy shock", "fiscal strain"]
+  },
   "key_state_fields": ["military_posture", "leader_style", "tension_index", "diplomatic_channel"],
   "canonical_stages": ["trigger", "signaling", "limited-response", "escalation", "negotiation-deescalation", "settlement-stalemate"],
   "recommended_source_types": ["government statements", "defense white papers", "treaties and alliance texts", "sanctions notices", "historical crisis timelines"],
@@ -16,5 +23,12 @@
     "binding alliance and legal commitments",
     "historical analogs for leader and institutional response style"
   ],
-  "freshness_notes": "Posture and signaling information is highly time-sensitive. Structural treaty and doctrine materials decay more slowly. Historical analogs should inform behavior profiles rather than override current evidence."
+  "freshness_notes": "Posture and signaling information is highly time-sensitive. Structural treaty and doctrine materials decay more slowly. Historical analogs should inform behavior profiles rather than override current evidence.",
+  "semantic_alias_groups": [
+    ["force posture", "military buildup", "troop movement"],
+    ["diplomatic signaling", "backchannel warning", "coercive message"],
+    ["alliance commitments", "treaty obligation", "security guarantee"],
+    ["leader behavior", "decision style", "crisis leadership"],
+    ["economic constraints", "sanctions pressure", "trade exposure"]
+  ]
 }

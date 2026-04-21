@@ -3,6 +3,13 @@
   "description": "Template for rates, liquidity, credibility, and cross-market stress events with central-bank or policy responses.",
   "actor_categories": ["central bank", "treasury", "financial institutions", "investors", "dealers", "foreign authorities"],
   "evidence_categories": ["liquidity conditions", "rates pressure", "policy credibility", "market functioning", "cross-asset contagion"],
+  "evidence_category_terms": {
+    "liquidity conditions": ["liquidity", "funding stress", "repo pressure", "market depth"],
+    "rates pressure": ["rate pressure", "yield spike", "repricing", "tightening"],
+    "policy credibility": ["policy credibility", "forward guidance", "credibility", "official communication"],
+    "market functioning": ["market functioning", "bid ask", "dislocation", "trading conditions"],
+    "cross-asset contagion": ["cross-asset contagion", "spillover", "volatility transmission", "correlation shock"]
+  },
   "key_state_fields": ["liquidity_stress", "rate_pressure", "policy_credibility"],
   "canonical_stages": ["trigger", "repricing", "policy-response", "liquidity-stabilization", "resolution"],
   "recommended_source_types": ["central bank releases", "treasury statements", "market functioning reports", "yield/volatility datasets", "bank or dealer commentary"],
@@ -16,5 +23,12 @@
     "liquidity and funding indicators",
     "historical episodes of repricing and policy stabilization"
   ],
-  "freshness_notes": "Market data and policy communication decay very quickly. Historical shock analogs remain useful for identifying stabilization patterns but should not dominate current market conditions."
+  "freshness_notes": "Market data and policy communication decay very quickly. Historical shock analogs remain useful for identifying stabilization patterns but should not dominate current market conditions.",
+  "semantic_alias_groups": [
+    ["liquidity conditions", "funding stress", "liquidity crunch"],
+    ["rates pressure", "yield shock", "tightening pressure"],
+    ["policy credibility", "guidance credibility", "policy trust"],
+    ["market functioning", "market plumbing", "trading conditions"],
+    ["cross-asset contagion", "spillover stress", "contagion"]
+  ]
 }

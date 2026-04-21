@@ -196,6 +196,31 @@ def test_search_engine_returns_semantic_hit_without_exact_lexical_match(tmp_path
     assert hits[0]["lexical_score"] == 0.0
 
 
+def test_search_engine_accepts_manifest_alias_groups_for_semantic_hits(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Strait posture",
+        source_type="markdown",
+        path="/tmp/posture.md",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        chunks=[
+            {"chunk_id": "1", "location": "heading:Overview", "content": "Force posture hardens near the strait."}
+        ],
+    )
+
+    hits = SearchEngine(registry).search(
+        RetrievalQuery(text="military buildup", filters={"domain": "interstate-crisis"}),
+        alias_groups=[("military buildup", "force posture")],
+    )
+
+    assert hits
+    assert hits[0]["source_id"] == "src-1"
+    assert hits[0]["semantic_score"] > 0
+    assert hits[0]["lexical_score"] == 0.0
+
+
 def test_freshness_multiplier_is_neutral_without_published_at(tmp_path: Path) -> None:
     registry = CorpusRegistry(tmp_path / "corpus.db")
     engine = SearchEngine(registry)

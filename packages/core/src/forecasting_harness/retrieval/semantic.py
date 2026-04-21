@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import re
+from typing import Iterable
 
 EMBEDDING_VERSION = "local-semantic-v1"
 VECTOR_DIMENSION = 256
@@ -26,9 +27,27 @@ def _normalized_tokens(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", text.lower())
 
 
-def _expanded_terms(normalized_text: str) -> list[str]:
+def _merge_alias_groups(
+    alias_groups: Iterable[tuple[str, ...] | list[str]] | None,
+) -> list[tuple[str, ...]]:
+    merged: list[tuple[str, ...]] = list(_ALIAS_GROUPS)
+    if alias_groups is None:
+        return merged
+
+    for group in alias_groups:
+        normalized_group = tuple(term for term in group if term)
+        if normalized_group and normalized_group not in merged:
+            merged.append(normalized_group)
+    return merged
+
+
+def _expanded_terms(
+    normalized_text: str,
+    *,
+    alias_groups: Iterable[tuple[str, ...] | list[str]] | None = None,
+) -> list[str]:
     terms: list[str] = []
-    for group in _ALIAS_GROUPS:
+    for group in _merge_alias_groups(alias_groups):
         if any(term in normalized_text for term in group):
             terms.extend(group)
     return terms
@@ -41,7 +60,11 @@ def _add_feature(vector: list[float], feature: str, weight: float) -> None:
     vector[index] += sign * weight
 
 
-def encode_text(text: str) -> tuple[list[float], int]:
+def encode_text(
+    text: str,
+    *,
+    alias_groups: Iterable[tuple[str, ...] | list[str]] | None = None,
+) -> tuple[list[float], int]:
     normalized = _normalize_text(text)
     tokens = _normalized_tokens(text)
     if not tokens:
@@ -57,7 +80,7 @@ def encode_text(text: str) -> tuple[list[float], int]:
     for left, right in zip(tokens, tokens[1:]):
         _add_feature(vector, f"bi:{left}_{right}", 0.7)
 
-    for alias in _expanded_terms(normalized):
+    for alias in _expanded_terms(normalized, alias_groups=alias_groups):
         _add_feature(vector, f"alias:{alias}", 0.9)
 
     norm = math.sqrt(sum(value * value for value in vector))

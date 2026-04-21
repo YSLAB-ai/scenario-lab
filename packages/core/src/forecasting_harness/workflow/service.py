@@ -8,6 +8,7 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.compatibility import compare_belief_states
 from forecasting_harness.domain.base import DomainPack
 from forecasting_harness.domain.registry import DomainPackRegistry, build_default_registry
+from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.models import BeliefState
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.query_api import summarize_top_branches
@@ -221,12 +222,21 @@ class WorkflowService:
             raise ValueError("corpus_registry is required for evidence drafting")
 
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        manifest = load_domain_manifest(pack.slug())
         search_engine = SearchEngine(self.corpus_registry)
         hits = search_engine.search(
             RetrievalQuery(text=query_text, filters=pack.retrieval_filters(intake)),
             freshness_policy=pack.freshness_policy(),
+            alias_groups=manifest.alias_groups(),
         )
-        packet = build_evidence_packet(revision_id, hits, max_per_source=max_per_source, max_total=max_total)
+        packet = build_evidence_packet(
+            revision_id,
+            hits,
+            max_per_source=max_per_source,
+            max_total=max_total,
+            evidence_categories=manifest.evidence_categories,
+            category_terms=manifest.category_terms(),
+        )
         self.save_evidence_draft(run_id, revision_id, packet)
         self.repository.append_event(
             run_id,

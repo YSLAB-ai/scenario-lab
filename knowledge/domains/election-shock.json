@@ -3,6 +3,13 @@
   "description": "Template for campaign shocks, late-breaking events, narrative changes, and turnout or coalition responses during an election.",
   "actor_categories": ["candidate", "party", "media", "donors", "voter blocs", "endorsers"],
   "evidence_categories": ["polling", "turnout signals", "message discipline", "coalition dynamics", "campaign resources"],
+  "evidence_category_terms": {
+    "polling": ["poll", "polling average", "survey"],
+    "turnout signals": ["turnout", "early vote", "enthusiasm", "ground game"],
+    "message discipline": ["message discipline", "campaign narrative", "debate response"],
+    "coalition dynamics": ["endorsement", "coalition", "swing bloc", "base support"],
+    "campaign resources": ["fundraising", "ad spend", "field offices", "cash on hand"]
+  },
   "key_state_fields": ["poll_margin", "turnout_energy", "message_discipline"],
   "canonical_stages": ["trigger", "narrative-fight", "turnout-drive", "coalition-shaping", "resolution"],
   "recommended_source_types": ["poll aggregations", "election rules", "campaign finance records", "debate/transcript archives", "turnout datasets"],
@@ -16,5 +23,12 @@
     "electoral rules and deadlines",
     "historical analogs for similar campaign shocks"
   ],
-  "freshness_notes": "Polling and turnout indicators decay quickly. Structural election rules stay relevant for the full cycle. Historical analogs are useful for pattern matching, not direct probability claims."
+  "freshness_notes": "Polling and turnout indicators decay quickly. Structural election rules stay relevant for the full cycle. Historical analogs are useful for pattern matching, not direct probability claims.",
+  "semantic_alias_groups": [
+    ["polling", "survey trend", "poll average"],
+    ["turnout", "voter enthusiasm", "mobilization"],
+    ["message discipline", "narrative control", "campaign message"],
+    ["coalition shift", "endorsement movement", "bloc realignment"],
+    ["campaign resources", "fundraising", "cash advantage"]
+  ]
 }
