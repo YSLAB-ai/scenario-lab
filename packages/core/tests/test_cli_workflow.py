@@ -13,7 +13,15 @@ def test_list_domain_packs() -> None:
     result = CliRunner().invoke(app, ["list-domain-packs"])
 
     assert result.exit_code == 0
-    assert json.loads(result.stdout) == ["generic-event", "interstate-crisis"]
+    assert json.loads(result.stdout) == [
+        "company-action",
+        "election-shock",
+        "generic-event",
+        "interstate-crisis",
+        "market-shock",
+        "regulatory-enforcement",
+        "supply-chain-disruption",
+    ]
 
 
 def test_demo_run_creates_report_and_workbench(tmp_path: Path) -> None:

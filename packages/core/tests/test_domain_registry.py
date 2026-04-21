@@ -4,7 +4,15 @@ from forecasting_harness.domain.registry import build_default_registry
 def test_default_registry_lists_builtin_domain_packs() -> None:
     registry = build_default_registry()
 
-    assert registry.list_slugs() == ["generic-event", "interstate-crisis"]
+    assert registry.list_slugs() == [
+        "company-action",
+        "election-shock",
+        "generic-event",
+        "interstate-crisis",
+        "market-shock",
+        "regulatory-enforcement",
+        "supply-chain-disruption",
+    ]
 
 
 def test_default_registry_returns_new_pack_instances() -> None:
