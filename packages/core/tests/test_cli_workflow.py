@@ -5,6 +5,7 @@ from typer.testing import CliRunner
 
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.cli import app
+from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 
 
 def test_list_domain_packs() -> None:
@@ -276,3 +277,84 @@ def test_draft_evidence_packet_command(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]
+
+
+def test_ingest_file_command_registers_a_searchable_source(tmp_path: Path) -> None:
+    source = tmp_path / "signals.md"
+    source.write_text("# Overview\nJapan issues a warning.\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ingest-file",
+            "--corpus-db",
+            str(tmp_path / "corpus.db"),
+            "--path",
+            str(source),
+            "--tag",
+            "domain=interstate-crisis",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["source_type"] == "markdown"
+    assert payload["chunk_count"] == 1
+
+    hits = SearchEngine(CorpusRegistry(tmp_path / "corpus.db")).search(
+        RetrievalQuery(text="Japan warning", filters={"domain": "interstate-crisis"})
+    )
+    assert [hit["source_id"] for hit in hits] == [payload["source_id"]]
+
+
+def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: Path) -> None:
+    corpus_db = tmp_path / "corpus.db"
+    source_dir = tmp_path / "corpus"
+    source_dir.mkdir()
+    (source_dir / "signals.md").write_text("# Overview\nWarning.\n", encoding="utf-8")
+    (source_dir / "posture.json").write_text('{"actors": ["Japan", "China"]}', encoding="utf-8")
+    (source_dir / "ignore.zip").write_text("not supported", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ingest-directory",
+            "--corpus-db",
+            str(corpus_db),
+            "--path",
+            str(source_dir),
+            "--tag",
+            "domain=interstate-crisis",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["ingested"] == 2
+    assert payload["skipped"] == 1
+
+
+def test_list_corpus_sources_command_lists_documents(tmp_path: Path) -> None:
+    corpus_db = tmp_path / "corpus.db"
+    registry = CorpusRegistry(corpus_db)
+    registry.register_document(
+        source_id="doc-1",
+        title="Signals",
+        source_type="markdown",
+        path="/tmp/signals.md",
+        published_at=None,
+        tags={"domain": "interstate-crisis"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "Alpha"}],
+    )
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "list-corpus-sources",
+            "--corpus-db",
+            str(corpus_db),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout)[0]["source_id"] == "doc-1"

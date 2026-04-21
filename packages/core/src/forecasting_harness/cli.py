@@ -12,7 +12,7 @@ from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
-from forecasting_harness.retrieval import CorpusRegistry
+from forecasting_harness.retrieval import CorpusRegistry, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
@@ -133,9 +133,115 @@ def _load_pack_for_run(repo: RunRepository, run_id: str) -> GenericEventPack | I
     return _pack_for_slug(repo.load_run_record(run_id).domain_pack)
 
 
+def _parse_tags(values: list[str] | None) -> dict[str, str]:
+    tags: dict[str, str] = {}
+    for value in values or []:
+        if "=" not in value:
+            raise typer.BadParameter("tags must be key=value", param_hint="tag")
+        key, raw_value = value.split("=", 1)
+        if not key:
+            raise typer.BadParameter("tag key cannot be empty", param_hint="tag")
+        tags[key] = raw_value
+    return tags
+
+
+def _register_ingested_document(registry: CorpusRegistry, path: Path, *, source_id: str | None, title: str | None, published_at: str | None, tags: dict[str, str]) -> dict[str, object]:
+    document = ingest_file(
+        path,
+        source_id=source_id,
+        title=title,
+        published_at=published_at,
+        tags=tags,
+    )
+    registry.register_document(
+        source_id=document.source_id,
+        title=document.title,
+        source_type=document.source_type,
+        path=document.path,
+        published_at=document.published_at,
+        tags=document.tags,
+        chunks=[
+            {
+                "chunk_id": chunk.chunk_id,
+                "location": chunk.location,
+                "content": chunk.content,
+            }
+            for chunk in document.chunks
+        ],
+    )
+    return {
+        "source_id": document.source_id,
+        "title": document.title,
+        "source_type": document.source_type,
+        "path": document.path,
+        "chunk_count": len(document.chunks),
+    }
+
+
 @app.command("list-domain-packs")
 def list_domain_packs() -> None:
     print(json.dumps(_registry().list_slugs()))
+
+
+@app.command("ingest-file")
+def ingest_file_command(
+    corpus_db: Path = typer.Option(...),
+    path: Path = typer.Option(...),
+    source_id: str | None = typer.Option(None),
+    title: str | None = typer.Option(None),
+    published_at: str | None = typer.Option(None),
+    tag: list[str] | None = typer.Option(None),
+) -> None:
+    registry = CorpusRegistry(corpus_db)
+    payload = _register_ingested_document(
+        registry,
+        path,
+        source_id=source_id,
+        title=title,
+        published_at=published_at,
+        tags=_parse_tags(tag),
+    )
+    print(json.dumps(payload))
+
+
+@app.command("ingest-directory")
+def ingest_directory_command(
+    corpus_db: Path = typer.Option(...),
+    path: Path = typer.Option(...),
+    published_at: str | None = typer.Option(None),
+    tag: list[str] | None = typer.Option(None),
+) -> None:
+    registry = CorpusRegistry(corpus_db)
+    tags = _parse_tags(tag)
+    ingested = 0
+    skipped = 0
+    failed = 0
+    for candidate in sorted(path.iterdir()):
+        if not candidate.is_file():
+            continue
+        try:
+            detect_source_type(candidate)
+        except ValueError:
+            skipped += 1
+            continue
+        try:
+            _register_ingested_document(
+                registry,
+                candidate,
+                source_id=None,
+                title=None,
+                published_at=published_at,
+                tags=tags,
+            )
+            ingested += 1
+        except Exception:
+            failed += 1
+    print(json.dumps({"ingested": ingested, "skipped": skipped, "failed": failed}))
+
+
+@app.command("list-corpus-sources")
+def list_corpus_sources(corpus_db: Path = typer.Option(...)) -> None:
+    print(json.dumps(CorpusRegistry(corpus_db).list_documents()))
 
 
 @app.command("demo-run")
