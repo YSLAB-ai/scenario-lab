@@ -60,8 +60,9 @@ def _pack_for_slug(domain_pack: str) -> GenericEventPack | InterstateCrisisPack:
         raise typer.BadParameter(str(exc), param_hint="domain_pack") from exc
 
 
-def _service(root: Path) -> WorkflowService:
-    return WorkflowService(RunRepository(root))
+def _service(root: Path, *, corpus_db: Path | None = None) -> WorkflowService:
+    corpus_registry = CorpusRegistry(corpus_db) if corpus_db is not None else None
+    return WorkflowService(RunRepository(root), corpus_registry=corpus_registry)
 
 
 def _repair_run_record(repo: RunRepository, run_id: str, domain_pack: str) -> None:
@@ -494,10 +495,16 @@ def draft_approval_packet(
 @app.command("draft-conversation-turn")
 def draft_conversation_turn(
     root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
+    candidate_path: Path | None = typer.Option(None),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
 ) -> None:
-    print(_service(root).draft_conversation_turn(run_id, revision_id).model_dump_json())
+    print(
+        _service(root, corpus_db=corpus_db)
+        .draft_conversation_turn(run_id, revision_id, candidate_path=candidate_path)
+        .model_dump_json()
+    )
 
 
 @app.command("curate-evidence-draft")

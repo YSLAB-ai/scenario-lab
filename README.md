@@ -56,7 +56,7 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `163 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `166 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -119,11 +119,16 @@ Verified current progress:
   - `draft-retrieval-plan` returns deterministic `query_variants` for the current intake
   - `draft-ingestion-plan` reports covered and missing manifest evidence categories from the local corpus
   - `draft-evidence-packet` succeeds without `--query-text`
+- A direct CLI smoke check now also verifies the native conversational adapter loop:
+  - `draft-conversation-turn --corpus-db ... --candidate-path ...` returns `stage = evidence`
+  - the same payload returns `recommended_command = forecast-harness batch-ingest-recommended`
+  - the payload embeds ordered `actions` for `batch-ingest-recommended` and `draft-evidence-packet`
+  - the payload embeds `intake_guidance`, `retrieval_plan`, `ingestion_plan`, and `ingestion_recommendations`
 
 ## Remaining Gaps
 
 - The broader analyst workflow is still a local filesystem slice, not the full product described in the design spec.
-- The deterministic core now supports a direct structured input path for intake and approvals and a conversation-stage turn contract, but there is not yet a finished conversational adapter loop that drafts and approves them end to end inside Codex or Claude Code.
+- The deterministic core now supports a native conversational adapter loop through `draft-conversation-turn`, but the Codex and Claude integrations are still skill/doc-driven rather than a packaged plugin runtime that executes the loop automatically.
 - Manual file-backed paths still exist for evidence replacement and bulk edits.
 - The repository still relies on curated local inputs rather than open-web retrieval.
 - The semantic retrieval layer is a deterministic local baseline, not a neural embedding model.

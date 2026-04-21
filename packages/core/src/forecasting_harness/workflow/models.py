@@ -153,6 +153,13 @@ class RevisionSummary(BaseModel):
     available_sections: list[str] = Field(default_factory=list)
 
 
+class AdapterAction(BaseModel):
+    command: str
+    label: str
+    description: str
+    required_options: list[str] = Field(default_factory=list)
+
+
 class ConversationTurn(BaseModel):
     run_id: str
     revision_id: str
@@ -161,4 +168,5 @@ class ConversationTurn(BaseModel):
     user_message: str
     recommended_command: str | None = None
     available_sections: list[str] = Field(default_factory=list)
+    actions: list[AdapterAction] = Field(default_factory=list)
     context: dict[str, object] = Field(default_factory=dict)

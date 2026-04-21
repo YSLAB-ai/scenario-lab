@@ -1,4 +1,5 @@
 from forecasting_harness.workflow.models import (
+    AdapterAction,
     ApprovalPacket,
     AssumptionSummary,
     ConversationTurn,
@@ -14,6 +15,7 @@ from forecasting_harness.workflow.models import (
 )
 
 __all__ = [
+    "AdapterAction",
     "ApprovalPacket",
     "AssumptionSummary",
     "ConversationTurn",

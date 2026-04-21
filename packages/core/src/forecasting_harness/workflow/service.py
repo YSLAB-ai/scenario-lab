@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from forecasting_harness.artifacts import RunRepository
@@ -16,6 +17,7 @@ from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, Search
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
 from forecasting_harness.workflow.models import (
+    AdapterAction,
     ApprovalPacket,
     AssumptionSummary,
     BatchIngestionResult,
@@ -85,6 +87,21 @@ class WorkflowService:
             if draft_path.exists() or approved_path.exists():
                 available_sections.append(section)
         return available_sections
+
+    def _adapter_action(
+        self,
+        command: str,
+        label: str,
+        description: str,
+        *,
+        required_options: list[str] | None = None,
+    ) -> AdapterAction:
+        return AdapterAction(
+            command=command,
+            label=label,
+            description=description,
+            required_options=required_options or [],
+        )
 
     def _ensure_revision_record(
         self,
@@ -631,12 +648,19 @@ class WorkflowService:
         self.repository.append_event(run_id, "report-generated", {"revision_id": revision_id})
         return content
 
-    def draft_conversation_turn(self, run_id: str, revision_id: str) -> ConversationTurn:
+    def draft_conversation_turn(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        candidate_path: Path | None = None,
+    ) -> ConversationTurn:
         self.repository.load_run_record(run_id)
         available_sections = self._available_sections(run_id, revision_id)
 
         if self._artifact_exists(run_id, "simulation", revision_id, approved=True):
             summary = self.summarize_revision(run_id, revision_id)
+            summary_payload = summary.model_dump(mode="json")
             return ConversationTurn(
                 run_id=run_id,
                 revision_id=revision_id,
@@ -645,7 +669,14 @@ class WorkflowService:
                 user_message="Simulation is complete. Review the top branches and decide whether to update the revision.",
                 recommended_command="forecast-harness begin-revision-update",
                 available_sections=available_sections,
-                context=summary.model_dump(mode="json"),
+                actions=[
+                    self._adapter_action(
+                        "forecast-harness begin-revision-update",
+                        "Start revision update",
+                        "Create a child revision from the current approved revision and continue the conversation loop.",
+                    )
+                ],
+                context={**summary_payload, "revision_summary": summary_payload},
             )
 
         if self._artifact_exists(run_id, "assumptions", revision_id, approved=True):
@@ -653,6 +684,11 @@ class WorkflowService:
             assumptions = self.repository.load_revision_model(
                 run_id, "assumptions", revision_id, AssumptionSummary, approved=True
             )
+            readiness_context = {
+                "revision_id": revision_id,
+                "evidence_item_count": len(evidence.items),
+                "assumption_count": len(assumptions.summary),
+            }
             return ConversationTurn(
                 run_id=run_id,
                 revision_id=revision_id,
@@ -661,15 +697,19 @@ class WorkflowService:
                 user_message="Revision is approved and ready to simulate.",
                 recommended_command="forecast-harness simulate",
                 available_sections=available_sections,
-                context={
-                    "revision_id": revision_id,
-                    "evidence_item_count": len(evidence.items),
-                    "assumption_count": len(assumptions.summary),
-                },
+                actions=[
+                    self._adapter_action(
+                        "forecast-harness simulate",
+                        "Run simulation",
+                        "Execute deterministic search for the approved revision.",
+                    )
+                ],
+                context={**readiness_context, "simulation_readiness": readiness_context},
             )
 
         if self._artifact_exists(run_id, "evidence", revision_id, approved=False):
             packet = self.draft_approval_packet(run_id, revision_id)
+            packet_payload = packet.model_dump(mode="json")
             return ConversationTurn(
                 run_id=run_id,
                 revision_id=revision_id,
@@ -678,20 +718,72 @@ class WorkflowService:
                 user_message="Evidence draft is ready. Review warnings, assumptions, and evidence summary before approval.",
                 recommended_command="forecast-harness approve-revision",
                 available_sections=available_sections,
-                context=packet.model_dump(mode="json"),
+                actions=[
+                    self._adapter_action(
+                        "forecast-harness approve-revision",
+                        "Approve revision",
+                        "Freeze the intake, evidence, and assumptions for simulation.",
+                    )
+                ],
+                context={**packet_payload, "approval_packet": packet_payload},
             )
 
         if self._artifact_exists(run_id, "intake", revision_id, approved=False):
             guidance = self.draft_intake_guidance(run_id, revision_id)
+            guidance_payload = guidance.model_dump(mode="json")
+            context: dict[str, object] = {**guidance_payload, "intake_guidance": guidance_payload}
+            actions: list[AdapterAction] = []
+            recommended_command = "forecast-harness draft-evidence-packet"
+
+            if self.corpus_registry is not None:
+                pack = self._pack_for_run(run_id)
+                retrieval_plan = self.draft_retrieval_plan(run_id, revision_id, pack=pack)
+                ingestion_plan = self.draft_ingestion_plan(run_id, revision_id, pack=pack)
+                retrieval_payload = retrieval_plan.model_dump(mode="json")
+                ingestion_payload = ingestion_plan.model_dump(mode="json")
+                context["retrieval_plan"] = retrieval_payload
+                context["ingestion_plan"] = ingestion_payload
+
+                recommendations: list[IngestionRecommendation] = []
+                if candidate_path is not None and candidate_path.exists() and candidate_path.is_dir():
+                    recommendations = self.recommend_ingestion_files(
+                        run_id,
+                        revision_id,
+                        pack=pack,
+                        path=candidate_path,
+                    )
+                if recommendations:
+                    context["ingestion_recommendations"] = [
+                        item.model_dump(mode="json") for item in recommendations
+                    ]
+                    recommended_command = "forecast-harness batch-ingest-recommended"
+                    actions.append(
+                        self._adapter_action(
+                            "forecast-harness batch-ingest-recommended",
+                            "Batch ingest recommended files",
+                            "Ingest the highest-priority local files that cover missing evidence categories.",
+                            required_options=["corpus_db", "candidate_path"],
+                        )
+                    )
+
+            actions.append(
+                self._adapter_action(
+                    "forecast-harness draft-evidence-packet",
+                    "Draft evidence packet",
+                    "Draft a grouped evidence packet from the current corpus and manifest-driven retrieval plan.",
+                    required_options=["corpus_db"] if self.corpus_registry is not None else [],
+                )
+            )
             return ConversationTurn(
                 run_id=run_id,
                 revision_id=revision_id,
                 stage="evidence",
                 headline="Draft evidence packet",
                 user_message="Intake draft saved. Review suggested entities and follow-up questions, then draft evidence.",
-                recommended_command="forecast-harness draft-evidence-packet",
+                recommended_command=recommended_command,
                 available_sections=available_sections,
-                context=guidance.model_dump(mode="json"),
+                actions=actions,
+                context=context,
             )
 
         return ConversationTurn(
@@ -702,6 +794,13 @@ class WorkflowService:
             user_message="Revision is ready for intake. Capture the event framing and core entities first.",
             recommended_command="forecast-harness save-intake-draft",
             available_sections=available_sections,
+            actions=[
+                self._adapter_action(
+                    "forecast-harness save-intake-draft",
+                    "Save intake draft",
+                    "Capture the normalized intake fields for the revision.",
+                )
+            ],
             context={},
         )
 

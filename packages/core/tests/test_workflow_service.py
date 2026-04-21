@@ -363,6 +363,36 @@ def test_draft_conversation_turn_returns_evidence_stage_from_intake_draft(tmp_pa
     assert turn.context["domain_pack"] == "interstate-crisis"
 
 
+def test_draft_conversation_turn_embeds_native_adapter_payloads_for_evidence_stage(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+    intake = _make_intake()
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1", candidate_path=source_dir)
+
+    assert turn.stage == "evidence"
+    assert turn.recommended_command == "forecast-harness batch-ingest-recommended"
+    assert [action.command for action in turn.actions] == [
+        "forecast-harness batch-ingest-recommended",
+        "forecast-harness draft-evidence-packet",
+    ]
+    assert turn.context["intake_guidance"]["domain_pack"] == "interstate-crisis"
+    assert "force posture" in turn.context["retrieval_plan"]["target_evidence_categories"]
+    assert "diplomatic signaling" in turn.context["ingestion_plan"]["missing_evidence_categories"]
+    assert turn.context["ingestion_recommendations"][0]["source_role"] == "official communications"
+
+
 def test_draft_conversation_turn_returns_approval_stage_from_evidence_draft(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)
@@ -378,6 +408,7 @@ def test_draft_conversation_turn_returns_approval_stage_from_evidence_draft(tmp_
     assert turn.stage == "approval"
     assert turn.recommended_command == "forecast-harness approve-revision"
     assert turn.context["revision_id"] == "r1"
+    assert turn.actions[0].command == "forecast-harness approve-revision"
 
 
 def test_draft_conversation_turn_returns_simulation_stage_from_approved_revision(tmp_path: Path) -> None:

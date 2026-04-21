@@ -20,6 +20,7 @@ Date: 2026-04-20
 - The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
+- The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
 - The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
@@ -39,7 +40,7 @@ Date: 2026-04-20
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `163 passed`
+  - Result: `166 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -78,6 +79,11 @@ Date: 2026-04-20
   - the curated evidence draft retained source id `source`
   - `summarize-revision` returned top branch `Signal resolve`
   - `reports/r1.report.md` existed after simulation
+- A native adapter loop smoke test on 2026-04-20 also verified:
+  - `draft-conversation-turn --corpus-db ... --candidate-path ...` returned `stage = evidence`
+  - the same payload returned `recommended_command = forecast-harness batch-ingest-recommended`
+  - the payload included ordered `actions` for `batch-ingest-recommended` and `draft-evidence-packet`
+  - the payload embedded `intake_guidance`, `retrieval_plan`, `ingestion_plan`, and `ingestion_recommendations`
 - A fresh-install simulation smoke test on 2026-04-20 also verified:
   - `simulation/r1.approved.json` contained `search_mode = mcts`
   - `simulation/r1.approved.json` contained `iterations = 18`
@@ -151,11 +157,12 @@ Date: 2026-04-20
   - `docs/superpowers/plans/2026-04-20-manifest-planning-v1-implementation.md`
   - `docs/superpowers/specs/2026-04-20-ingestion-orchestration-v1-design.md`
   - `docs/superpowers/plans/2026-04-20-ingestion-orchestration-v1-implementation.md`
+  - `docs/superpowers/specs/2026-04-20-native-adapter-loop-v1-design.md`
+  - `docs/superpowers/plans/2026-04-20-native-adapter-loop-v1-implementation.md`
 
 ## Current Gaps
 
-- The current analyst workflow is still not a finished conversational adapter loop.
-- The adapters can now query guidance, conversation-turn, and summary payloads and use direct structured input for the normal path, but they are still documentation/skill scaffolding rather than a finished conversational analyst experience.
+- The current analyst workflow now has a native deterministic adapter loop at the core and CLI layer, but the Codex and Claude integrations are still documentation/skill scaffolding rather than a packaged plugin runtime.
 - Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
   - calibrated real-world probabilities

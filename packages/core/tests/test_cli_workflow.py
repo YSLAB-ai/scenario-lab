@@ -912,6 +912,65 @@ def test_draft_conversation_turn_command_returns_report_stage_for_simulated_revi
     assert payload["context"]["revision_id"] == "r1"
 
 
+def test_draft_conversation_turn_command_embeds_native_adapter_payloads(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    intake_path = tmp_path / "intake.json"
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "draft-conversation-turn",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--candidate-path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["stage"] == "evidence"
+    assert payload["recommended_command"] == "forecast-harness batch-ingest-recommended"
+    assert payload["actions"][0]["command"] == "forecast-harness batch-ingest-recommended"
+    assert payload["context"]["intake_guidance"]["domain_pack"] == "interstate-crisis"
+    assert payload["context"]["ingestion_recommendations"][0]["source_role"] == "official communications"
+
+
 def test_curate_evidence_draft_command_filters_existing_packet(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

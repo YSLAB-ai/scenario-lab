@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from forecasting_harness.workflow import (
+    AdapterAction,
     ApprovalPacket,
     AssumptionSummary,
     ConversationTurn,
@@ -179,3 +180,15 @@ def test_conversation_turn_captures_stage_and_context() -> None:
 
     assert turn.stage == "approval"
     assert turn.context["revision_id"] == "r1"
+
+
+def test_adapter_action_serializes_command_templates() -> None:
+    action = AdapterAction(
+        command="forecast-harness batch-ingest-recommended",
+        label="Ingest recommended files",
+        description="Ingest top local files that match missing evidence categories.",
+        required_options=["corpus_db", "candidate_path"],
+    )
+
+    assert action.command == "forecast-harness batch-ingest-recommended"
+    assert action.required_options == ["corpus_db", "candidate_path"]
