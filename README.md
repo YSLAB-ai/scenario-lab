@@ -128,6 +128,15 @@ Verified current progress:
   - `Supply rare-earth` -> `Expedite alternatives`
   - `Supplier flooding` -> `Reserve logistics`
 - The replay suite now measures both exact top-branch matches and root-strategy matches per domain.
+- The repo now includes a built-in 10-case replay library under `knowledge/replays/` so replay and calibration checks can run without ad hoc JSON input.
+- The CLI now exposes:
+  - `forecast-harness run-builtin-replay-suite`
+  - `forecast-harness summarize-replay-calibration`
+- The calibration summary now reports:
+  - overall top-branch accuracy
+  - overall root-strategy accuracy
+  - per-domain breakdown metrics
+  - domains needing attention when accuracy or inferred-field coverage drops below threshold
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
@@ -192,3 +201,4 @@ Verified current progress:
 - The source manifests now guide ingestion orchestration, but they do not yet schedule ingestion work automatically or acquire files from outside the local workspace.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.
 - The replay suite infrastructure now exists, but the repo still does not contain a large curated historical replay library or calibration loop that tunes model behavior against real outcomes.
+- The repo now has a small curated replay library and a deterministic calibration summary, but it still does not contain a large historical replay corpus or a tuning loop against real outcomes.

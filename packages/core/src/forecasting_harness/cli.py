@@ -10,10 +10,11 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
+from forecasting_harness.knowledge import load_builtin_replay_cases
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
+from forecasting_harness.replay import ReplayCase, run_replay_suite, summarize_calibration
 from forecasting_harness.retrieval import CorpusRegistry, detect_source_type, ingest_file
-from forecasting_harness.replay import ReplayCase, run_replay_suite
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
@@ -320,6 +321,20 @@ def run_replay_suite_command(
 ) -> None:
     cases = [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
     print(run_replay_suite(cases).model_dump_json())
+
+
+@app.command("run-builtin-replay-suite")
+def run_builtin_replay_suite_command() -> None:
+    print(run_replay_suite(load_builtin_replay_cases()).model_dump_json())
+
+
+@app.command("summarize-replay-calibration")
+def summarize_replay_calibration_command(
+    input: Path | None = typer.Option(None),
+) -> None:
+    cases = load_builtin_replay_cases() if input is None else [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
+    summary = summarize_calibration(run_replay_suite(cases))
+    print(summary.model_dump_json())
 
 
 @app.command("demo-run")

@@ -28,6 +28,9 @@ Date: 2026-04-21
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
+- The repo now also includes a built-in 10-case replay library plus deterministic calibration reporting through:
+  - `forecast-harness run-builtin-replay-suite`
+  - `forecast-harness summarize-replay-calibration`
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -40,6 +43,7 @@ Date: 2026-04-21
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
 - The domain registry now exposes reusable domain template packs for company action, election shock, market shock, supply-chain disruption, and regulatory enforcement in addition to the existing generic and interstate packs.
 - The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for six high-value domains.
+- The repo now also includes a repo-owned replay library under `knowledge/replays/`.
 - The repo-owned manifests now load through a typed `forecasting_harness.knowledge` module instead of remaining documentation-only files.
 - The retrieval layer now accepts manifest-specific semantic alias groups during search.
 - Evidence packet drafting now uses manifest evidence-category terms to diversify packet coverage and emit category-aware reasons.
@@ -50,7 +54,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `194 passed`
+  - Result: `197 passed`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -78,6 +82,11 @@ Date: 2026-04-21
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
+- The calibration pass on 2026-04-21 also verified:
+  - `forecast-harness run-builtin-replay-suite` -> `case_count = 10`
+  - `forecast-harness run-builtin-replay-suite` -> `top_branch_accuracy = 1.0`
+  - `forecast-harness run-builtin-replay-suite` -> `root_strategy_accuracy = 1.0`
+  - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
@@ -95,6 +104,8 @@ Date: 2026-04-21
   - supply scenarios collapsing onto the same root strategy because transport and source disruptions were not separated strongly enough
   - replay summaries that could not distinguish exact top-branch accuracy from root-strategy accuracy
   - branch reports that let unvisited root children outrank explored branches with a default `0.0` score
+  - replay evaluation that depended on ad hoc input files instead of a repo-owned calibration library
+  - package initialization that risked circular imports once replay loading moved into the shared knowledge layer
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`

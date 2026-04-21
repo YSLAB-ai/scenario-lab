@@ -54,6 +54,18 @@ class ReplaySuiteResult(BaseModel):
     results: list[ReplayCaseResult] = Field(default_factory=list)
 
 
+class CalibrationSummary(BaseModel):
+    case_count: int
+    overall_top_branch_accuracy: float
+    overall_root_strategy_accuracy: float
+    overall_evidence_source_accuracy: float
+    average_inferred_field_coverage: float
+    strongest_domains: list[str] = Field(default_factory=list)
+    weakest_domains: list[str] = Field(default_factory=list)
+    domains_needing_attention: list[str] = Field(default_factory=list)
+    domain_breakdown: dict[str, dict[str, float | int]] = Field(default_factory=dict)
+
+
 def _safe_accuracy(values: list[bool | None]) -> float:
     observed = [value for value in values if value is not None]
     if not observed:
@@ -175,4 +187,51 @@ def run_replay_suite(cases: list[ReplayCase], *, workspace_root: Path | None = N
         else 0.0,
         domain_breakdown=domain_breakdown,
         results=results,
+    )
+
+
+def _domain_composite_score(metrics: dict[str, float | int]) -> float:
+    return round(
+        float(metrics.get("top_branch_accuracy", 0.0)) * 0.35
+        + float(metrics.get("root_strategy_accuracy", 0.0)) * 0.4
+        + float(metrics.get("evidence_source_accuracy", 0.0)) * 0.1
+        + float(metrics.get("average_inferred_field_coverage", 0.0)) * 0.15,
+        3,
+    )
+
+
+def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: float = 0.85) -> CalibrationSummary:
+    enriched_breakdown: dict[str, dict[str, float | int]] = {}
+    weakest_domains: list[tuple[float, str]] = []
+    strongest_domains: list[tuple[float, str]] = []
+    domains_needing_attention: list[str] = []
+
+    for domain_pack, metrics in sorted(result.domain_breakdown.items()):
+        enriched_metrics = dict(metrics)
+        composite_score = _domain_composite_score(enriched_metrics)
+        enriched_metrics["composite_score"] = composite_score
+        enriched_breakdown[domain_pack] = enriched_metrics
+        weakest_domains.append((composite_score, domain_pack))
+        strongest_domains.append((composite_score, domain_pack))
+
+        if (
+            float(metrics.get("top_branch_accuracy", 0.0)) < attention_threshold
+            or float(metrics.get("root_strategy_accuracy", 0.0)) < attention_threshold
+            or float(metrics.get("average_inferred_field_coverage", 0.0)) < attention_threshold
+        ):
+            domains_needing_attention.append(domain_pack)
+
+    strongest = [domain for _, domain in sorted(strongest_domains, key=lambda item: (-item[0], item[1]))]
+    weakest = [domain for _, domain in sorted(weakest_domains, key=lambda item: (item[0], item[1]))]
+
+    return CalibrationSummary(
+        case_count=result.case_count,
+        overall_top_branch_accuracy=result.top_branch_accuracy,
+        overall_root_strategy_accuracy=result.root_strategy_accuracy,
+        overall_evidence_source_accuracy=result.evidence_source_accuracy,
+        average_inferred_field_coverage=result.average_inferred_field_coverage,
+        strongest_domains=strongest,
+        weakest_domains=weakest,
+        domains_needing_attention=sorted(domains_needing_attention),
+        domain_breakdown=enriched_breakdown,
     )
