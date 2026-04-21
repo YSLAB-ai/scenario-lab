@@ -3,8 +3,13 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from forecasting_harness.domain.base import DomainPack
+from forecasting_harness.domain.company_action import CompanyActionPack
+from forecasting_harness.domain.election_shock import ElectionShockPack
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
+from forecasting_harness.domain.market_shock import MarketShockPack
+from forecasting_harness.domain.regulatory_enforcement import RegulatoryEnforcementPack
+from forecasting_harness.domain.supply_chain_disruption import SupplyChainDisruptionPack
 
 PackFactory = Callable[[], DomainPack]
 
@@ -28,6 +33,11 @@ class DomainPackRegistry:
 
 def build_default_registry() -> DomainPackRegistry:
     registry = DomainPackRegistry()
+    registry.register("company-action", CompanyActionPack)
+    registry.register("election-shock", ElectionShockPack)
     registry.register("generic-event", GenericEventPack)
     registry.register("interstate-crisis", InterstateCrisisPack)
+    registry.register("market-shock", MarketShockPack)
+    registry.register("regulatory-enforcement", RegulatoryEnforcementPack)
+    registry.register("supply-chain-disruption", SupplyChainDisruptionPack)
     return registry
