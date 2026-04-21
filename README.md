@@ -91,6 +91,10 @@ Verified current progress:
   - `tree_nodes`
   - root `branches` preserved for the workflow/report layer
 - The workflow now also supports deterministic replay-suite execution through `forecast-harness run-replay-suite`, so curated scenario cases can be re-run and scored for top-branch accuracy, evidence-source accuracy, and inferred-field coverage.
+- The replay coverage now spans multiple domains in the checked test suite:
+  - `company-action`
+  - `market-shock`
+  - `regulatory-enforcement`
 - Post-search reporting now synthesizes:
   - root-route-aware `scenario_families`
   - explicit top-branch path detail
@@ -102,6 +106,15 @@ Verified current progress:
 - The company-action pack now infers richer causal state fields from approved evidence:
   - `board_cohesion`
   - `operational_stability`
+- The market-shock pack now infers richer causal state fields from approved evidence:
+  - `contagion_risk`
+  - `policy_optionality`
+- The regulatory-enforcement pack now infers richer causal state fields from approved evidence:
+  - `remedy_severity`
+  - `litigation_readiness`
+- The supply-chain-disruption pack now infers richer causal state fields from approved evidence:
+  - `supplier_concentration`
+  - `customer_penalty_pressure`
 - The checked-in 10-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate and company templates instead of collapsing those scenarios into one repeated root strategy.
 - The latest verified smoke campaign on 2026-04-21 produced these top branches:
   - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
@@ -109,6 +122,10 @@ Verified current progress:
   - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
+  - `Market rate shock` -> `Emergency liquidity`
+  - `Regulator ad-tech` -> `Internal remediation`
+  - `Supply rare-earth` -> `Expedite alternatives`
+  - `Supplier flooding` -> `Expedite alternatives`
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
