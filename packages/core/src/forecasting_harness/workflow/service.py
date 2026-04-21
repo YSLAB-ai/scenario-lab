@@ -214,6 +214,51 @@ class WorkflowService:
         )
         return packet
 
+    def curate_evidence_draft(self, run_id: str, revision_id: str, evidence_ids: list[str]) -> EvidencePacket:
+        packet = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
+        items_by_id = {item.evidence_id: item for item in packet.items}
+        unknown_ids = [evidence_id for evidence_id in evidence_ids if evidence_id not in items_by_id]
+        if unknown_ids:
+            raise ValueError(f"unknown evidence ids: {', '.join(unknown_ids)}")
+
+        curated_packet = packet.model_copy(
+            update={"items": [item for item in packet.items if item.evidence_id in evidence_ids]}
+        )
+        self.repository.write_revision_json(
+            run_id,
+            "evidence",
+            revision_id,
+            curated_packet.model_dump(mode="json"),
+            approved=False,
+        )
+        self.repository.append_event(
+            run_id,
+            "evidence-curated",
+            {"revision_id": revision_id, "evidence_ids": evidence_ids},
+        )
+        return curated_packet
+
+    def begin_revision_update(self, run_id: str, revision_id: str, *, parent_revision_id: str) -> dict[str, object]:
+        intake = self.repository.load_revision_model(run_id, "intake", parent_revision_id, IntakeDraft, approved=True)
+        evidence = self.repository.load_revision_model(run_id, "evidence", parent_revision_id, EvidencePacket, approved=True)
+        self.save_intake_draft(run_id, revision_id, intake, parent_revision_id=parent_revision_id)
+        self.save_evidence_draft(
+            run_id,
+            revision_id,
+            evidence.model_copy(update={"revision_id": revision_id}),
+            parent_revision_id=parent_revision_id,
+        )
+        self.repository.append_event(
+            run_id,
+            "revision-update-started",
+            {"revision_id": revision_id, "parent_revision_id": parent_revision_id},
+        )
+        return {
+            "revision_id": revision_id,
+            "parent_revision_id": parent_revision_id,
+            "copied_sections": ["intake", "evidence"],
+        }
+
     def approve_revision(self, run_id: str, revision_id: str, assumptions: AssumptionSummary) -> RunRecord:
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
