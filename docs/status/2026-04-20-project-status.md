@@ -71,7 +71,7 @@ Date: 2026-04-21
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
   - Result: `246 passed in 2.69s`
-- A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
+- A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
   - `india-pakistan-crisis`
@@ -79,6 +79,8 @@ Date: 2026-04-21
   - `boeing-post-reporting`
   - `election-debate-collapse`
   - `market-rate-shock`
+  - `pandemic-first-wave`
+  - `pandemic-vaccine-wave`
   - `regulator-adtech`
   - `supply-rare-earth`
   - `supplier-flooding`
@@ -93,6 +95,15 @@ Date: 2026-04-21
   - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
+- A direct end-to-end rerun of the checked-in smoke campaign on the actor-utility branch on 2026-04-21 also verified:
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - Result: `16 passed in 0.65s`
+  - Direct branch outputs:
+    - `Pandemic first wave` -> `Containment push (coordination holds)`
+    - `Pandemic vaccine wave` -> `Vaccine acceleration (uptake improves)`
+    - `Regulator ad-tech` -> `Internal remediation`
+    - `Supply rare-earth` -> `Expedite alternatives`
+    - `Supplier flooding` -> `Reserve logistics`
 - The next deepening pass on 2026-04-21 also verified richer evidence-conditioned state construction and replay coverage for:
   - `election-shock`
   - `market-shock`

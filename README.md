@@ -133,9 +133,9 @@ Verified current progress:
 - The supply-chain-disruption pack now infers richer causal state fields from approved evidence:
   - `supplier_concentration`
   - `customer_penalty_pressure`
-- The checked-in 10-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate, company, and supply templates instead of collapsing those scenarios into one repeated root strategy.
+- The checked-in 12-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate, company, supply, and pandemic templates instead of collapsing those scenarios into one repeated root strategy.
 - The checked-in smoke and replay coverage now also includes a from-zero `pandemic-response` benchmark pack built inside the repo from the generic harness interfaces rather than extending an existing template.
-- The latest verified smoke campaign on 2026-04-21 produced these top branches:
+- The latest verified direct smoke rerun on 2026-04-21 used the checked-in 12-scenario campaign in `packages/core/tests/test_smoke_campaign.py` and produced these top branches:
   - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
   - `Japan-China Strait` -> `Signal resolve (managed signal)`
   - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
@@ -143,6 +143,8 @@ Verified current progress:
   - `Boeing post-reporting` -> `Contain message (message lands)`
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
+  - `Pandemic first wave` -> `Containment push (coordination holds)`
+  - `Pandemic vaccine wave` -> `Vaccine acceleration (uptake improves)`
   - `Regulator ad-tech` -> `Internal remediation`
   - `Supply rare-earth` -> `Expedite alternatives`
   - `Supplier flooding` -> `Reserve logistics`
@@ -225,11 +227,12 @@ Verified current progress:
 - The CLI now exposes `draft-retrieval-plan` and `draft-ingestion-plan` so adapters can ask the core what to search for and what the local corpus is still missing.
 - The CLI now exposes `recommend-ingestion-files` and `batch-ingest-recommended` so the core can map local files to domain/source roles and ingest the highest-priority candidates directly.
 - Batch ingestion now stores recommended tags such as `domain`, `source_role`, and top `evidence_category` on the ingested document rows.
-- A checked-in 10-scenario smoke campaign now verifies realistic runs across:
+- A checked-in 12-scenario smoke campaign now verifies realistic runs across:
   - `interstate-crisis`
   - `company-action`
   - `election-shock`
   - `market-shock`
+  - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
 - That campaign exposed and the current code now fixes:

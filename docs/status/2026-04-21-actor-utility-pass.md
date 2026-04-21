@@ -50,6 +50,22 @@ Date: 2026-04-21
 - Scoped replay verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_replay.py packages/core/tests/test_replay_library.py -q`
   - Result: `7 passed`
+- Checked-in smoke campaign verification passed:
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - Result: `16 passed in 0.65s`
+- Direct end-to-end smoke rerun on the same branch verified these top branches across the checked-in 12 scenarios:
+  - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
+  - `Japan-China Strait` -> `Signal resolve (managed signal)`
+  - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
+  - `Apple CEO transition` -> `Stakeholder reset`
+  - `Boeing post-reporting` -> `Contain message (message lands)`
+  - `Election debate collapse` -> `Message reset (reset holds)`
+  - `Market rate shock` -> `Emergency liquidity`
+  - `Pandemic first wave` -> `Containment push (coordination holds)`
+  - `Pandemic vaccine wave` -> `Vaccine acceleration (uptake improves)`
+  - `Regulator ad-tech` -> `Internal remediation`
+  - `Supply rare-earth` -> `Expedite alternatives`
+  - `Supplier flooding` -> `Reserve logistics`
 - Required full-suite verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
   - Result: `246 passed in 2.69s`
