@@ -7,6 +7,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from forecasting_harness.retrieval.semantic import (
+    EMBEDDING_VERSION,
+    cosine_similarity,
+    deserialize_vector,
+    encode_text,
+    serialize_vector,
+)
+
 
 def parse_published_at(published_at: str | None) -> str | None:
     if published_at is None:
@@ -51,6 +59,18 @@ class CorpusRegistry:
                 USING fts5(source_id, chunk_id, title, published_at, source_type, tags, location, content)
                 """
             )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chunk_vectors (
+                    source_id TEXT NOT NULL,
+                    chunk_id TEXT NOT NULL,
+                    embedding_version TEXT NOT NULL,
+                    vector_json TEXT NOT NULL,
+                    token_count INTEGER NOT NULL,
+                    PRIMARY KEY (source_id, chunk_id)
+                )
+                """
+            )
 
     def register_document(
         self,
@@ -82,6 +102,7 @@ class CorpusRegistry:
         with self._connect() as connection:
             connection.execute("DELETE FROM documents WHERE source_id = ?", (source_id,))
             connection.execute("DELETE FROM chunks WHERE source_id = ?", (source_id,))
+            connection.execute("DELETE FROM chunk_vectors WHERE source_id = ?", (source_id,))
             connection.execute(
                 """
                 INSERT INTO documents (source_id, title, source_type, path, published_at, tags, chunk_count, ingested_at)
@@ -113,6 +134,22 @@ class CorpusRegistry:
                         json.dumps(tags, sort_keys=True),
                         chunk["location"],
                         chunk["content"],
+                    )
+                    for chunk in normalized_chunks
+                ],
+            )
+            connection.executemany(
+                """
+                INSERT INTO chunk_vectors (source_id, chunk_id, embedding_version, vector_json, token_count)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        source_id,
+                        chunk["chunk_id"],
+                        EMBEDDING_VERSION,
+                        serialize_vector(encode_text(chunk["content"])[0]),
+                        encode_text(chunk["content"])[1],
                     )
                     for chunk in normalized_chunks
                 ],
@@ -178,3 +215,47 @@ class CorpusRegistry:
                 result["tags"] = {}
             results.append(result)
         return results
+
+    def search_semantic_chunks(self, text: str, *, limit: int = 20) -> list[dict[str, Any]]:
+        query_vector, token_count = encode_text(text)
+        if token_count == 0:
+            return []
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    chunks.source_id,
+                    chunks.chunk_id,
+                    chunks.title,
+                    chunks.published_at,
+                    chunks.source_type,
+                    chunks.tags,
+                    chunks.location,
+                    chunks.content,
+                    chunk_vectors.vector_json
+                FROM chunks
+                JOIN chunk_vectors
+                  ON chunks.source_id = chunk_vectors.source_id
+                 AND chunks.chunk_id = chunk_vectors.chunk_id
+                WHERE chunk_vectors.embedding_version = ?
+                """,
+                (EMBEDDING_VERSION,),
+            ).fetchall()
+
+        scored: list[dict[str, Any]] = []
+        for row in rows:
+            result = dict(row)
+            similarity = cosine_similarity(query_vector, deserialize_vector(result.pop("vector_json")))
+            if similarity <= 0.0:
+                continue
+            tags = result.get("tags")
+            if isinstance(tags, str) and tags:
+                result["tags"] = json.loads(tags)
+            else:
+                result["tags"] = {}
+            result["semantic_score"] = similarity
+            scored.append(result)
+
+        scored.sort(key=lambda item: (-item["semantic_score"], item["source_id"], item["chunk_id"]))
+        return scored[:limit]

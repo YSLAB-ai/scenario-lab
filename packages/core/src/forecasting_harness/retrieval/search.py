@@ -32,18 +32,39 @@ class SearchEngine:
         freshness_policy: dict[str, float] | None = None,
     ) -> list[dict[str, Any]]:
         freshness_policy = freshness_policy or {}
+        merged: dict[tuple[str, str], dict[str, Any]] = {}
+
+        for rank, row in enumerate(self.registry.search_chunks(query.text), start=1):
+            key = (str(row["source_id"]), str(row["chunk_id"]))
+            result = dict(row)
+            result["lexical_score"] = 1.0 / rank
+            result["semantic_score"] = 0.0
+            merged[key] = result
+
+        for row in self.registry.search_semantic_chunks(query.text):
+            key = (str(row["source_id"]), str(row["chunk_id"]))
+            if key in merged:
+                merged[key]["semantic_score"] = float(row.get("semantic_score", 0.0))
+                continue
+            result = dict(row)
+            result["lexical_score"] = 0.0
+            result["semantic_score"] = float(result.get("semantic_score", 0.0))
+            merged[key] = result
+
         hits: list[dict[str, Any]] = []
-        for row in self.registry.search_chunks(query.text):
-            tags = row.get("tags") or {}
+        for result in merged.values():
+            tags = result.get("tags") or {}
             if any(tags.get(key) != value for key, value in query.filters.items()):
                 continue
 
-            result = dict(row)
             domain_weight = 1.0
             domain_name = tags.get("domain")
             if isinstance(domain_name, str):
                 domain_weight = freshness_policy.get(domain_name, 1.0)
-            result["score"] = self.freshness_multiplier(result["published_at"]) * domain_weight
+            lexical_score = float(result.get("lexical_score", 0.0))
+            semantic_score = float(result.get("semantic_score", 0.0))
+            hybrid_score = (lexical_score * 0.6) + (semantic_score * 0.4)
+            result["score"] = hybrid_score * self.freshness_multiplier(result["published_at"]) * domain_weight
             hits.append(result)
 
         hits.sort(key=lambda item: (-item["score"], item["source_id"]))
