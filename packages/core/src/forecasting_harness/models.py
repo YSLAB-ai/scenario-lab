@@ -13,6 +13,12 @@ FieldStatus = Literal["observed", "inferred", "unknown"]
 class BehaviorProfile(BaseModel):
     risk_tolerance: float | None = None
     escalation_tolerance: float | None = None
+    domestic_sensitivity: float | None = Field(default=None, ge=0.0, le=1.0)
+    economic_pain_tolerance: float | None = Field(default=None, ge=0.0, le=1.0)
+    negotiation_openness: float | None = Field(default=None, ge=0.0, le=1.0)
+    reputational_sensitivity: float | None = Field(default=None, ge=0.0, le=1.0)
+    alliance_dependence: float | None = Field(default=None, ge=0.0, le=1.0)
+    coercive_bias: float | None = Field(default=None, ge=0.0, le=1.0)
     notes: str | None = None
 
 
@@ -40,6 +46,11 @@ class ObjectiveProfile(BaseModel):
     veto_thresholds: dict[str, float]
     risk_tolerance: float = Field(ge=0.0, le=1.0)
     asymmetry_penalties: dict[str, float]
+    actor_metric_weights: dict[str, float] = Field(default_factory=dict)
+    actor_weights: dict[str, float] = Field(default_factory=dict)
+    aggregation_mode: Literal["balanced-system", "focal-actor"] = "balanced-system"
+    focal_actor_id: str | None = None
+    destabilization_penalty: float = 0.0
 
     def scalarize(self, metrics: dict[str, float]) -> float:
         unknown_metrics = sorted(metric for metric in metrics if metric not in self.metric_weights)
