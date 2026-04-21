@@ -21,9 +21,12 @@ Date: 2026-04-20
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
 - The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
+- The simulation engine now performs deterministic multi-step MCTS over `BeliefState` and preserves top-level `branches` for workflow compatibility.
+- The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
+- The `generic-event` and `interstate-crisis` reference packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `132 passed`
+  - Result: `135 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -62,6 +65,11 @@ Date: 2026-04-20
   - the curated evidence draft retained source id `source`
   - `summarize-revision` returned top branch `Signal resolve`
   - `reports/r1.report.md` existed after simulation
+- A fresh-install simulation smoke test on 2026-04-20 also verified:
+  - `simulation/r1.approved.json` contained `search_mode = mcts`
+  - `simulation/r1.approved.json` contained `iterations = 18`
+  - the top branch label remained `Signal resolve`
+  - `reports/r1.report.md` existed after simulation
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -90,17 +98,16 @@ Date: 2026-04-20
 - The current analyst workflow is still not a finished conversational adapter loop.
 - The adapters can now query guidance, conversation-turn, and summary payloads and use direct structured input for the normal path, but they are still documentation/skill scaffolding rather than a finished conversational analyst experience.
 - Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
-- The simulation engine is still a one-step branch enumerator. It is not yet a full MCTS implementation with tree expansion, rollouts, and backpropagation.
-- The `interstate-crisis` pack is still a reference pack:
-  - action generation is fixed
-  - transition sampling returns the input state
-  - scoring is fixed
+- The simulation engine is now deterministic MCTS, but it does not yet implement:
+  - warm-start subtree reuse
+  - transposition-table deduplication across equivalent states
+  - calibrated real-world probabilities
+- The `interstate-crisis` pack is still a reference pack rather than a mature validated model.
 - The system does not yet implement:
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
   - mature multi-domain packs
   - historical replay and calibration
-  - full MCTS search
   - rule extraction / knowledge compiler
 
 ## Known Issues and Risks
@@ -132,7 +139,11 @@ Date: 2026-04-20
 - `667072a` `feat: add conversation turn model`
 - `f4d66e3` `feat: add conversation turn resolution`
 - `77b57f4` `feat: add conversation turn command`
+- `a283fb2` `test: define deterministic mcts engine behavior`
+- `0e56542` `feat: add deterministic mcts simulation engine`
+- `840a293` `feat: add generic domain search hooks`
+- `4461457` `feat: add deterministic multi-step reference transitions`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.

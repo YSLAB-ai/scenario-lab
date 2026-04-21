@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.models import BeliefField
 
 
 def _anchor_timestamp(state: Any) -> datetime:
@@ -26,6 +25,8 @@ def _field_value(state: Any, field_name: str, default: float) -> float:
 
 
 def _with_updates(state: Any, *, phase: str, field_updates: dict[str, float]) -> Any:
+    from forecasting_harness.models import BeliefField
+
     existing_fields = dict(getattr(state, "fields", {}))
     timestamp = _anchor_timestamp(state)
     for field_name, value in field_updates.items():

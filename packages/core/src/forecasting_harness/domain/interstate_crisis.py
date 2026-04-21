@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.models import BeliefField
 from forecasting_harness.workflow.models import IntakeDraft
 
 if TYPE_CHECKING:
@@ -37,6 +36,8 @@ def _string_field(state: Any, field_name: str, default: str) -> str:
 
 
 def _with_updates(state: Any, *, phase: str, field_updates: dict[str, float | str]) -> Any:
+    from forecasting_harness.models import BeliefField
+
     existing_fields = dict(getattr(state, "fields", {}))
     timestamp = _anchor_timestamp(state)
     for field_name, value in field_updates.items():
@@ -105,8 +106,8 @@ class InterstateCrisisPack(DomainPack):
         return getattr(state, "phase", None) == "settlement-stalemate"
 
     def propose_actions(self, state: "BeliefState") -> list[dict[str, Any]]:
-        phase = state.phase or "trigger"
-        leader_style = _string_field(state, "leader_style", "cautious")
+        phase = getattr(state, "phase", None) or "trigger"
+        leader_style = _string_field(state, "leader_style", "cautious") if state is not None else "cautious"
         hawkish_adjustment = 0.1 if leader_style == "hawkish" else 0.0
 
         if phase == "trigger":
