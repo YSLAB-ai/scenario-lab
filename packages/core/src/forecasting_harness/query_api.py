@@ -16,6 +16,8 @@ def summarize_top_branches(branches: list[dict[str, Any]], limit: int = 3) -> li
             "branch_id": branch["branch_id"],
             "label": branch["label"],
             "score": _normalize_score(branch),
+            "aggregate_score_breakdown": dict(branch.get("aggregate_score_breakdown", {})),
+            "terminal_phase": branch.get("terminal_phase"),
         }
         for branch in top_branches
     ]

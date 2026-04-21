@@ -525,6 +525,52 @@ def test_draft_approval_packet_summarizes_evidence_and_warnings(tmp_path: Path) 
     assert "known unknowns remain unresolved" in packet.warnings
 
 
+def test_draft_approval_packet_includes_actor_preferences_and_recommended_run_lens(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess domestic resolve and alliance security after the exchange of strikes.",
+        primary_actors=["United States", "Iran"],
+        trigger="U.S. leaders weigh domestic resolve and alliance security commitments after the exchange of strikes.",
+        current_phase="trigger",
+        time_horizon="30d",
+        known_constraints=["United States alliance security backing remains visible."],
+        known_unknowns=["United States domestic audience response is still uncertain."],
+    )
+    evidence = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="doc-1",
+                source_title="Doc 1",
+                reason="Relevant context",
+                raw_passages=[
+                    (
+                        "United States officials described domestic political pressure, public resolve, "
+                        "and alliance security backing as the main constraints."
+                    )
+                ],
+            )
+        ],
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    packet = service.draft_approval_packet("crisis-1", "r1")
+
+    assert packet.actor_preferences
+    united_states = next(item for item in packet.actor_preferences if item["actor_id"] == "united-states")
+    assert united_states["preferences"]["domestic_sensitivity"] >= 0.7
+    assert united_states["preferences"]["alliance_dependence"] >= 0.7
+    assert packet.recommended_run_lens["name"] == "domestic-politics-first"
+    assert packet.recommended_run_lens["aggregation_mode"] == "focal-actor"
+    assert packet.recommended_run_lens["focal_actor_id"] == "united-states"
+
+
 def test_summarize_run_returns_revision_statuses(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)
@@ -741,8 +787,59 @@ def test_simulate_revision_writes_belief_state_summary_and_report(tmp_path: Path
     assert "# Scenario Report" in report
     assert "- Revision: r1" in report
     assert "- Unsupported assumptions: 1" in report
+    assert "## Actor Utility Summary" in report
+    assert "## Aggregation Lens" in report
+    assert "## Top Branch Aggregate Breakdown" in report
     assert "## Scenario Families" in report
     assert "low-credibility exploratory run" not in report
+
+
+def test_simulate_revision_honors_approved_objective_profile_over_recommended_lens(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess domestic resolve and alliance security after the exchange of strikes.",
+        primary_actors=["United States", "Iran"],
+        trigger="U.S. leaders weigh domestic resolve and alliance security commitments after the exchange of strikes.",
+        current_phase="trigger",
+        time_horizon="30d",
+        known_constraints=["United States alliance security backing remains visible."],
+        known_unknowns=["United States domestic audience response is still uncertain."],
+    )
+    evidence = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="doc-1",
+                source_title="Doc 1",
+                reason="Relevant context",
+                raw_passages=[
+                    (
+                        "United States officials described domestic political pressure, public resolve, "
+                        "and alliance security backing as the main constraints."
+                    )
+                ],
+            )
+        ],
+    )
+    assumptions = AssumptionSummary(summary=["assumption-1"], objective_profile_name="balanced")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    result = service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    assert result["aggregation_lens"]["name"] == "balanced-system"
+    assert result["aggregation_lens"]["aggregation_mode"] == "balanced-system"
+    assert result["recommended_run_lens"]["name"] == "domestic-politics-first"
+    assert result["recommended_run_lens"]["focal_actor_id"] == "united-states"
+    report = (repository.run_dir("crisis-1") / "reports" / "r1.report.md").read_text(encoding="utf-8")
+    assert "Lens: balanced-system" in report
+    assert "Recommended lens: domestic-politics-first" in report
 
 
 def test_generate_report_writes_revision_specific_reports_and_credibility_note(tmp_path: Path) -> None:
@@ -1518,6 +1615,56 @@ def test_simulate_revision_reuses_parent_tree_when_child_revision_is_compatible(
     assert result["reuse_summary"]["source_revision_id"] == "r1"
     assert result["reuse_summary"]["reused_nodes"] > 0
     assert result["reuse_summary"]["skipped_nodes"] > 0
+
+
+def test_simulate_revision_reuses_parent_tree_when_only_recommended_lens_changes(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        focus_entities=["Japan", "China"],
+        current_development="Naval transit through the Taiwan Strait",
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+    evidence = _make_revision_inputs("r1", evidence_count=2)[1]
+    assumptions = AssumptionSummary(summary=["assumption-1"], objective_profile_name="balanced")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+    service.approve_revision("crisis-1", "r2", assumptions.model_copy())
+
+    original_recommend = pack.recommend_objective_profile
+
+    def _alternate_recommendation(intake_arg, state_arg):
+        if state_arg.revision_id == "r2":
+            from forecasting_harness.objectives import objective_profile_by_name
+
+            return objective_profile_by_name("domestic-politics-first").model_copy(
+                update={"focal_actor_id": "japan"}
+            )
+        return original_recommend(intake_arg, state_arg)
+
+    pack.recommend_objective_profile = _alternate_recommendation  # type: ignore[method-assign]
+    try:
+        result = service.simulate_revision("crisis-1", "r2", pack=pack)
+    finally:
+        pack.recommend_objective_profile = original_recommend  # type: ignore[method-assign]
+
+    child_state = repository.load_revision_model("crisis-1", "belief-state", "r2", BeliefState, approved=True)
+    assert child_state.objectives["selected_run_lens"] == "balanced-system"
+    assert "recommended_run_lens" not in child_state.objectives
+    assert result["aggregation_lens"]["name"] == "balanced-system"
+    assert result["recommended_run_lens"]["name"] == "domestic-politics-first"
+    assert result["reuse_summary"]["enabled"] is True
+    assert result["reuse_summary"]["source_revision_id"] == "r1"
+    assert result["reuse_summary"]["reused_nodes"] > 0
 
 
 def test_revision_record_tracks_lifecycle_timestamps(tmp_path: Path) -> None:

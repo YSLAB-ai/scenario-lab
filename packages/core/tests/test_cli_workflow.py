@@ -207,7 +207,10 @@ def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
     assert (run_dir / "belief-state" / "r1.approved.json").exists()
     assert (run_dir / "simulation" / "r1.approved.json").exists()
     assert (run_dir / "reports" / "r1.report.md").exists()
-    assert "- Unsupported assumptions: 1" in (run_dir / "reports" / "r1.report.md").read_text(encoding="utf-8")
+    report = (run_dir / "reports" / "r1.report.md").read_text(encoding="utf-8")
+    assert "- Unsupported assumptions: 1" in report
+    assert "## Actor Utility Summary" in report
+    assert "## Aggregation Lens" in report
 
 
 def test_draft_evidence_packet_command(tmp_path: Path) -> None:
@@ -716,6 +719,8 @@ def test_draft_approval_packet_command_returns_grouped_summary(tmp_path: Path) -
     payload = json.loads(result.stdout)
     assert payload["revision_id"] == "r1"
     assert "warnings" in payload
+    assert "actor_preferences" in payload
+    assert "recommended_run_lens" in payload
     assert payload["evidence_summary"][0]["source_id"] == "doc-1"
 
 

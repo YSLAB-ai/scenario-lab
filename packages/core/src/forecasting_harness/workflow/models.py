@@ -132,6 +132,8 @@ class ApprovalPacket(BaseModel):
     intake_summary: dict[str, object]
     assumption_summary: list[str] = Field(default_factory=list)
     objective_profile: dict[str, object]
+    actor_preferences: list[dict[str, object]] = Field(default_factory=list)
+    recommended_run_lens: dict[str, object] = Field(default_factory=dict)
     evidence_summary: list[dict[str, object]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
