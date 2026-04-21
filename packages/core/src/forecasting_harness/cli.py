@@ -15,7 +15,10 @@ from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.knowledge import load_builtin_replay_cases, summarize_builtin_replay_corpus
 from forecasting_harness.models import BeliefState, ObjectiveProfile
-from forecasting_harness.objectives import default_objective_profile
+from forecasting_harness.objectives import (
+    default_objective_profile,
+    normalize_selected_objective_profile_name,
+)
 from forecasting_harness.replay import ReplayCase, run_replay_suite, summarize_calibration
 from forecasting_harness.retrieval import CorpusRegistry, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
@@ -222,7 +225,7 @@ def _assumptions_from_flags(
     return AssumptionSummary(
         summary=assumptions or [],
         suggested_actors=suggested_actors or [],
-        objective_profile_name=objective_profile_name or "balanced",
+        objective_profile_name=normalize_selected_objective_profile_name(objective_profile_name),
     )
 
 
@@ -629,14 +632,17 @@ def approve_revision(
     suggested_actor: list[str] | None = typer.Option(None),
     objective_profile_name: str | None = typer.Option(None),
 ) -> None:
-    if input is not None:
-        payload = AssumptionSummary.model_validate_json(input.read_text(encoding="utf-8"))
-    else:
-        payload = _assumptions_from_flags(
-            assumptions=assumption,
-            suggested_actors=suggested_actor,
-            objective_profile_name=objective_profile_name,
-        )
+    try:
+        if input is not None:
+            payload = AssumptionSummary.model_validate_json(input.read_text(encoding="utf-8"))
+        else:
+            payload = _assumptions_from_flags(
+                assumptions=assumption,
+                suggested_actors=suggested_actor,
+                objective_profile_name=objective_profile_name,
+            )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="objective_profile_name") from exc
     _service(root).approve_revision(run_id=run_id, revision_id=revision_id, assumptions=payload)
     print(f"approved {revision_id}")
 

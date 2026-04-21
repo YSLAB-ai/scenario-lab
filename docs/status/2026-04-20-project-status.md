@@ -19,6 +19,7 @@ Date: 2026-04-21
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
 - The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
+- Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The repo now also supports domain-scoped self-improvement through:
@@ -35,11 +36,14 @@ Date: 2026-04-21
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
+- Belief-state compilation now also infers actor utility preference fields from approved evidence and case framing, including `domestic_sensitivity`, `economic_pain_tolerance`, `negotiation_openness`, `reputational_sensitivity`, `alliance_dependence`, and `coercive_bias`.
 - The repo now also includes a built-in 12-case replay library plus deterministic calibration reporting through:
   - `forecast-harness run-builtin-replay-suite`
   - `forecast-harness summarize-replay-calibration`
+- The interstate replay slice inside that 12-case corpus now includes `philippines-china-shoal`, a preference-differentiated shoal crisis case that preserves full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
+- Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The company-action pack now infers `board_cohesion` and `operational_stability` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The market-shock pack now infers `contagion_risk` and `policy_optionality` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -64,9 +68,9 @@ Date: 2026-04-21
 - The workflow now exposes concrete ingest tasks for missing evidence categories.
 - The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
-- The test suite passed on 2026-04-21 with:
-  - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `213 passed`
+- The latest full-suite verification in this worktree on 2026-04-21 ran:
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
+  - Result: `246 passed in 2.69s`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`

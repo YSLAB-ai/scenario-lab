@@ -52,7 +52,7 @@ class IntakeDraft(BaseModel):
 class AssumptionSummary(BaseModel):
     summary: list[str] = Field(default_factory=list)
     suggested_actors: list[str] = Field(default_factory=list)
-    objective_profile_name: str = "balanced"
+    objective_profile_name: str = ""
 
 
 class EvidencePacketItem(BaseModel):

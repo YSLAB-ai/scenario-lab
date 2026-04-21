@@ -63,7 +63,7 @@ Verified current progress:
   - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `213 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The latest full-suite verification in this worktree on 2026-04-21 ran `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q` and returned `246 passed in 2.69s`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -87,6 +87,17 @@ Verified current progress:
   - concrete ingest tasks
   - ranked local file recommendations
   - prioritized batch ingestion into the corpus
+- Belief-state compilation now also infers actor utility preference fields from approved evidence and case framing, including:
+  - `domestic_sensitivity`
+  - `economic_pain_tolerance`
+  - `negotiation_openness`
+  - `reputational_sensitivity`
+  - `alliance_dependence`
+  - `coercive_bias`
+- Grouped approval packets now expose:
+  - `actor_preferences`
+  - `recommended_run_lens`
+  - focal-actor lens metadata when the recommended run lens is actor-centered
 - The simulation engine now runs deterministic multi-step MCTS over `BeliefState` and writes simulation payloads with:
   - `search_mode = "mcts"`
   - `iterations`
@@ -136,6 +147,11 @@ Verified current progress:
   - `Supply rare-earth` -> `Expedite alternatives`
   - `Supplier flooding` -> `Reserve logistics`
 - The replay suite now measures both exact top-branch matches and root-strategy matches per domain.
+- Simulation outputs and generated reports now expose:
+  - `actor_utility_summary`
+  - selected and recommended aggregation-lens summaries
+  - branch-level actor impact metrics
+  - top-branch aggregate score breakdowns
 - The repo now also includes a protected-surface domain evolution pipeline that can:
   - record explicit user suggestions per domain
   - derive self-detected suggestions from replay misses
@@ -182,6 +198,7 @@ Verified current progress:
   - `synthesize-domain` created branch `codex/domain-synthesis-product-recall-20260421`
   - the branch head commit message was `feat: synthesize product-recall domain`
   - the generated `product-recall` pack imported successfully after synthesis
+- The built-in replay corpus still contains 12 cases, and the interstate replay slice now includes `philippines-china-shoal` to pin a preference-differentiated case where approval and report surfaces expose actor preferences plus a `domestic-politics-first` recommended run lens.
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:

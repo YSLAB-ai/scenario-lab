@@ -14,13 +14,13 @@ def _actor_id_from_name(name: str) -> str:
 
 
 def _dedupe_actor_names(values: list[str]) -> list[str]:
-    seen_actor_ids: set[str] = set()
+    seen_actor_families: set[str] = set()
     unique_values: list[str] = []
     for value in values:
-        actor_id = _actor_id_from_name(value)
-        if actor_id in seen_actor_ids:
+        actor_family = _canonical_actor_family(value)
+        if actor_family in seen_actor_families:
             continue
-        seen_actor_ids.add(actor_id)
+        seen_actor_families.add(actor_family)
         unique_values.append(value)
     return unique_values
 
@@ -212,7 +212,7 @@ def compile_belief_state(
         )
     actors = [
         Actor(
-            actor_id=_actor_id_from_name(name),
+            actor_id=_canonical_actor_family(name),
             name=name,
             behavior_profile=_infer_behavior_profile(name, intake, assumptions, approved_evidence_items or []),
         )

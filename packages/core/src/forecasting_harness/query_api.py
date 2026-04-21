@@ -9,8 +9,36 @@ def _normalize_score(branch: dict[str, Any]) -> float:
     return 0 if score is None else score
 
 
-def summarize_top_branches(branches: list[dict[str, Any]], limit: int = 3) -> list[dict[str, Any]]:
-    top_branches = sorted(branches, key=_normalize_score, reverse=True)[:limit]
+def _branch_order_key(branch: dict[str, Any]) -> tuple[bool, float, int, float, str]:
+    visits = int(branch.get("visits", 0) or 0)
+    prior = float(branch.get("prior", 0.0) or 0.0)
+    branch_id = str(branch.get("branch_id") or "")
+    return (
+        visits > 0,
+        _normalize_score(branch),
+        visits,
+        prior,
+        branch_id,
+    )
+
+
+def summarize_top_branches(
+    branches: list[dict[str, Any]],
+    limit: int = 3,
+    *,
+    detailed: bool = False,
+) -> list[dict[str, Any]]:
+    top_branches = sorted(branches, key=_branch_order_key, reverse=True)[:limit]
+    if not detailed:
+        return [
+            {
+                "branch_id": branch["branch_id"],
+                "label": branch["label"],
+                "score": _normalize_score(branch),
+            }
+            for branch in top_branches
+        ]
+
     return [
         {
             "branch_id": branch["branch_id"],

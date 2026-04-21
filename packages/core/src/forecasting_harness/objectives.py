@@ -1,12 +1,28 @@
 from forecasting_harness.models import ObjectiveProfile
 
 
-def objective_profile_by_name(name: str) -> ObjectiveProfile:
-    profile_name = {
+def normalize_objective_profile_name(name: str) -> str:
+    normalized_name = {
         "balanced": "balanced-system",
         "balanced-system": "balanced-system",
         "domestic-politics-first": "domestic-politics-first",
     }.get(name, name)
+    if normalized_name not in {"balanced-system", "domestic-politics-first"}:
+        raise ValueError(f"unknown objective profile: {name}")
+    return normalized_name
+
+
+def normalize_selected_objective_profile_name(name: str | None) -> str:
+    if name is None:
+        return ""
+    stripped_name = name.strip()
+    if not stripped_name:
+        return ""
+    return normalize_objective_profile_name(stripped_name)
+
+
+def objective_profile_by_name(name: str) -> ObjectiveProfile:
+    profile_name = normalize_objective_profile_name(name)
 
     if profile_name == "balanced-system":
         return ObjectiveProfile(
@@ -57,9 +73,6 @@ def objective_profile_by_name(name: str) -> ObjectiveProfile:
             focal_actor_id=None,
             destabilization_penalty=0.15,
         )
-
-    raise KeyError(f"unknown objective profile: {name}")
-
 
 def default_objective_profile() -> ObjectiveProfile:
     return objective_profile_by_name("balanced")

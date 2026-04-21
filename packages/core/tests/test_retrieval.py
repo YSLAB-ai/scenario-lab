@@ -51,6 +51,54 @@ def test_query_api_summarizes_top_branches_without_loading_full_tree():
     ) == [{"branch_id": "b1", "label": "de-escalation", "score": 0.7}]
 
 
+def test_query_api_can_return_detailed_top_branch_data():
+    assert summarize_top_branches(
+        [
+            {
+                "branch_id": "b1",
+                "score": 0.7,
+                "label": "de-escalation",
+                "terminal_phase": "settlement",
+                "aggregate_score_breakdown": {"system": 0.4},
+            }
+        ],
+        detailed=True,
+    ) == [
+        {
+            "branch_id": "b1",
+            "label": "de-escalation",
+            "score": 0.7,
+            "aggregate_score_breakdown": {"system": 0.4},
+            "terminal_phase": "settlement",
+        }
+    ]
+
+
+def test_query_api_keeps_explored_branches_ahead_of_unexplored_higher_score_branches():
+    assert summarize_top_branches(
+        [
+            {
+                "branch_id": "visited",
+                "label": "Visited branch",
+                "score": 0.5,
+                "visits": 10,
+                "prior": 0.2,
+            },
+            {
+                "branch_id": "unvisited",
+                "label": "Unvisited branch",
+                "score": 0.9,
+                "visits": 0,
+                "prior": 0.9,
+            },
+        ],
+        limit=2,
+    ) == [
+        {"branch_id": "visited", "label": "Visited branch", "score": 0.5},
+        {"branch_id": "unvisited", "label": "Unvisited branch", "score": 0.9},
+    ]
+
+
 def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
     _register_markdown_source(registry)

@@ -90,12 +90,12 @@ def test_intake_draft_preserves_pack_fields() -> None:
     assert intake.pack_fields == {"military_posture": "high"}
 
 
-def test_assumption_summary_defaults_to_balanced_profile() -> None:
+def test_assumption_summary_defaults_to_unset_profile() -> None:
     summary = AssumptionSummary()
 
     assert summary.summary == []
     assert summary.suggested_actors == []
-    assert summary.objective_profile_name == "balanced"
+    assert summary.objective_profile_name == ""
 
 
 def test_evidence_packet_defaults_to_empty_items() -> None:

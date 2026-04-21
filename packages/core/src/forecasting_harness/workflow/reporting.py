@@ -82,7 +82,7 @@ def render_report(
     if not isinstance(branches, list):
         branches = []
 
-    top_branches = summarize_top_branches(branches, limit=3)
+    top_branches = summarize_top_branches(branches, limit=3, detailed=True)
     scenario_families = summarize_scenario_families(branches, limit=3)
     lines = [
         "# Scenario Report",

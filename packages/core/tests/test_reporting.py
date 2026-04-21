@@ -183,6 +183,53 @@ def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> Non
     assert "Limited response ->" not in report
 
 
+def test_render_report_prefers_explored_top_branch_over_unexplored_higher_score_branch() -> None:
+    report = render_report(
+        revision_id="r1",
+        simulation={
+            "search_mode": "mcts",
+            "node_count": 40,
+            "transposition_hits": 12,
+            "branches": [
+                {
+                    "branch_id": "unvisited",
+                    "label": "Unvisited branch",
+                    "score": 0.9,
+                    "visits": 0,
+                    "prior": 0.9,
+                    "confidence_signal": 0.0,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["diplomatic_channel"],
+                    "path": [{"label": "Unvisited branch", "phase": "signaling"}],
+                },
+                {
+                    "branch_id": "visited",
+                    "label": "Visited branch",
+                    "score": 0.5,
+                    "visits": 10,
+                    "prior": 0.2,
+                    "confidence_signal": 0.55,
+                    "terminal_phase": "limited-response",
+                    "key_drivers": ["military_posture", "tension_index"],
+                    "aggregate_score_breakdown": {
+                        "system": 0.15,
+                        "actors": 0.1,
+                    },
+                    "path": [{"label": "Visited branch", "phase": "limited-response"}],
+                },
+            ],
+        },
+        evidence_count=2,
+        unsupported_count=1,
+    )
+
+    top_branches_section = report.split("## Top Branches", 1)[1].split("##", 1)[0]
+    assert "- Visited branch (0.5);" in report
+    assert "- Terminal phase: limited-response" in report
+    assert "Visited branch" in report
+    assert top_branches_section.index("- Visited branch (0.5);") < top_branches_section.index("- Unvisited branch (0.9)")
+
+
 def test_render_report_includes_recommended_lens_when_it_differs_from_selected_lens() -> None:
     report = render_report(
         revision_id="r1",

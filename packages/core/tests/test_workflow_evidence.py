@@ -205,7 +205,7 @@ def test_compile_belief_state_dedupes_actor_names_by_normalized_actor_id(monkeyp
     )
 
     assert [actor.name for actor in state.actors] == ["North Korea", "US"]
-    assert [actor.actor_id for actor in state.actors] == ["north-korea", "us"]
+    assert [actor.actor_id for actor in state.actors] == ["north-korea", "united-states"]
 
 
 def test_compile_belief_state_infers_company_pack_fields_from_intake_and_evidence(monkeypatch) -> None:

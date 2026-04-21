@@ -1,11 +1,13 @@
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
 
+from forecasting_harness.compatibility import compare_belief_states
 from forecasting_harness.domain.base import InteractionModel
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
-from forecasting_harness.models import BeliefState
+from forecasting_harness.models import Actor, BehaviorProfile, BeliefField, BeliefState
 from forecasting_harness.models import ObjectiveProfile
 from forecasting_harness.simulation import SimulationEngine, scalarize_node_value
 from forecasting_harness.simulation.cache import should_reuse_node
@@ -94,6 +96,54 @@ def test_should_reuse_node_allows_reusable_partial_reruns() -> None:
     compatibility = {"changed_fields": ["morale"], "compatible": False, "reusable": True}
 
     assert should_reuse_node(node, compatibility) is True
+
+
+def test_compare_belief_states_blocks_reuse_when_actor_behavior_profile_changes() -> None:
+    timestamp = datetime(2026, 4, 20, 12, 0, tzinfo=timezone.utc)
+    previous = BeliefState(
+        run_id="run-1",
+        interaction_model=InteractionModel.EVENT_DRIVEN,
+        actors=[
+            Actor(
+                actor_id="china",
+                name="China",
+                behavior_profile=BehaviorProfile(domestic_sensitivity=0.8, coercive_bias=0.4),
+            )
+        ],
+        fields={
+            "morale": BeliefField(
+                value=0.8,
+                normalized_value=0.8,
+                status="observed",
+                confidence=1.0,
+                last_updated_at=timestamp,
+            )
+        },
+        objectives={},
+        capabilities={},
+        constraints={},
+        unknowns=[],
+        current_epoch="trigger",
+        horizon="30d",
+        phase="trigger",
+        domain_pack="generic-event",
+    )
+    current = previous.model_copy(
+        update={
+            "actors": [
+                previous.actors[0].model_copy(
+                    update={"behavior_profile": BehaviorProfile(domestic_sensitivity=0.5, coercive_bias=0.4)}
+                )
+            ]
+        }
+    )
+
+    result = compare_belief_states(previous, current, tolerances={"morale": 0.0})
+
+    assert result["compatible"] is False
+    assert result["reusable"] is False
+    assert result["changed_fields"] == []
+    assert "actor behavior_profile changed: china" in result["reasons"]
 
 
 def test_simulation_engine_returns_mcts_metadata_and_multi_step_backed_up_scores() -> None:
