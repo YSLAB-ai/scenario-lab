@@ -159,11 +159,13 @@ def test_approval_packet_and_revision_summary_capture_narrow_fields() -> None:
         evidence_item_count=0,
         assumption_count=1,
         top_branches=[{"label": "Signal resolve", "score": -0.06}],
+        scenario_families=[{"terminal_phase": "settlement-stalemate", "branch_count": 1}],
         available_sections=["intake", "evidence"],
     )
 
     assert packet.evidence_summary[0]["source_id"] == "src-1"
     assert summary.available_sections == ["intake", "evidence"]
+    assert summary.scenario_families[0]["terminal_phase"] == "settlement-stalemate"
 
 
 def test_conversation_turn_captures_stage_and_context() -> None:

@@ -10,6 +10,7 @@ from forecasting_harness.domain.template_utils import (
     count_term_matches,
     integer_field,
     numeric_field,
+    string_field,
     with_updates,
 )
 from forecasting_harness.workflow.models import IntakeDraft
@@ -51,7 +52,13 @@ class CompanyActionPack(DomainPack):
         ]
 
     def extend_schema(self) -> dict[str, Any]:
-        return {"cash_runway_months": "int", "brand_sentiment": "float", "regulatory_pressure": "float"}
+        return {
+            "board_cohesion": "float",
+            "cash_runway_months": "int",
+            "brand_sentiment": "float",
+            "operational_stability": "float",
+            "regulatory_pressure": "float",
+        }
 
     def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
         evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
@@ -88,9 +95,30 @@ class CompanyActionPack(DomainPack):
         )
         regulatory_pressure = bounded(regulatory_pressure)
 
+        board_cohesion = 0.5
+        board_cohesion -= 0.09 * count_term_matches(
+            text,
+            ["sudden ceo transition", "board split", "activist pressure", "leadership uncertainty", "credibility pressure"],
+        )
+        board_cohesion += 0.1 * count_term_matches(
+            text,
+            ["succession clarity", "board wants stability", "board support", "internal successor", "stability"],
+        )
+        board_cohesion = bounded(board_cohesion)
+
+        operational_stability = 0.56
+        operational_stability -= 0.12 * count_term_matches(
+            text,
+            ["delivery concerns", "production recovery", "safety scrutiny", "supplier anxiety", "product delays", "quality systems"],
+        )
+        operational_stability += 0.06 * count_term_matches(text, ["roadmap credibility", "stabilize production", "supplier reassurance"])
+        operational_stability = bounded(operational_stability)
+
         return {
+            "board_cohesion": round(board_cohesion, 3),
             "cash_runway_months": int(cash_runway),
             "brand_sentiment": round(brand_sentiment, 3),
+            "operational_stability": round(operational_stability, 3),
             "regulatory_pressure": round(regulatory_pressure, 3),
         }
 
@@ -99,66 +127,229 @@ class CompanyActionPack(DomainPack):
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
+        board_cohesion = numeric_field(state, "board_cohesion", 0.5)
+        runway = integer_field(state, "cash_runway_months", 9)
+        sentiment = numeric_field(state, "brand_sentiment", 0.5)
+        operational_stability = numeric_field(state, "operational_stability", 0.5)
+        pressure = numeric_field(state, "regulatory_pressure", 0.35)
         if phase == "trigger":
             return [
-                {"action_id": "contain-message", "label": "Contain message", "prior": 0.45, "dependencies": {"fields": ["brand_sentiment"]}},
-                {"action_id": "strategic-review", "label": "Strategic review", "prior": 0.35, "dependencies": {"fields": ["cash_runway_months"]}},
-                {"action_id": "operational-pivot", "label": "Operational pivot", "prior": 0.3, "dependencies": {"fields": ["cash_runway_months", "regulatory_pressure"]}},
+                {
+                    "action_id": "contain-message",
+                    "label": "Contain message",
+                    "prior": bounded(0.14 + sentiment * 0.2 + board_cohesion * 0.16),
+                    "dependencies": {"fields": ["board_cohesion", "brand_sentiment"]},
+                },
+                {
+                    "action_id": "strategic-review",
+                    "label": "Strategic review",
+                    "prior": bounded(0.14 + max(0, 12 - runway) * 0.03 + max(0.0, 0.5 - board_cohesion) * 0.22),
+                    "dependencies": {"fields": ["board_cohesion", "cash_runway_months"]},
+                },
+                {
+                    "action_id": "operational-pivot",
+                    "label": "Operational pivot",
+                    "prior": bounded(
+                        0.1
+                        + pressure * 0.18
+                        + max(0.0, 0.5 - operational_stability) * 0.35
+                        + max(0, 10 - runway) * 0.02
+                    ),
+                    "dependencies": {"fields": ["cash_runway_months", "operational_stability", "regulatory_pressure"]},
+                },
+                {
+                    "action_id": "stakeholder-reset",
+                    "label": "Stakeholder reset",
+                    "prior": bounded(0.08 + max(0.0, 0.6 - sentiment) * 0.18 + board_cohesion * 0.22 + pressure * 0.06),
+                    "dependencies": {"fields": ["board_cohesion", "brand_sentiment", "regulatory_pressure"]},
+                },
             ]
         if phase == "board-response":
             return [
-                {"action_id": "cost-program", "label": "Cost program", "prior": 0.55},
-                {"action_id": "leadership-reset", "label": "Leadership reset", "prior": 0.4},
+                {"action_id": "cost-program", "label": "Cost program", "prior": bounded(0.18 + max(0, 8 - runway) * 0.03 + pressure * 0.08)},
+                {"action_id": "leadership-reset", "label": "Leadership reset", "prior": bounded(0.12 + max(0.0, 0.5 - board_cohesion) * 0.22 + max(0.0, 0.55 - sentiment) * 0.16)},
             ]
         if phase == "market-response":
             return [
-                {"action_id": "capital-raise", "label": "Capital raise", "prior": 0.5},
-                {"action_id": "customer-guarantees", "label": "Customer guarantees", "prior": 0.45},
+                {"action_id": "capital-raise", "label": "Capital raise", "prior": bounded(0.12 + max(0, 8 - runway) * 0.04 + pressure * 0.12)},
+                {"action_id": "customer-guarantees", "label": "Customer guarantees", "prior": bounded(0.14 + sentiment * 0.14 + operational_stability * 0.2)},
             ]
         if phase == "restructuring":
             return [
-                {"action_id": "asset-sales", "label": "Asset sales", "prior": 0.55},
-                {"action_id": "stabilize-operations", "label": "Stabilize operations", "prior": 0.45},
+                {"action_id": "asset-sales", "label": "Asset sales", "prior": bounded(0.22 + max(0, 8 - runway) * 0.03 + pressure * 0.12)},
+                {"action_id": "stabilize-operations", "label": "Stabilize operations", "prior": bounded(0.18 + max(0.0, 0.5 - operational_stability) * 0.32 + pressure * 0.08)},
             ]
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
         action_id = action_context.get("action_id") or action_context.get("branch_id")
+        board_cohesion = numeric_field(state, "board_cohesion", 0.5)
         runway = integer_field(state, "cash_runway_months", 9)
         sentiment = numeric_field(state, "brand_sentiment", 0.5)
+        operational_stability = numeric_field(state, "operational_stability", 0.5)
         pressure = numeric_field(state, "regulatory_pressure", 0.35)
         phase = getattr(state, "phase", None) or "trigger"
 
         if phase == "trigger" and action_id == "contain-message":
-            return [with_updates(state, phase="market-response", field_updates={"brand_sentiment": sentiment + 0.1, "cash_runway_months": runway})]
+            return [
+                {
+                    "next_state": with_updates(
+                        state,
+                        phase="market-response",
+                        field_updates={
+                            "board_cohesion": max(board_cohesion, 0.58),
+                            "brand_sentiment": bounded(sentiment + 0.1),
+                            "cash_runway_months": runway,
+                            "operational_stability": operational_stability,
+                        },
+                    ),
+                    "weight": 0.65,
+                    "outcome_id": "message-lands",
+                    "outcome_label": "message lands",
+                },
+                {
+                    "next_state": with_updates(
+                        state,
+                        phase="board-response",
+                        field_updates={
+                            "board_cohesion": bounded(max(0.0, board_cohesion - 0.06)),
+                            "brand_sentiment": max(0.0, sentiment - 0.02),
+                            "cash_runway_months": runway - 1,
+                            "operational_stability": operational_stability,
+                        },
+                    ),
+                    "weight": 0.35,
+                    "outcome_id": "skepticism-persists",
+                    "outcome_label": "skepticism persists",
+                },
+            ]
         if phase == "trigger" and action_id == "strategic-review":
-            return [with_updates(state, phase="board-response", field_updates={"cash_runway_months": max(1, runway - 1), "regulatory_pressure": pressure})]
+            return [
+                with_updates(
+                    state,
+                    phase="board-response",
+                    field_updates={
+                        "board_cohesion": bounded(board_cohesion + 0.04),
+                        "cash_runway_months": max(1, runway - 1),
+                        "operational_stability": operational_stability,
+                        "regulatory_pressure": pressure,
+                    },
+                )
+            ]
         if phase == "trigger" and action_id == "operational-pivot":
-            return [with_updates(state, phase="restructuring", field_updates={"cash_runway_months": max(1, runway - 2), "brand_sentiment": sentiment - 0.05})]
+            return [
+                with_updates(
+                    state,
+                    phase="restructuring",
+                    field_updates={
+                        "cash_runway_months": max(1, runway - 1),
+                        "brand_sentiment": bounded(sentiment - 0.03),
+                        "operational_stability": bounded(operational_stability + 0.18),
+                        "regulatory_pressure": pressure,
+                    },
+                )
+            ]
+        if phase == "trigger" and action_id == "stakeholder-reset":
+            return [
+                with_updates(
+                    state,
+                    phase="board-response",
+                    field_updates={
+                        "board_cohesion": max(board_cohesion, 0.65),
+                        "brand_sentiment": bounded(sentiment + (0.08 if board_cohesion >= 0.55 else 0.03)),
+                        "operational_stability": operational_stability,
+                        "regulatory_pressure": max(0.0, pressure - (0.05 if board_cohesion >= 0.55 else 0.01)),
+                    },
+                )
+            ]
         if phase == "board-response" and action_id == "cost-program":
-            return [with_updates(state, phase="restructuring", field_updates={"cash_runway_months": runway + 2, "brand_sentiment": sentiment - 0.05})]
+            return [
+                with_updates(
+                    state,
+                    phase="restructuring",
+                    field_updates={
+                        "board_cohesion": bounded(max(0.0, board_cohesion - 0.02)),
+                        "cash_runway_months": runway + 2,
+                        "brand_sentiment": bounded(sentiment - 0.05),
+                        "operational_stability": bounded(operational_stability + 0.04),
+                    },
+                )
+            ]
         if phase == "board-response" and action_id == "leadership-reset":
-            return [with_updates(state, phase="market-response", field_updates={"brand_sentiment": sentiment + 0.12, "regulatory_pressure": max(0.0, pressure - 0.05)})]
+            return [
+                with_updates(
+                    state,
+                    phase="market-response",
+                    field_updates={
+                        "board_cohesion": bounded(board_cohesion + 0.12),
+                        "brand_sentiment": bounded(sentiment + 0.12),
+                        "operational_stability": operational_stability,
+                        "regulatory_pressure": max(0.0, pressure - 0.05),
+                    },
+                )
+            ]
         if phase == "market-response" and action_id == "capital-raise":
-            return [with_updates(state, phase="resolution", field_updates={"cash_runway_months": runway + 4, "brand_sentiment": sentiment + 0.02})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "cash_runway_months": runway + 4,
+                        "brand_sentiment": bounded(sentiment + 0.02),
+                        "operational_stability": operational_stability,
+                    },
+                )
+            ]
         if phase == "market-response" and action_id == "customer-guarantees":
-            return [with_updates(state, phase="resolution", field_updates={"brand_sentiment": sentiment + 0.08, "cash_runway_months": max(1, runway - 1)})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "brand_sentiment": bounded(sentiment + 0.08),
+                        "cash_runway_months": max(1, runway - 1),
+                        "operational_stability": bounded(operational_stability + 0.08),
+                    },
+                )
+            ]
         if phase == "restructuring" and action_id == "asset-sales":
-            return [with_updates(state, phase="resolution", field_updates={"cash_runway_months": runway + 3, "brand_sentiment": sentiment - 0.02})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "cash_runway_months": runway + 3,
+                        "brand_sentiment": bounded(sentiment - 0.02),
+                        "operational_stability": bounded(operational_stability + 0.02),
+                    },
+                )
+            ]
         if phase == "restructuring" and action_id == "stabilize-operations":
-            return [with_updates(state, phase="resolution", field_updates={"brand_sentiment": sentiment + 0.06, "regulatory_pressure": max(0.0, pressure - 0.05)})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "brand_sentiment": bounded(sentiment + 0.06),
+                        "operational_stability": bounded(operational_stability + 0.16),
+                        "regulatory_pressure": max(0.0, pressure - 0.05),
+                    },
+                )
+            ]
         return [state]
 
     def score_state(self, state: Any) -> dict[str, float]:
         phase = getattr(state, "phase", None) or "trigger"
+        board_cohesion = numeric_field(state, "board_cohesion", 0.5)
         runway = integer_field(state, "cash_runway_months", 9)
         sentiment = numeric_field(state, "brand_sentiment", 0.5)
+        operational_stability = numeric_field(state, "operational_stability", 0.5)
         pressure = numeric_field(state, "regulatory_pressure", 0.35)
         phase_risk = {"trigger": 0.45, "board-response": 0.4, "market-response": 0.3, "restructuring": 0.5, "resolution": 0.2}[phase]
         return {
-            "escalation": bounded(phase_risk + (0.5 - sentiment) * 0.3 + pressure * 0.15),
-            "negotiation": bounded(0.25 + sentiment * 0.35 + max(0, runway - 6) * 0.03),
-            "economic_stress": bounded(0.75 - min(runway, 12) / 16 + pressure * 0.2),
+            "escalation": bounded(phase_risk + (0.5 - sentiment) * 0.24 + pressure * 0.12 + max(0.0, 0.5 - board_cohesion) * 0.1 + max(0.0, 0.5 - operational_stability) * 0.15),
+            "negotiation": bounded(0.18 + sentiment * 0.28 + max(0, runway - 6) * 0.03 + board_cohesion * 0.12 + operational_stability * 0.1),
+            "economic_stress": bounded(0.72 - min(runway, 12) / 16 + pressure * 0.18 + max(0.0, 0.5 - operational_stability) * 0.2),
         }
 
     def validate_state(self, state: Any) -> list[str]:

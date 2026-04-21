@@ -497,12 +497,13 @@ def test_interstate_crisis_pack_transitions_change_follow_on_actions() -> None:
     )
 
     root_actions = [action.get("branch_id") or action.get("action_id") for action in pack.propose_actions(root_state)]
-    signaling_state = pack.sample_transition(root_state, pack.propose_actions(root_state)[0])[0]
+    transition = pack.sample_transition(root_state, pack.propose_actions(root_state)[0])[0]
+    signaling_state = transition["next_state"] if isinstance(transition, dict) else transition
     signaling_actions = [
         action.get("branch_id") or action.get("action_id") for action in pack.propose_actions(signaling_state)
     ]
 
-    assert root_actions == ["signal", "limited-response", "open-negotiation"]
+    assert root_actions == ["signal", "limited-response", "alliance-consultation", "open-negotiation"]
     assert signaling_state.phase == "signaling"
     assert signaling_actions != root_actions
     assert "intercept" in signaling_actions

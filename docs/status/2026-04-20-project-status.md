@@ -27,7 +27,11 @@ Date: 2026-04-21
 - The simulation engine now performs deterministic multi-step MCTS over `BeliefState` and preserves top-level `branches` for workflow compatibility.
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
+- The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, evidence-source accuracy, and inferred-field coverage metrics.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
+- The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
+- The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
+- The company-action pack now infers `board_cohesion` and `operational_stability` from approved evidence and uses them inside action priors, transitions, and scoring.
 - Corpus registration now disambiguates repeated `source_id` stems by file path instead of silently replacing earlier unrelated documents.
 - Evidence drafting and ingestion planning now scope same-domain corpus reuse to the current run and primary actors instead of borrowing stale material from other scenarios.
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
@@ -43,7 +47,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `186 passed`
+  - Result: `193 passed`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -60,12 +64,20 @@ Date: 2026-04-21
   - scenario-local evidence packet drafting
   - ingest recommendations that map the local files to the current run instead of prior same-domain coverage
   - inferred pack-specific state fields from approved evidence
+- A deeper smoke pass on 2026-04-21 also verified differentiated top-branch outcomes for the previously over-convergent interstate and company cases:
+  - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
+  - `Japan-China Strait` -> `Signal resolve (managed signal)`
+  - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
+  - `Apple CEO transition` -> `Stakeholder reset`
+  - `Boeing post-reporting` -> `Contain message (message lands)`
 - The 2026-04-21 smoke campaign exposed and the current code now fixes:
   - natural-language source-role and evidence-category matching that was too brittle for realistic wording
   - source-id collisions when different directories contained the same filename stem
   - cross-run evidence leakage between same-domain scenarios
   - ingestion planning that treated earlier same-domain coverage as sufficient for later runs
   - pack-field compilation that ignored approved evidence unless the user manually filled `pack_fields`
+  - interstate scenarios collapsing onto the same alliance-mediated first move
+  - company scenarios collapsing onto the same stakeholder-reset first move
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -197,8 +209,8 @@ Date: 2026-04-21
   - local neural embeddings
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
-  - historical replay and calibration
   - rule extraction / knowledge compiler
+- The replay suite infrastructure now exists, but the repo does not yet include a large curated historical replay library or a closed-loop calibration process that retunes model behavior against those replay results.
 
 ## Known Issues and Risks
 
@@ -237,6 +249,8 @@ Date: 2026-04-21
 - `51eac3d` `feat: add reusable domain template packs`
 - `668952b` `docs: add domain knowledge manifests`
   - `3e19855` `feat: add local semantic vector index`
+- `7aeb185` `test: add realistic scenario smoke campaign`
+- `2026-04-21 deep-analysis branch` `feat: deepen evidence-conditioned modeling and reporting`
 
 ## Current Assessment
 

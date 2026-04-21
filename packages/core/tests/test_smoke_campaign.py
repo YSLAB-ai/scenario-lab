@@ -32,7 +32,15 @@ SCENARIOS = [
             "iran-mobilization.md": "Iran signals mobilization and missile readiness near the Gulf as regional diplomats attempt backchannel talks.",
         },
         "expected_sources": {"us-iran-warning", "iran-mobilization"},
-        "expected_fields": {"diplomatic_channel", "leader_style", "military_posture", "tension_index"},
+        "expected_fields": {
+            "alliance_pressure",
+            "diplomatic_channel",
+            "geographic_flashpoint",
+            "leader_style",
+            "mediation_window",
+            "military_posture",
+            "tension_index",
+        },
     },
     {
         "run_id": "japan-china-strait",
@@ -53,7 +61,15 @@ SCENARIOS = [
             "china-backchannel.md": "Chinese and Japanese officials keep emergency backchannel talks open to avoid a wider clash in the strait.",
         },
         "expected_sources": {"japan-transit", "china-backchannel"},
-        "expected_fields": {"diplomatic_channel", "leader_style", "military_posture", "tension_index"},
+        "expected_fields": {
+            "alliance_pressure",
+            "diplomatic_channel",
+            "geographic_flashpoint",
+            "leader_style",
+            "mediation_window",
+            "military_posture",
+            "tension_index",
+        },
     },
     {
         "run_id": "india-pakistan-crisis",
@@ -74,7 +90,15 @@ SCENARIOS = [
             "mediator-restraint.md": "International mediators urge restraint as India and Pakistan keep diplomatic channels partially open.",
         },
         "expected_sources": {"border-attack", "mediator-restraint"},
-        "expected_fields": {"diplomatic_channel", "leader_style", "military_posture", "tension_index"},
+        "expected_fields": {
+            "alliance_pressure",
+            "diplomatic_channel",
+            "geographic_flashpoint",
+            "leader_style",
+            "mediation_window",
+            "military_posture",
+            "tension_index",
+        },
     },
     {
         "run_id": "apple-ceo-transition",
@@ -95,7 +119,7 @@ SCENARIOS = [
             "apple-roadmap.md": "Apple product roadmap credibility and premium brand messaging are central to calming customers and suppliers.",
         },
         "expected_sources": {"apple-succession", "apple-roadmap"},
-        "expected_fields": {"brand_sentiment", "cash_runway_months", "regulatory_pressure"},
+        "expected_fields": {"board_cohesion", "brand_sentiment", "cash_runway_months", "operational_stability", "regulatory_pressure"},
     },
     {
         "run_id": "boeing-post-reporting",
@@ -116,7 +140,7 @@ SCENARIOS = [
             "boeing-safety.md": "Safety scrutiny and regulatory pressure are forcing Boeing to reassure customers and defend production recovery.",
         },
         "expected_sources": {"boeing-quarter", "boeing-safety"},
-        "expected_fields": {"brand_sentiment", "cash_runway_months", "regulatory_pressure"},
+        "expected_fields": {"board_cohesion", "brand_sentiment", "cash_runway_months", "operational_stability", "regulatory_pressure"},
     },
     {
         "run_id": "election-debate-collapse",
@@ -263,3 +287,65 @@ def test_realistic_scenario_smoke_campaign(tmp_path: Path, scenario: dict[str, o
     assert simulation["search_mode"] == "mcts"
     for field_name in scenario["expected_fields"]:
         assert state.fields[field_name].status == "inferred"
+
+
+def test_interstate_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    registry = build_default_registry()
+    service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
+
+    top_root_labels: set[str] = set()
+    for scenario in SCENARIOS[:3]:
+        pack = registry.resolve(str(scenario["domain"]))
+        run_id = str(scenario["run_id"])
+        service.start_run(run_id, pack.slug())
+        intake = IntakeDraft.model_validate(scenario["intake"])
+        service.save_intake_draft(run_id, "r1", intake)
+
+        docs_dir = tmp_path / run_id
+        docs_dir.mkdir()
+        for filename, content in dict(scenario["docs"]).items():
+            (docs_dir / filename).write_text(str(content), encoding="utf-8")
+
+        service.batch_ingest_recommended_files(run_id, "r1", pack=pack, path=docs_dir, max_files=5)
+        service.draft_evidence_packet(run_id, "r1", pack=pack)
+        assumptions = AssumptionSummary(summary=list(scenario["assumptions"]), suggested_actors=intake.suggested_entities)
+        service.approve_revision(run_id, "r1", assumptions)
+        simulation = service.simulate_revision(run_id, "r1", pack=pack)
+
+        top_label = str(simulation["branches"][0]["label"])
+        top_root_labels.add(top_label.split(" (", 1)[0])
+
+    assert len(top_root_labels) >= 2
+
+
+def test_company_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    registry = build_default_registry()
+    service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
+
+    top_root_labels: set[str] = set()
+    for scenario in SCENARIOS[3:5]:
+        pack = registry.resolve(str(scenario["domain"]))
+        run_id = str(scenario["run_id"])
+        service.start_run(run_id, pack.slug())
+        intake = IntakeDraft.model_validate(scenario["intake"])
+        service.save_intake_draft(run_id, "r1", intake)
+
+        docs_dir = tmp_path / run_id
+        docs_dir.mkdir()
+        for filename, content in dict(scenario["docs"]).items():
+            (docs_dir / filename).write_text(str(content), encoding="utf-8")
+
+        service.batch_ingest_recommended_files(run_id, "r1", pack=pack, path=docs_dir, max_files=5)
+        service.draft_evidence_packet(run_id, "r1", pack=pack)
+        assumptions = AssumptionSummary(summary=list(scenario["assumptions"]), suggested_actors=intake.suggested_entities)
+        service.approve_revision(run_id, "r1", assumptions)
+        simulation = service.simulate_revision(run_id, "r1", pack=pack)
+
+        top_label = str(simulation["branches"][0]["label"])
+        top_root_labels.add(top_label.split(" (", 1)[0])
+
+    assert len(top_root_labels) >= 2

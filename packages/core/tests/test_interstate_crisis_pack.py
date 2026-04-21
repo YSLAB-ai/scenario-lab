@@ -71,6 +71,9 @@ def test_pack_suggests_crisis_questions_and_schema() -> None:
         "What constraint most limits immediate escalation?",
     ]
     assert pack.extend_schema() == {
+        "alliance_pressure": "float",
+        "geographic_flashpoint": "float",
+        "mediation_window": "float",
         "military_posture": "str",
         "leader_style": "str",
         "tension_index": "float",
@@ -93,5 +96,32 @@ def test_pack_proposes_simple_event_driven_actions() -> None:
     assert [action["action_id"] for action in pack.propose_actions(None)] == [
         "signal",
         "limited-response",
+        "alliance-consultation",
         "open-negotiation",
     ]
+
+
+def test_pack_limited_response_can_branch_into_multiple_outcomes() -> None:
+    pack = InterstateCrisisPack()
+    state = type(
+        "State",
+        (),
+        {
+            "phase": "trigger",
+            "fields": {
+                "tension_index": type("Field", (), {"normalized_value": 0.8})(),
+                "diplomatic_channel": type("Field", (), {"normalized_value": 0.2})(),
+                "military_posture": type("Field", (), {"normalized_value": "high-alert"})(),
+                "leader_style": type("Field", (), {"normalized_value": "hawkish"})(),
+            },
+            "model_copy": lambda self, update: type("NextState", (), {**self.__dict__, **update})(),
+        },
+    )()
+
+    outcomes = pack.sample_transition(
+        state,
+        {"action_id": "limited-response", "branch_id": "limited-response", "label": "Limited response", "prior": 0.5},
+    )
+
+    assert isinstance(outcomes, list)
+    assert len(outcomes) >= 2

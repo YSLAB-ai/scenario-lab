@@ -434,6 +434,62 @@ class SimulationEngine:
         value = scalarize_node_value(metrics, self.objective_profile)
         return value, metrics, rollout_depth
 
+    def _synthesize_branch(self, node: _SearchNode, config: SearchConfig, *, root_visits: int) -> dict[str, Any]:
+        current_state = node.state
+        current_depth = node.depth
+        path = [
+            {
+                "label": node.label,
+                "phase": getattr(current_state, "phase", None),
+            }
+        ]
+        driver_fields = set(node.dependencies.get("fields", []))
+
+        while not _is_terminal(self.domain_pack, current_state, current_depth) and current_depth < config.max_depth:
+            actions = [_normalize_action(action) for action in self.domain_pack.propose_actions(current_state)]
+            if not actions:
+                break
+            action = max(actions, key=lambda item: (item["prior"], item["branch_id"]))
+            outcomes = _normalize_outcomes(self.domain_pack.sample_transition(current_state, action))
+            if not outcomes:
+                break
+            outcome = max(
+                outcomes,
+                key=lambda item: (item.weight, item.outcome_id or "", item.outcome_label or ""),
+            )
+            driver_fields.update(action.get("dependencies", {}).get("fields", []))
+            driver_fields.update(outcome.dependencies.get("fields", []))
+            current_state = outcome.next_state
+            current_depth += 1
+            label = action["label"] if not outcome.outcome_label else f"{action['label']} ({outcome.outcome_label})"
+            path.append(
+                {
+                    "label": label,
+                    "phase": getattr(current_state, "phase", None),
+                }
+            )
+
+        terminal_metrics = self.domain_pack.score_state(current_state)
+        key_drivers = sorted(driver_fields)
+        if not key_drivers:
+            key_drivers = [
+                metric_name
+                for metric_name, metric_value in sorted(
+                    terminal_metrics.items(),
+                    key=lambda item: (item[1], item[0]),
+                    reverse=True,
+                )
+                if metric_value > 0
+            ][:3]
+
+        return {
+            "path": path,
+            "terminal_phase": getattr(current_state, "phase", None),
+            "terminal_metrics": terminal_metrics,
+            "key_drivers": key_drivers[:3],
+            "confidence_signal": round(node.visits / max(root_visits, 1), 3),
+        }
+
     def run(self, state: Any, reuse_context: dict[str, Any] | None = None) -> dict[str, Any]:
         self._validate_root_state(state)
         config = _search_config(self.domain_pack)
@@ -491,6 +547,7 @@ class SimulationEngine:
                     "visits": child.visits,
                     "prior": child.prior,
                     "dependencies": child.dependencies,
+                    **self._synthesize_branch(child, config, root_visits=root.visits),
                 }
                 for child in root_children
             ],
