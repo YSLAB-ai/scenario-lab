@@ -13,15 +13,20 @@ Date: 2026-04-20
   - `current_stage`
   - `suggested_entities`
   - `pack_fields`
+- The corpus now supports document metadata plus citation-friendly chunk rows in the local SQLite/FTS registry.
+- The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into the corpus.
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `96 passed in 0.21s`
+  - Result: `107 passed in 0.29s`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness version`
   - `forecast-harness list-domain-packs`
+  - `forecast-harness ingest-file`
+  - `forecast-harness ingest-directory`
+  - `forecast-harness list-corpus-sources`
   - `forecast-harness start-run`
   - `forecast-harness save-intake-draft`
   - `forecast-harness draft-evidence-packet`
@@ -41,6 +46,10 @@ Date: 2026-04-20
   - `simulation/<revision>.approved.json`
   - `reports/<revision>.report.md`
   - `revisions/<revision>.json`
+- A smoke test on 2026-04-20 verified:
+  - ingesting a Markdown file into `corpus.db`
+  - listing corpus sources from that database
+  - drafting an evidence packet for an `interstate-crisis` run from the ingested chunk
 - Codex and Claude install notes exist:
   - `docs/install-codex.md`
   - `docs/install-claude-code.md`
@@ -51,6 +60,8 @@ Date: 2026-04-20
   - `docs/superpowers/plans/2026-04-20-interstate-workflow-slice-implementation.md`
   - `docs/superpowers/specs/2026-04-20-generalized-harness-v2-design.md`
   - `docs/superpowers/plans/2026-04-20-generalized-harness-v2-implementation.md`
+  - `docs/superpowers/specs/2026-04-20-corpus-ingestion-v1-design.md`
+  - `docs/superpowers/plans/2026-04-20-corpus-ingestion-v1-implementation.md`
 
 ## Current Gaps
 
@@ -60,9 +71,10 @@ Date: 2026-04-20
   - action generation is fixed
   - transition sampling returns the input state
   - scoring is fixed
-- The retrieval layer can now draft evidence packets from local SQLite/FTS corpus data, but there is still no end-user ingestion workflow yet for curated PDF, Markdown, CSV, and JSON corpora.
 - The adapters are still documentation and skill scaffolding rather than a seamless conversational analyst experience.
 - The system does not yet implement:
+  - OCR-backed PDF ingestion
+  - spreadsheet or web archive ingestion
   - mature multi-domain packs
   - historical replay and calibration
   - full MCTS search
@@ -86,7 +98,10 @@ Date: 2026-04-20
 - `b3f8ac4` `feat: generalize intake schema`
 - `f7b9af7` `feat: draft evidence packets from retrieval`
 - `13ffa88` `feat: persist revision lineage`
+- `af7d99e` `feat: add corpus ingestion parsers`
+- `9666884` `feat: persist corpus documents and chunks`
+- `478825b` `feat: add corpus ingestion commands`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, retrieval-backed evidence packet drafting, and persisted revision lineage for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, and persisted revision lineage for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
