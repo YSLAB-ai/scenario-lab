@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import pprint
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 from forecasting_harness.domain.template_utils import tokenize_text
-from forecasting_harness.evolution.models import DomainEvolutionCandidate, DomainSuggestion, DomainWeaknessBrief
+from forecasting_harness.evolution.models import DomainBlueprint, DomainEvolutionCandidate, DomainSuggestion, DomainWeaknessBrief
 from forecasting_harness.evolution.storage import EvolutionStorage
 from forecasting_harness.replay import ReplayCase, ReplaySuiteResult, run_replay_suite, summarize_calibration
 
@@ -20,6 +22,18 @@ class DomainEvolutionService:
     def _manifest_path(self, domain_slug: str) -> Path:
         return self.manifest_root / f"{domain_slug}.json"
 
+    def _replay_path(self, domain_slug: str) -> Path:
+        return self.workspace_root / "knowledge" / "replays" / f"{domain_slug}.json"
+
+    def _domain_dir(self) -> Path:
+        return self.workspace_root / "packages" / "core" / "src" / "forecasting_harness" / "domain"
+
+    def _registry_path(self) -> Path:
+        return self._domain_dir() / "registry.py"
+
+    def _tests_dir(self) -> Path:
+        return self.workspace_root / "packages" / "core" / "tests"
+
     def _load_manifest(self, domain_slug: str) -> dict[str, object]:
         path = self._manifest_path(domain_slug)
         if not path.exists():
@@ -28,6 +42,7 @@ class DomainEvolutionService:
 
     def _write_manifest(self, domain_slug: str, payload: dict[str, object]) -> Path:
         path = self._manifest_path(domain_slug)
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload, sort_keys=True, indent=2), encoding="utf-8")
         return path
 
@@ -93,6 +108,103 @@ class DomainEvolutionService:
             status="pending",
         )
         return self.evolution_storage.append_suggestion(suggestion)
+
+    def synthesize_domain(self, blueprint: DomainBlueprint, *, create_branch: bool = True) -> dict[str, object]:
+        slug = blueprint.slug
+        file_stem = slug.replace("-", "_")
+        manifest_payload = {
+            "slug": blueprint.slug,
+            "description": blueprint.description,
+            "actor_categories": blueprint.actor_categories,
+            "evidence_categories": blueprint.evidence_categories,
+            "evidence_category_terms": blueprint.evidence_category_terms,
+            "key_state_fields": sorted(blueprint.field_schema),
+            "canonical_stages": blueprint.canonical_stages,
+            "recommended_source_types": sorted({item.get("kind", "document") for item in blueprint.starter_sources}),
+            "starter_sources": blueprint.starter_sources,
+            "semantic_alias_groups": blueprint.semantic_alias_groups,
+        }
+
+        manifest_path = self._write_manifest(slug, manifest_payload)
+        replay_path = self._replay_path(slug)
+        replay_path.parent.mkdir(parents=True, exist_ok=True)
+        replay_path.write_text(json.dumps(blueprint.replay_seed_cases, indent=2, sort_keys=True), encoding="utf-8")
+
+        pack_path = self._domain_dir() / f"{file_stem}.py"
+        pack_path.parent.mkdir(parents=True, exist_ok=True)
+        pack_path.write_text(self._render_pack_file(blueprint), encoding="utf-8")
+
+        test_path = self._tests_dir() / f"test_{file_stem}_pack.py"
+        test_path.parent.mkdir(parents=True, exist_ok=True)
+        test_path.write_text(self._render_pack_test(blueprint), encoding="utf-8")
+
+        self._update_registry(blueprint)
+
+        branch_name = None
+        if create_branch:
+            branch_name = self._promote_synthesis_branch(slug)
+            self._commit_synthesis_changes(slug, branch_name, paths=[manifest_path, replay_path, pack_path, test_path, self._registry_path()])
+
+        return {
+            "domain_slug": slug,
+            "branch_name": branch_name,
+            "generated_files": [
+                str(manifest_path),
+                str(replay_path),
+                str(pack_path),
+                str(test_path),
+                str(self._registry_path()),
+            ],
+        }
+
+    def _render_pack_file(self, blueprint: DomainBlueprint) -> str:
+        payload = pprint.pformat(blueprint.model_dump(mode="python"), sort_dicts=True, width=100)
+        return (
+            "from forecasting_harness.domain.generated_template import GeneratedTemplatePack\n"
+            "from forecasting_harness.evolution.models import DomainBlueprint\n\n\n"
+            f"class {blueprint.class_name}(GeneratedTemplatePack):\n"
+            f"    BLUEPRINT = DomainBlueprint.model_validate({payload})\n"
+        )
+
+    def _render_pack_test(self, blueprint: DomainBlueprint) -> str:
+        module_name = blueprint.slug.replace("-", "_")
+        return (
+            "from forecasting_harness.workflow.models import IntakeDraft\n\n\n"
+            f"def test_{module_name}_pack_imports_and_validates() -> None:\n"
+            f"    from forecasting_harness.domain.{module_name} import {blueprint.class_name}\n\n"
+            f"    pack = {blueprint.class_name}()\n"
+            "    intake = IntakeDraft(\n"
+            "        event_framing='Assess scenario evolution',\n"
+            f"        focus_entities={['Entity A'] * max(blueprint.focus_entity_rule.min_count, blueprint.focus_entity_rule.exact_count or blueprint.focus_entity_rule.min_count)},\n"
+            f"        current_development='A material development occurred',\n"
+            f"        current_stage={blueprint.canonical_stages!r}[0],\n"
+            "        time_horizon='30d',\n"
+            "        pack_fields={},\n"
+            "    )\n\n"
+            f"    assert pack.slug() == {blueprint.slug!r}\n"
+            "    assert pack.validate_intake(intake) == []\n"
+        )
+
+    def _update_registry(self, blueprint: DomainBlueprint) -> None:
+        registry_path = self._registry_path()
+        registry_text = registry_path.read_text(encoding="utf-8")
+        module_name = blueprint.slug.replace("-", "_")
+        import_line = f"from forecasting_harness.domain.{module_name} import {blueprint.class_name}"
+        register_line = f'    registry.register("{blueprint.slug}", {blueprint.class_name})'
+
+        if import_line not in registry_text:
+            match = re.search(r"(from forecasting_harness\.domain\.[^\n]+\n)+", registry_text)
+            if match:
+                import_block = match.group(0) + import_line + "\n"
+                registry_text = registry_text[: match.start()] + import_block + registry_text[match.end() :]
+            else:
+                registry_text = import_line + "\n" + registry_text
+
+        if register_line not in registry_text:
+            anchor = "    return registry"
+            registry_text = registry_text.replace(anchor, f"{register_line}\n{anchor}")
+
+        registry_path.write_text(registry_text, encoding="utf-8")
 
     def _classify_category(self, *, text: str, target: str | None) -> str:
         lower = text.lower()
@@ -335,6 +447,11 @@ class DomainEvolutionService:
         subprocess.run(["git", "checkout", "-B", branch_name], cwd=self.workspace_root, check=True)
         return branch_name
 
+    def _promote_synthesis_branch(self, domain_slug: str) -> str:
+        branch_name = f"codex/domain-synthesis-{domain_slug}-{datetime.now(timezone.utc).strftime('%Y%m%d')}"
+        subprocess.run(["git", "checkout", "-B", branch_name], cwd=self.workspace_root, check=True)
+        return branch_name
+
     def _commit_domain_changes(self, domain_slug: str, branch_name: str) -> None:
         report_path = self.evolution_storage.write_report(
             domain_slug,
@@ -357,6 +474,14 @@ class DomainEvolutionService:
         )
         subprocess.run(
             ["git", "commit", "-m", f"feat: evolve {domain_slug} domain knowledge"],
+            cwd=self.workspace_root,
+            check=True,
+        )
+
+    def _commit_synthesis_changes(self, domain_slug: str, branch_name: str, *, paths: list[Path]) -> None:
+        subprocess.run(["git", "add", *[str(path) for path in paths]], cwd=self.workspace_root, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", f"feat: synthesize {domain_slug} domain"],
             cwd=self.workspace_root,
             check=True,
         )

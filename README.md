@@ -48,6 +48,7 @@ The local CLI now supports the verified workflow commands:
 - `forecast-harness analyze-domain-weakness`
 - `forecast-harness run-domain-evolution`
 - `forecast-harness summarize-domain-evolution`
+- `forecast-harness synthesize-domain`
 - `forecast-harness generate-report`
 
 Verified current progress:
@@ -62,7 +63,7 @@ Verified current progress:
   - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `210 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `213 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -141,7 +142,13 @@ Verified current progress:
   - compile manifest-driven adaptive state/action overlays
   - verify before/after replay metrics
   - promote verified domain-only changes onto a standalone review branch
+- The repo now also includes a protected-surface domain synthesis pipeline that can:
+  - accept a structured blueprint for a brand-new domain slug
+  - generate a template-backed manifest, replay seed file, pack source file, and starter test
+  - update the domain registry
+  - create a standalone review branch and commit without touching `main`
 - The domain evolution pipeline is limited to domain-owned assets and does not edit the shared MCTS/workflow/retrieval core.
+- The domain synthesis pipeline is also limited to domain-owned assets and does not edit the shared MCTS/workflow/retrieval core.
 - Built-in packs now read manifest-driven adaptive overlays for:
   - state-field inference boosts
   - action-prior biases
@@ -171,6 +178,10 @@ Verified current progress:
 - A temporary git-repo smoke check on 2026-04-21 also confirmed the branch-promotion path:
   - `run-domain-evolution` created branch `codex/domain-evolution-company-action-20260421`
   - the branch head commit message was `feat: evolve company-action domain knowledge`
+- A temporary git-repo smoke check on 2026-04-21 also confirmed the new-domain synthesis path:
+  - `synthesize-domain` created branch `codex/domain-synthesis-product-recall-20260421`
+  - the branch head commit message was `feat: synthesize product-recall domain`
+  - the generated `product-recall` pack imported successfully after synthesis
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
@@ -189,7 +200,7 @@ Verified current progress:
   - `simulation/r2.approved.json` reports `source_revision_id = "r1"`
   - the rerun reused cached nodes (`reused_nodes = 7`) and skipped invalidated ones (`skipped_nodes = 9`)
   - the rerun reported transposition metadata (`transposition_hits = 37`, `state_table_size = 14`, `node_count = 40`)
-- A direct CLI check now verifies `forecast-harness list-domain-packs` returns all seven built-in domain templates.
+- A direct CLI check now verifies `forecast-harness list-domain-packs` returns all eight built-in domain templates.
 - The retrieval layer now supports semantic-only local matches where exact FTS terms would miss, for example `ceo response` retrieving a chunk about a `chief executive`.
 - The workflow can now use manifest-specific semantic aliases, for example matching `military buildup` to a chunk about `force posture` inside the `interstate-crisis` domain without exact lexical overlap.
 - Evidence drafting can now label and diversify packets using manifest evidence categories such as `force posture` and `diplomatic signaling`.
@@ -236,4 +247,5 @@ Verified current progress:
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.
 - The replay suite infrastructure now exists, but the repo still does not contain a large curated historical replay library or calibration loop that tunes model behavior against real outcomes.
 - The repo now has a small curated replay library and a deterministic calibration summary, but it still does not contain a large historical replay corpus or a tuning loop against real outcomes.
-- Domain evolution currently compiles improvements into manifest-owned overlays only. It does not yet synthesize direct edits to domain pack Python files or replay files.
+- Domain evolution currently compiles improvements into manifest-owned overlays only. It does not yet synthesize direct edits to existing domain pack Python files or replay files.
+- New-domain synthesis currently generates template-backed starter packs. It does not yet synthesize richer bespoke Python logic for a new domain beyond that generated template runtime.

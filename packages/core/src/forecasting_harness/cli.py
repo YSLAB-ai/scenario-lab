@@ -7,6 +7,7 @@ from typer import Typer
 
 from forecasting_harness import __version__
 from forecasting_harness.artifacts import RunRepository
+from forecasting_harness.evolution.models import DomainBlueprint
 from forecasting_harness.evolution.service import DomainEvolutionService
 from forecasting_harness.evolution.storage import EvolutionStorage
 from forecasting_harness.domain.generic_event import GenericEventPack
@@ -312,6 +313,16 @@ def summarize_domain_evolution_command(
     domain_pack: str = typer.Option(...),
 ) -> None:
     print(json.dumps(_evolution_service(workspace_root).summarize_domain_evolution(domain_pack)))
+
+
+@app.command("synthesize-domain")
+def synthesize_domain_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    input: Path = typer.Option(...),
+    no_branch: bool = typer.Option(False),
+) -> None:
+    blueprint = DomainBlueprint.model_validate_json(input.read_text(encoding="utf-8"))
+    print(json.dumps(_evolution_service(workspace_root).synthesize_domain(blueprint, create_branch=not no_branch)))
 
 
 @app.command("ingest-file")

@@ -5,7 +5,7 @@ Date: 2026-04-21
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
-- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution package under `packages/core/src/forecasting_harness/evolution/`.
+- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution and synthesis package under `packages/core/src/forecasting_harness/evolution/`.
 - Domain packs are now discovered through a registry instead of hardcoded CLI branching.
 - The workflow now supports generic intake fields with compatibility aliases:
   - `focus_entities`
@@ -26,6 +26,8 @@ Date: 2026-04-21
   - `forecast-harness analyze-domain-weakness`
   - `forecast-harness run-domain-evolution`
   - `forecast-harness summarize-domain-evolution`
+- The repo now also supports protected-surface new-domain synthesis through:
+  - `forecast-harness synthesize-domain`
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
 - The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
@@ -33,7 +35,7 @@ Date: 2026-04-21
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
-- The repo now also includes a built-in 10-case replay library plus deterministic calibration reporting through:
+- The repo now also includes a built-in 12-case replay library plus deterministic calibration reporting through:
   - `forecast-harness run-builtin-replay-suite`
   - `forecast-harness summarize-replay-calibration`
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
@@ -64,7 +66,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `210 passed`
+  - Result: `213 passed`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -114,6 +116,14 @@ Date: 2026-04-21
   - a branch-promotion smoke flow in a temporary git repo:
     - branch created: `codex/domain-evolution-company-action-20260421`
     - head commit message: `feat: evolve company-action domain knowledge`
+- The domain synthesis pass on 2026-04-21 also verified:
+  - a no-branch CLI smoke flow in a temporary workspace:
+    - `synthesize-domain --no-branch`
+    - generated manifest, replay file, pack file, starter test, and registry update
+    - dynamic import of the generated `product-recall` pack succeeded
+  - a branch-promotion smoke flow in a temporary git repo:
+    - branch created: `codex/domain-synthesis-product-recall-20260421`
+    - head commit message: `feat: synthesize product-recall domain`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
@@ -260,6 +270,8 @@ Date: 2026-04-21
   - `docs/superpowers/plans/2026-04-20-ingestion-orchestration-v1-implementation.md`
   - `docs/superpowers/specs/2026-04-20-native-adapter-loop-v1-design.md`
   - `docs/superpowers/plans/2026-04-20-native-adapter-loop-v1-implementation.md`
+  - `docs/superpowers/specs/2026-04-21-domain-synthesis-pipeline-design.md`
+  - `docs/superpowers/plans/2026-04-21-domain-synthesis-pipeline-implementation.md`
 
 ## Current Gaps
 
@@ -275,6 +287,7 @@ Date: 2026-04-21
   - spreadsheet or web archive ingestion
   - rule extraction / knowledge compiler
 - The replay suite infrastructure now exists, but the repo does not yet include a large curated historical replay library or a closed-loop calibration process that retunes model behavior against those replay results.
+- Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline does not yet synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
 
 ## Known Issues and Risks
 

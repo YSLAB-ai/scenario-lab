@@ -166,7 +166,10 @@ def state_signal_text(state: Any) -> str:
 def manifest_state_delta(text: str, field_name: str, *, manifest: DomainManifest | None = None, slug: str | None = None) -> float:
     active_manifest = manifest
     if active_manifest is None and slug is not None:
-        active_manifest = load_domain_manifest(slug)
+        try:
+            active_manifest = load_domain_manifest(slug)
+        except FileNotFoundError:
+            return 0.0
     if active_manifest is None:
         return 0.0
 
@@ -186,7 +189,10 @@ def apply_manifest_state_overlays(
 ) -> dict[str, Any]:
     active_manifest = manifest
     if active_manifest is None and slug is not None:
-        active_manifest = load_domain_manifest(slug)
+        try:
+            active_manifest = load_domain_manifest(slug)
+        except FileNotFoundError:
+            return field_values
     if active_manifest is None:
         return field_values
 
@@ -216,7 +222,10 @@ def apply_manifest_action_biases(
 ) -> list[dict[str, Any]]:
     active_manifest = manifest
     if active_manifest is None and slug is not None:
-        active_manifest = load_domain_manifest(slug)
+        try:
+            active_manifest = load_domain_manifest(slug)
+        except FileNotFoundError:
+            return actions
     if active_manifest is None:
         return actions
 
