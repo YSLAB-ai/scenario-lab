@@ -34,10 +34,12 @@ Date: 2026-04-20
 - Evidence packet drafting now uses manifest evidence-category terms to diversify packet coverage and emit category-aware reasons.
 - The workflow now exposes typed manifest-aware retrieval planning and ingestion planning payloads.
 - The workflow can now draft evidence packets without an explicit query string by expanding deterministic query variants from intake plus manifest categories.
+- The workflow now exposes concrete ingest tasks for missing evidence categories.
+- The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `159 passed`
+  - Result: `163 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -117,6 +119,10 @@ Date: 2026-04-20
   - `draft-retrieval-plan` returned base query `Japan China Naval transit through the Taiwan Strait trigger`
   - `draft-ingestion-plan` reported `covered_evidence_categories = [force posture]`
   - `draft-evidence-packet` returned a packet containing source `doc-1`
+- An ingestion orchestration smoke check on 2026-04-20 also verified:
+  - `draft-ingestion-plan` emitted concrete ingest tasks
+  - `recommend-ingestion-files` mapped local files to `official communications` and `force and capability references`
+  - `batch-ingest-recommended` registered prioritized files with domain/source-role tags
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -143,6 +149,8 @@ Date: 2026-04-20
   - `docs/superpowers/plans/2026-04-20-manifest-retrieval-v1-implementation.md`
   - `docs/superpowers/specs/2026-04-20-manifest-planning-v1-design.md`
   - `docs/superpowers/plans/2026-04-20-manifest-planning-v1-implementation.md`
+  - `docs/superpowers/specs/2026-04-20-ingestion-orchestration-v1-design.md`
+  - `docs/superpowers/plans/2026-04-20-ingestion-orchestration-v1-implementation.md`
 
 ## Current Gaps
 
@@ -152,7 +160,7 @@ Date: 2026-04-20
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
   - calibrated real-world probabilities
 - The built-in domain packs are templates rather than mature validated models.
-- The manifests now guide retrieval planning and ingestion-gap reporting, but they do not yet drive automatic acquisition or ingestion scheduling.
+- The manifests now guide retrieval planning, ingestion-gap reporting, and local ingestion orchestration, but they do not yet drive automatic acquisition or ingestion scheduling.
 - The system does not yet implement:
   - local neural embeddings
   - OCR-backed PDF ingestion
@@ -200,4 +208,4 @@ Date: 2026-04-20
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, a repo-owned knowledge-manifest scaffold, typed manifest loading, manifest-aware retrieval planning, manifest-aware ingestion-gap planning, fully local hybrid lexical/semantic retrieval with manifest-specific alias expansion, manifest-aware evidence packet drafting, local corpus ingestion, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, a repo-owned knowledge-manifest scaffold, typed manifest loading, manifest-aware retrieval planning, manifest-aware ingestion-gap planning, local ingestion orchestration with source-role mapping and prioritized batch ingestion, fully local hybrid lexical/semantic retrieval with manifest-specific alias expansion, manifest-aware evidence packet drafting, local corpus ingestion, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.

@@ -15,9 +15,11 @@ from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.workflow.models import (
     ApprovalPacket,
     AssumptionSummary,
+    BatchIngestionResult,
     ConversationTurn,
     EvidencePacket,
     EvidencePacketItem,
+    IngestionRecommendation,
     IngestionPlan,
     IntakeGuidance,
     IntakeDraft,
@@ -676,6 +678,8 @@ def test_draft_ingestion_plan_reports_missing_manifest_categories(tmp_path: Path
     assert plan.covered_evidence_categories == ["force posture"]
     assert "diplomatic signaling" in plan.missing_evidence_categories
     assert plan.starter_sources[0]["kind"] == "official communications"
+    assert plan.ingest_tasks[0].evidence_category == "diplomatic signaling"
+    assert plan.ingest_tasks[0].source_role == "official communications"
 
 
 def test_draft_evidence_packet_can_generate_query_variants_without_explicit_query_text(tmp_path: Path) -> None:
@@ -710,6 +714,102 @@ def test_draft_evidence_packet_can_generate_query_variants_without_explicit_quer
 
     assert [item.source_id for item in packet.items] == ["doc-1"]
     assert packet.items[0].reason == "Candidate passage for approved evidence packet: force posture"
+
+
+def test_recommend_ingestion_files_maps_local_files_to_source_roles(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+    (source_dir / "deployment-notes.md").write_text(
+        "# Deployment\nForce posture and readiness changed near the theater.\n",
+        encoding="utf-8",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    recommendations = service.recommend_ingestion_files(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        path=source_dir,
+    )
+
+    assert all(isinstance(item, IngestionRecommendation) for item in recommendations)
+    by_source_id = {item.source_id: item for item in recommendations}
+    assert by_source_id["official-warning"].source_role == "official communications"
+    assert by_source_id["official-warning"].recommended_tags["domain"] == "interstate-crisis"
+    assert "diplomatic signaling" in by_source_id["official-warning"].matched_evidence_categories
+    assert by_source_id["deployment-notes"].source_role == "force and capability references"
+    assert "force posture" in by_source_id["deployment-notes"].matched_evidence_categories
+
+
+def test_batch_ingest_recommended_files_registers_prioritized_sources_with_role_tags(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+    (source_dir / "deployment-notes.md").write_text(
+        "# Deployment\nForce posture and readiness changed near the theater.\n",
+        encoding="utf-8",
+    )
+    (source_dir / "ignore.txt").write_text("general note without useful signal\n", encoding="utf-8")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    result = service.batch_ingest_recommended_files(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        path=source_dir,
+        max_files=2,
+    )
+
+    assert isinstance(result, BatchIngestionResult)
+    assert result.ingested_count == 2
+    assert result.skipped_count == 1
+    assert set(result.ingested_source_ids) == {"official-warning", "deployment-notes"}
+
+    documents = corpus.list_documents()
+    assert documents[0]["tags"]["source_role"] == "force and capability references"
+    assert documents[0]["tags"]["domain"] == "interstate-crisis"
+    assert documents[1]["tags"]["source_role"] == "official communications"
 
 
 def test_curate_evidence_draft_keeps_requested_ids_and_records_event() -> None:

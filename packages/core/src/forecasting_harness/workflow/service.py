@@ -12,14 +12,16 @@ from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.models import BeliefState
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.query_api import summarize_top_branches
-from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
+from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
 from forecasting_harness.workflow.models import (
     ApprovalPacket,
     AssumptionSummary,
+    BatchIngestionResult,
     ConversationTurn,
     EvidencePacket,
+    IngestionRecommendation,
     IngestionPlan,
     IntakeDraft,
     IntakeGuidance,
@@ -29,7 +31,7 @@ from forecasting_harness.workflow.models import (
     RunRecord,
     RunSummary,
 )
-from forecasting_harness.workflow.planning import build_query_variants, classify_text
+from forecasting_harness.workflow.planning import build_ingest_tasks, build_query_variants, category_match_scores, classify_text, compact_query, select_source_role
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.reporting import render_report
 
@@ -355,6 +357,128 @@ class WorkflowService:
             recommended_source_types=list(manifest.recommended_source_types),
             starter_sources=[source.model_dump(mode="json") for source in manifest.starter_sources],
             ingestion_priorities=list(manifest.ingestion_priorities),
+            ingest_tasks=build_ingest_tasks(manifest, missing_categories=missing_categories),
+        )
+
+    def recommend_ingestion_files(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        pack: DomainPack,
+        path,
+    ) -> list[IngestionRecommendation]:
+        if self.corpus_registry is None:
+            raise ValueError("corpus_registry is required for ingestion recommendations")
+
+        manifest = load_domain_manifest(pack.slug())
+        plan = self.draft_ingestion_plan(run_id, revision_id, pack=pack)
+        candidate_categories = plan.missing_evidence_categories or manifest.evidence_categories
+        category_terms = manifest.category_terms()
+
+        recommendations: list[IngestionRecommendation] = []
+        for candidate in sorted(path.iterdir()):
+            if not candidate.is_file():
+                continue
+            try:
+                detect_source_type(candidate)
+            except ValueError:
+                continue
+
+            document = ingest_file(candidate)
+            content_text = compact_query([document.title, " ".join(chunk.content for chunk in document.chunks)])
+            scores = category_match_scores(
+                content_text,
+                category_terms={category: category_terms.get(category, [category]) for category in candidate_categories},
+            )
+            matched_categories = [category for category in candidate_categories if category in scores]
+            if not matched_categories:
+                continue
+
+            source = select_source_role(manifest, text=content_text, matched_categories=matched_categories)
+            priority_score = 0.0
+            for index, category in enumerate(candidate_categories):
+                if category in scores:
+                    priority_score += float((len(candidate_categories) - index) * scores[category])
+            recommended_tags = {"domain": pack.slug(), "source_role": source.kind}
+            recommended_tags["evidence_category"] = matched_categories[0]
+            recommendations.append(
+                IngestionRecommendation(
+                    path=str(candidate.resolve()),
+                    source_id=document.source_id,
+                    title=document.title,
+                    source_type=document.source_type,
+                    source_role=source.kind,
+                    matched_evidence_categories=matched_categories,
+                    priority_score=priority_score,
+                    recommended_tags=recommended_tags,
+                )
+            )
+
+        recommendations.sort(
+            key=lambda item: (-item.priority_score, item.source_role, item.source_id)
+        )
+        return recommendations
+
+    def batch_ingest_recommended_files(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        pack: DomainPack,
+        path,
+        max_files: int = 5,
+    ) -> BatchIngestionResult:
+        if self.corpus_registry is None:
+            raise ValueError("corpus_registry is required for batch ingestion")
+
+        recommendations = self.recommend_ingestion_files(run_id, revision_id, pack=pack, path=path)
+        selected = recommendations[:max_files]
+        selected_paths = {item.path for item in selected}
+        skipped_count = 0
+        ingested_source_ids: list[str] = []
+
+        for candidate in sorted(path.iterdir()):
+            if not candidate.is_file():
+                continue
+            try:
+                detect_source_type(candidate)
+            except ValueError:
+                skipped_count += 1
+                continue
+            if str(candidate.resolve()) not in selected_paths:
+                skipped_count += 1
+                continue
+
+            recommendation = next(item for item in selected if item.path == str(candidate.resolve()))
+            document = ingest_file(
+                candidate,
+                source_id=recommendation.source_id,
+                title=recommendation.title,
+                tags=recommendation.recommended_tags,
+            )
+            self.corpus_registry.register_document(
+                source_id=document.source_id,
+                title=document.title,
+                source_type=document.source_type,
+                path=document.path,
+                published_at=document.published_at,
+                tags=document.tags,
+                chunks=[
+                    {
+                        "chunk_id": chunk.chunk_id,
+                        "location": chunk.location,
+                        "content": chunk.content,
+                    }
+                    for chunk in document.chunks
+                ],
+            )
+            ingested_source_ids.append(document.source_id)
+
+        return BatchIngestionResult(
+            ingested_count=len(ingested_source_ids),
+            skipped_count=skipped_count,
+            ingested_source_ids=ingested_source_ids,
         )
 
     def curate_evidence_draft(self, run_id: str, revision_id: str, evidence_ids: list[str]) -> EvidencePacket:

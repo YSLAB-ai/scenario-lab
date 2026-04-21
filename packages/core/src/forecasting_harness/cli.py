@@ -445,6 +445,43 @@ def draft_ingestion_plan_command(
     print(service.draft_ingestion_plan(run_id, revision_id, pack=pack).model_dump_json())
 
 
+@app.command("recommend-ingestion-files")
+def recommend_ingestion_files_command(
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path = typer.Option(...),
+    path: Path = typer.Option(...),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+) -> None:
+    repo = RunRepository(root)
+    pack = _load_pack_for_run(repo, run_id)
+    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    recommendations = service.recommend_ingestion_files(run_id, revision_id, pack=pack, path=path)
+    print(json.dumps([item.model_dump(mode="json") for item in recommendations]))
+
+
+@app.command("batch-ingest-recommended")
+def batch_ingest_recommended_command(
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path = typer.Option(...),
+    path: Path = typer.Option(...),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+    max_files: int = typer.Option(5),
+) -> None:
+    repo = RunRepository(root)
+    pack = _load_pack_for_run(repo, run_id)
+    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    result = service.batch_ingest_recommended_files(
+        run_id,
+        revision_id,
+        pack=pack,
+        path=path,
+        max_files=max_files,
+    )
+    print(result.model_dump_json())
+
+
 @app.command("draft-approval-packet")
 def draft_approval_packet(
     root: Path = typer.Option(Path(".forecast")),

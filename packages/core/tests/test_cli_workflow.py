@@ -446,6 +446,134 @@ def test_draft_ingestion_plan_command(tmp_path: Path) -> None:
     assert "diplomatic signaling" in payload["missing_evidence_categories"]
 
 
+def test_recommend_ingestion_files_command(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    intake_path = tmp_path / "intake.json"
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+    (source_dir / "deployment-notes.md").write_text(
+        "# Deployment\nForce posture and readiness changed near the theater.\n",
+        encoding="utf-8",
+    )
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "recommend-ingestion-files",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    by_source_id = {item["source_id"]: item for item in payload}
+    assert by_source_id["official-warning"]["source_role"] == "official communications"
+    assert by_source_id["official-warning"]["recommended_tags"]["domain"] == "interstate-crisis"
+    assert "diplomatic signaling" in by_source_id["official-warning"]["matched_evidence_categories"]
+
+
+def test_batch_ingest_recommended_command(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    intake_path = tmp_path / "intake.json"
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+    (source_dir / "deployment-notes.md").write_text(
+        "# Deployment\nForce posture and readiness changed near the theater.\n",
+        encoding="utf-8",
+    )
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "batch-ingest-recommended",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--max-files",
+            "2",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["ingested_count"] == 2
+    assert set(payload["ingested_source_ids"]) == {"official-warning", "deployment-notes"}
+
+    documents = CorpusRegistry(corpus_db).list_documents()
+    assert documents[0]["tags"]["source_role"] == "force and capability references"
+    assert documents[1]["tags"]["source_role"] == "official communications"
+
+
 def test_draft_intake_guidance_command_returns_pack_guidance(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

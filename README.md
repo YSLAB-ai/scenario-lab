@@ -35,6 +35,8 @@ The local CLI now supports the verified workflow commands:
 - `forecast-harness save-evidence-draft`
 - `forecast-harness draft-retrieval-plan`
 - `forecast-harness draft-ingestion-plan`
+- `forecast-harness recommend-ingestion-files`
+- `forecast-harness batch-ingest-recommended`
 - `forecast-harness draft-evidence-packet`
 - `forecast-harness curate-evidence-draft`
 - `forecast-harness draft-approval-packet`
@@ -54,7 +56,7 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `159 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `163 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -73,6 +75,10 @@ Verified current progress:
 - The workflow core can now draft deterministic manifest-aware planning payloads for:
   - retrieval query expansion
   - corpus ingestion gaps
+- The workflow core can now also turn ingestion gaps into:
+  - concrete ingest tasks
+  - ranked local file recommendations
+  - prioritized batch ingestion into the corpus
 - The simulation engine now runs deterministic multi-step MCTS over `BeliefState` and writes simulation payloads with:
   - `search_mode = "mcts"`
   - `iterations`
@@ -107,6 +113,8 @@ Verified current progress:
 - Evidence drafting can now label and diversify packets using manifest evidence categories such as `force posture` and `diplomatic signaling`.
 - Evidence drafting can now also run with no explicit `query_text`; the core generates deterministic manifest-aware query variants from the intake.
 - The CLI now exposes `draft-retrieval-plan` and `draft-ingestion-plan` so adapters can ask the core what to search for and what the local corpus is still missing.
+- The CLI now exposes `recommend-ingestion-files` and `batch-ingest-recommended` so the core can map local files to domain/source roles and ingest the highest-priority candidates directly.
+- Batch ingestion now stores recommended tags such as `domain`, `source_role`, and top `evidence_category` on the ingested document rows.
 - A direct CLI smoke check now verifies:
   - `draft-retrieval-plan` returns deterministic `query_variants` for the current intake
   - `draft-ingestion-plan` reports covered and missing manifest evidence categories from the local corpus
@@ -122,4 +130,5 @@ Verified current progress:
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The source manifests define what to ingest, but they do not yet populate the local corpus automatically.
 - The source manifests now guide retrieval planning and ingestion-gap reporting, but they do not yet trigger automatic ingestion or open-web acquisition.
+- The source manifests now guide ingestion orchestration, but they do not yet schedule ingestion work automatically or acquire files from outside the local workspace.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.

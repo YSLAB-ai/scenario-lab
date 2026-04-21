@@ -79,6 +79,14 @@ class RetrievalPlan(BaseModel):
     target_evidence_categories: list[str] = Field(default_factory=list)
 
 
+class IngestionTask(BaseModel):
+    evidence_category: str
+    priority_rank: int
+    source_role: str
+    starter_source: dict[str, str]
+    recommended_source_types: list[str] = Field(default_factory=list)
+
+
 class IngestionPlan(BaseModel):
     revision_id: str
     domain_pack: str
@@ -89,6 +97,24 @@ class IngestionPlan(BaseModel):
     recommended_source_types: list[str] = Field(default_factory=list)
     starter_sources: list[dict[str, str]] = Field(default_factory=list)
     ingestion_priorities: list[str] = Field(default_factory=list)
+    ingest_tasks: list[IngestionTask] = Field(default_factory=list)
+
+
+class IngestionRecommendation(BaseModel):
+    path: str
+    source_id: str
+    title: str
+    source_type: str
+    source_role: str
+    matched_evidence_categories: list[str] = Field(default_factory=list)
+    priority_score: float = 0.0
+    recommended_tags: dict[str, str] = Field(default_factory=dict)
+
+
+class BatchIngestionResult(BaseModel):
+    ingested_count: int = 0
+    skipped_count: int = 0
+    ingested_source_ids: list[str] = Field(default_factory=list)
 
 
 class IntakeGuidance(BaseModel):
