@@ -14,8 +14,10 @@ Date: 2026-04-20
   - `suggested_entities`
   - `pack_fields`
 - The corpus now supports document metadata plus citation-friendly chunk rows in the local SQLite/FTS registry.
+- The corpus now also stores local semantic vectors per chunk in the same SQLite database.
 - The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into the corpus.
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
+- The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
@@ -30,7 +32,7 @@ Date: 2026-04-20
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `146 passed`
+  - Result: `148 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -90,6 +92,10 @@ Date: 2026-04-20
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
+- A retrieval verification on 2026-04-20 also confirmed a semantic-only local match:
+  - query `ceo response`
+  - content `The chief executive stabilized messaging quickly.`
+  - result returned with `semantic_score > 0` and `lexical_score = 0.0`
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -122,6 +128,7 @@ Date: 2026-04-20
   - calibrated real-world probabilities
 - The built-in domain packs are templates rather than mature validated models.
 - The system does not yet implement:
+  - local neural embeddings
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
   - historical replay and calibration
@@ -163,7 +170,8 @@ Date: 2026-04-20
 - `20ea8d9` `feat: add deterministic mcts simulation engine`
 - `51eac3d` `feat: add reusable domain template packs`
 - `668952b` `docs: add domain knowledge manifests`
+- `3e19855` `feat: add local semantic vector index`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, generic intake aliases, a repo-owned knowledge-manifest scaffold, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, a repo-owned knowledge-manifest scaffold, local corpus ingestion, fully local hybrid lexical/semantic retrieval, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.

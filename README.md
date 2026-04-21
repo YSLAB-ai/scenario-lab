@@ -57,6 +57,7 @@ Verified current progress:
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
 - The local corpus can now ingest curated `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into a searchable SQLite/FTS corpus with citation-friendly chunk locations.
+- The local corpus now also persists local semantic vectors per chunk and uses hybrid lexical + semantic retrieval with no external API.
 - The repo now includes source-manifest scaffolding under `knowledge/domains/` for:
   - `company-action`
   - `election-shock`
@@ -93,6 +94,7 @@ Verified current progress:
   - the rerun reused cached nodes (`reused_nodes = 7`) and skipped invalidated ones (`skipped_nodes = 9`)
   - the rerun reported transposition metadata (`transposition_hits = 37`, `state_table_size = 14`, `node_count = 40`)
 - A direct CLI check now verifies `forecast-harness list-domain-packs` returns all seven built-in domain templates.
+- The retrieval layer now supports semantic-only local matches where exact FTS terms would miss, for example `ceo response` retrieving a chunk about a `chief executive`.
 
 ## Remaining Gaps
 
@@ -100,6 +102,7 @@ Verified current progress:
 - The deterministic core now supports a direct structured input path for intake and approvals and a conversation-stage turn contract, but there is not yet a finished conversational adapter loop that drafts and approves them end to end inside Codex or Claude Code.
 - Manual file-backed paths still exist for evidence replacement and bulk edits.
 - The repository still relies on curated local inputs rather than open-web retrieval.
+- The semantic retrieval layer is a deterministic local baseline, not a neural embedding model.
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The source manifests define what to ingest, but they do not yet populate the local corpus automatically.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.
