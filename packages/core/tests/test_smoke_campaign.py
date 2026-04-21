@@ -182,7 +182,13 @@ SCENARIOS = [
             "funding-stress.md": "Funding markets widen immediately and investors debate whether policy credibility has improved or deteriorated.",
         },
         "expected_sources": {"rate-shock", "funding-stress"},
-        "expected_fields": {"liquidity_stress", "policy_credibility", "rate_pressure"},
+        "expected_fields": {
+            "contagion_risk",
+            "liquidity_stress",
+            "policy_credibility",
+            "policy_optionality",
+            "rate_pressure",
+        },
     },
     {
         "run_id": "regulator-adtech",
@@ -203,7 +209,13 @@ SCENARIOS = [
             "adtech-remediation.md": "The ad-tech platform expands internal remediation and coordinates with external counsel as enforcement momentum builds.",
         },
         "expected_sources": {"adtech-remedies", "adtech-remediation"},
-        "expected_fields": {"compliance_posture", "enforcement_momentum", "public_attention"},
+        "expected_fields": {
+            "compliance_posture",
+            "enforcement_momentum",
+            "litigation_readiness",
+            "public_attention",
+            "remedy_severity",
+        },
     },
     {
         "run_id": "supply-rare-earth",
@@ -224,7 +236,13 @@ SCENARIOS = [
             "rare-earth-substitute.md": "Procurement teams scramble to qualify alternate sources for specialized rare-earth processing.",
         },
         "expected_sources": {"rare-earth-ports", "rare-earth-substitute"},
-        "expected_fields": {"inventory_cover_days", "substitution_flexibility", "transport_reliability"},
+        "expected_fields": {
+            "customer_penalty_pressure",
+            "inventory_cover_days",
+            "substitution_flexibility",
+            "supplier_concentration",
+            "transport_reliability",
+        },
     },
     {
         "run_id": "supplier-flooding",
@@ -245,7 +263,13 @@ SCENARIOS = [
             "supplier-reroute.md": "The automaker and logistics partners consider rerouting and alternate suppliers to keep launches alive.",
         },
         "expected_sources": {"supplier-flood", "supplier-reroute"},
-        "expected_fields": {"inventory_cover_days", "substitution_flexibility", "transport_reliability"},
+        "expected_fields": {
+            "customer_penalty_pressure",
+            "inventory_cover_days",
+            "substitution_flexibility",
+            "supplier_concentration",
+            "transport_reliability",
+        },
     },
 ]
 

@@ -32,6 +32,9 @@ Date: 2026-04-21
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The company-action pack now infers `board_cohesion` and `operational_stability` from approved evidence and uses them inside action priors, transitions, and scoring.
+- The market-shock pack now infers `contagion_risk` and `policy_optionality` from approved evidence and uses them inside action priors, transitions, and scoring.
+- The regulatory-enforcement pack now infers `remedy_severity` and `litigation_readiness` from approved evidence and uses them inside action priors, transitions, and scoring.
+- The supply-chain-disruption pack now infers `supplier_concentration` and `customer_penalty_pressure` from approved evidence and uses them inside action priors, transitions, and scoring.
 - Corpus registration now disambiguates repeated `source_id` stems by file path instead of silently replacing earlier unrelated documents.
 - Evidence drafting and ingestion planning now scope same-domain corpus reuse to the current run and primary actors instead of borrowing stale material from other scenarios.
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
@@ -70,6 +73,15 @@ Date: 2026-04-21
   - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
+- The next deepening pass on 2026-04-21 also verified richer evidence-conditioned state construction and replay coverage for:
+  - `market-shock`
+  - `regulatory-enforcement`
+  - `supply-chain-disruption`
+- That same pass verified these top branches on the realistic smoke campaign:
+  - `Market rate shock` -> `Emergency liquidity`
+  - `Regulator ad-tech` -> `Internal remediation`
+  - `Supply rare-earth` -> `Expedite alternatives`
+  - `Supplier flooding` -> `Expedite alternatives`
 - The 2026-04-21 smoke campaign exposed and the current code now fixes:
   - natural-language source-role and evidence-category matching that was too brittle for realistic wording
   - source-id collisions when different directories contained the same filename stem

@@ -43,7 +43,13 @@ class MarketShockPack(DomainPack):
         ]
 
     def extend_schema(self) -> dict[str, Any]:
-        return {"liquidity_stress": "float", "rate_pressure": "float", "policy_credibility": "float"}
+        return {
+            "contagion_risk": "float",
+            "liquidity_stress": "float",
+            "policy_credibility": "float",
+            "policy_optionality": "float",
+            "rate_pressure": "float",
+        }
 
     def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
         evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
@@ -71,10 +77,25 @@ class MarketShockPack(DomainPack):
         )
         policy_credibility -= 0.08 * count_term_matches(text, ["instability", "surprise decision", "wait and see"])
 
+        contagion_risk = 0.35 + 0.12 * count_term_matches(
+            text,
+            ["credit spreads", "cross-asset", "spillover", "funding market", "dealers", "global equities"],
+        )
+        contagion_risk += 0.08 * count_term_matches(text, ["money market", "treasury market", "banks"])
+
+        policy_optionality = 0.3
+        policy_optionality += 0.12 * count_term_matches(
+            text,
+            ["swap lines", "market functioning", "facility", "liquidity tools", "backstop", "authorities will prioritize"],
+        )
+        policy_optionality -= 0.08 * count_term_matches(text, ["credibility at stake", "emergency rate hike", "surprise decision"])
+
         return {
+            "contagion_risk": round(bounded(contagion_risk), 3),
             "liquidity_stress": round(bounded(liquidity_stress), 3),
             "rate_pressure": round(bounded(rate_pressure), 3),
             "policy_credibility": round(bounded(policy_credibility), 3),
+            "policy_optionality": round(bounded(policy_optionality), 3),
         }
 
     def is_terminal(self, state: Any, depth: int) -> bool:
@@ -82,78 +103,204 @@ class MarketShockPack(DomainPack):
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
+        contagion = numeric_field(state, "contagion_risk", 0.35)
         liquidity = numeric_field(state, "liquidity_stress", 0.45)
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
+        optionality = numeric_field(state, "policy_optionality", 0.3)
         if phase == "trigger":
             return [
-                {"action_id": "hawkish-guidance", "label": "Hawkish guidance", "prior": bounded(0.18 + rates * 0.25), "dependencies": {"fields": ["rate_pressure", "policy_credibility"]}},
-                {"action_id": "emergency-liquidity", "label": "Emergency liquidity", "prior": bounded(0.22 + liquidity * 0.25), "dependencies": {"fields": ["liquidity_stress"]}},
-                {"action_id": "wait-and-see", "label": "Wait and see", "prior": bounded(0.12 + max(0.0, credibility - 0.35) * 0.25), "dependencies": {"fields": ["policy_credibility"]}},
-                {"action_id": "coordinated-backstop", "label": "Coordinated backstop", "prior": bounded(0.16 + liquidity * 0.15 + credibility * 0.1), "dependencies": {"fields": ["liquidity_stress", "policy_credibility"]}},
+                {
+                    "action_id": "hawkish-guidance",
+                    "label": "Hawkish guidance",
+                    "prior": bounded(0.1 + rates * 0.22 + credibility * 0.1 - optionality * 0.08),
+                    "dependencies": {"fields": ["policy_credibility", "policy_optionality", "rate_pressure"]},
+                },
+                {
+                    "action_id": "emergency-liquidity",
+                    "label": "Emergency liquidity",
+                    "prior": bounded(0.14 + liquidity * 0.18 + contagion * 0.18 + optionality * 0.14),
+                    "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_optionality"]},
+                },
+                {
+                    "action_id": "wait-and-see",
+                    "label": "Wait and see",
+                    "prior": bounded(0.08 + max(0.0, credibility - 0.4) * 0.18 - contagion * 0.12),
+                    "dependencies": {"fields": ["contagion_risk", "policy_credibility"]},
+                },
+                {
+                    "action_id": "coordinated-backstop",
+                    "label": "Coordinated backstop",
+                    "prior": bounded(0.1 + liquidity * 0.12 + contagion * 0.16 + credibility * 0.08 + optionality * 0.16),
+                    "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_credibility", "policy_optionality"]},
+                },
             ]
         if phase == "repricing":
             return [
-                {"action_id": "verbal-backstop", "label": "Verbal backstop", "prior": 0.5},
-                {"action_id": "forced-deleveraging", "label": "Forced deleveraging", "prior": 0.4},
+                {"action_id": "verbal-backstop", "label": "Verbal backstop", "prior": bounded(0.15 + credibility * 0.18 + optionality * 0.16)},
+                {"action_id": "forced-deleveraging", "label": "Forced deleveraging", "prior": bounded(0.12 + liquidity * 0.14 + contagion * 0.18)},
             ]
         if phase == "policy-response":
             return [
-                {"action_id": "swap-lines", "label": "Swap lines", "prior": 0.5},
-                {"action_id": "rate-cut-path", "label": "Rate cut path", "prior": 0.45},
+                {"action_id": "swap-lines", "label": "Swap lines", "prior": bounded(0.16 + optionality * 0.22 + contagion * 0.14)},
+                {"action_id": "rate-cut-path", "label": "Rate cut path", "prior": bounded(0.14 + optionality * 0.16 + max(0.0, rates - 0.55) * 0.18)},
             ]
         if phase == "liquidity-stabilization":
             return [
-                {"action_id": "restore-function", "label": "Restore function", "prior": 0.55},
-                {"action_id": "moral-hazard-pushback", "label": "Moral hazard pushback", "prior": 0.35},
+                {"action_id": "restore-function", "label": "Restore function", "prior": bounded(0.18 + liquidity * 0.08 + optionality * 0.18)},
+                {"action_id": "moral-hazard-pushback", "label": "Moral hazard pushback", "prior": bounded(0.1 + credibility * 0.12 + max(0.0, 0.5 - optionality) * 0.14)},
             ]
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
         action_id = action_context.get("action_id") or action_context.get("branch_id")
+        contagion = numeric_field(state, "contagion_risk", 0.35)
         liquidity = numeric_field(state, "liquidity_stress", 0.45)
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
+        optionality = numeric_field(state, "policy_optionality", 0.3)
         phase = getattr(state, "phase", None) or "trigger"
 
         if phase == "trigger" and action_id == "hawkish-guidance":
-            return [with_updates(state, phase="repricing", field_updates={"rate_pressure": rates + 0.12, "policy_credibility": credibility + 0.05})]
+            return [
+                with_updates(
+                    state,
+                    phase="repricing",
+                    field_updates={
+                        "contagion_risk": bounded(contagion + 0.06),
+                        "rate_pressure": rates + 0.12,
+                        "policy_credibility": credibility + 0.05,
+                        "policy_optionality": max(0.0, optionality - 0.06),
+                    },
+                )
+            ]
         if phase == "trigger" and action_id == "emergency-liquidity":
-            return [with_updates(state, phase="policy-response", field_updates={"liquidity_stress": max(0.0, liquidity - 0.18), "policy_credibility": credibility + 0.08})]
+            return [
+                with_updates(
+                    state,
+                    phase="policy-response",
+                    field_updates={
+                        "contagion_risk": max(0.0, contagion - 0.08),
+                        "liquidity_stress": max(0.0, liquidity - 0.18),
+                        "policy_credibility": credibility + 0.08,
+                        "policy_optionality": optionality + 0.04,
+                    },
+                )
+            ]
         if phase == "trigger" and action_id == "wait-and-see":
-            return [with_updates(state, phase="repricing", field_updates={"liquidity_stress": liquidity + 0.1, "policy_credibility": credibility - 0.08})]
+            return [
+                with_updates(
+                    state,
+                    phase="repricing",
+                    field_updates={
+                        "contagion_risk": bounded(contagion + 0.1),
+                        "liquidity_stress": liquidity + 0.1,
+                        "policy_credibility": credibility - 0.08,
+                        "policy_optionality": max(0.0, optionality - 0.04),
+                    },
+                )
+            ]
         if phase == "trigger" and action_id == "coordinated-backstop":
             return [
                 with_updates(
                     state,
                     phase="policy-response",
-                    field_updates={"liquidity_stress": max(0.0, liquidity - 0.12), "policy_credibility": credibility + 0.12},
+                    field_updates={
+                        "contagion_risk": max(0.0, contagion - 0.1),
+                        "liquidity_stress": max(0.0, liquidity - 0.12),
+                        "policy_credibility": credibility + 0.12,
+                        "policy_optionality": optionality + 0.08,
+                    },
                 )
             ]
         if phase == "repricing" and action_id == "verbal-backstop":
-            return [with_updates(state, phase="liquidity-stabilization", field_updates={"liquidity_stress": max(0.0, liquidity - 0.1), "policy_credibility": credibility + 0.08})]
+            return [
+                with_updates(
+                    state,
+                    phase="liquidity-stabilization",
+                    field_updates={
+                        "contagion_risk": max(0.0, contagion - 0.06),
+                        "liquidity_stress": max(0.0, liquidity - 0.1),
+                        "policy_credibility": credibility + 0.08,
+                        "policy_optionality": optionality + 0.04,
+                    },
+                )
+            ]
         if phase == "repricing" and action_id == "forced-deleveraging":
-            return [with_updates(state, phase="liquidity-stabilization", field_updates={"liquidity_stress": liquidity + 0.12, "rate_pressure": rates + 0.05})]
+            return [
+                with_updates(
+                    state,
+                    phase="liquidity-stabilization",
+                    field_updates={
+                        "contagion_risk": bounded(contagion + 0.08),
+                        "liquidity_stress": liquidity + 0.12,
+                        "rate_pressure": rates + 0.05,
+                    },
+                )
+            ]
         if phase == "policy-response" and action_id == "swap-lines":
-            return [with_updates(state, phase="resolution", field_updates={"liquidity_stress": max(0.0, liquidity - 0.2), "policy_credibility": credibility + 0.06})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "contagion_risk": max(0.0, contagion - 0.12),
+                        "liquidity_stress": max(0.0, liquidity - 0.2),
+                        "policy_credibility": credibility + 0.06,
+                        "policy_optionality": optionality + 0.05,
+                    },
+                )
+            ]
         if phase == "policy-response" and action_id == "rate-cut-path":
-            return [with_updates(state, phase="liquidity-stabilization", field_updates={"rate_pressure": max(0.0, rates - 0.15), "policy_credibility": credibility + 0.04})]
+            return [
+                with_updates(
+                    state,
+                    phase="liquidity-stabilization",
+                    field_updates={
+                        "liquidity_stress": max(0.0, liquidity - 0.08),
+                        "rate_pressure": max(0.0, rates - 0.15),
+                        "policy_credibility": credibility + 0.04,
+                    },
+                )
+            ]
         if phase == "liquidity-stabilization" and action_id == "restore-function":
-            return [with_updates(state, phase="resolution", field_updates={"liquidity_stress": max(0.0, liquidity - 0.15), "rate_pressure": max(0.0, rates - 0.05)})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "contagion_risk": max(0.0, contagion - 0.08),
+                        "liquidity_stress": max(0.0, liquidity - 0.15),
+                        "rate_pressure": max(0.0, rates - 0.05),
+                    },
+                )
+            ]
         if phase == "liquidity-stabilization" and action_id == "moral-hazard-pushback":
-            return [with_updates(state, phase="resolution", field_updates={"policy_credibility": credibility - 0.02, "liquidity_stress": max(0.0, liquidity - 0.05)})]
+            return [
+                with_updates(
+                    state,
+                    phase="resolution",
+                    field_updates={
+                        "policy_credibility": credibility - 0.02,
+                        "liquidity_stress": max(0.0, liquidity - 0.05),
+                        "policy_optionality": max(0.0, optionality - 0.06),
+                    },
+                )
+            ]
         return [state]
 
     def score_state(self, state: Any) -> dict[str, float]:
         phase = getattr(state, "phase", None) or "trigger"
+        contagion = numeric_field(state, "contagion_risk", 0.35)
         liquidity = numeric_field(state, "liquidity_stress", 0.45)
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
+        optionality = numeric_field(state, "policy_optionality", 0.3)
         instability = {"trigger": 0.45, "repricing": 0.65, "policy-response": 0.4, "liquidity-stabilization": 0.3, "resolution": 0.15}[phase]
         return {
-            "escalation": bounded(instability + liquidity * 0.25 + max(0.0, rates - 0.5) * 0.2),
-            "negotiation": bounded(0.2 + credibility * 0.35 + max(0.0, 0.6 - liquidity) * 0.2),
-            "economic_stress": bounded(0.25 + liquidity * 0.45 + rates * 0.2),
+            "escalation": bounded(instability + liquidity * 0.22 + contagion * 0.2 + max(0.0, rates - 0.5) * 0.18),
+            "negotiation": bounded(0.16 + credibility * 0.28 + optionality * 0.18 + max(0.0, 0.6 - liquidity) * 0.18),
+            "economic_stress": bounded(0.22 + liquidity * 0.4 + rates * 0.18 + contagion * 0.14),
         }
 
     def validate_state(self, state: Any) -> list[str]:
