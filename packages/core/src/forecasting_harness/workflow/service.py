@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from forecasting_harness.artifacts import RunRepository
+from forecasting_harness.domain.base import DomainPack
+from forecasting_harness.domain.registry import DomainPackRegistry, build_default_registry
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
@@ -11,9 +13,35 @@ from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.reporting import render_report
 
 
+def _validate_pack_fields(pack: DomainPack, intake: IntakeDraft) -> None:
+    schema = pack.extend_schema()
+    unknown_fields = sorted(set(intake.pack_fields) - set(schema))
+    if unknown_fields:
+        raise ValueError(f"unknown pack_fields: {', '.join(unknown_fields)}")
+
+    expected_types = {"str": str, "int": int, "float": float, "bool": bool}
+    for field_name, value in intake.pack_fields.items():
+        expected_type_name = schema[field_name]
+        expected_type = expected_types.get(expected_type_name)
+        if expected_type is None:
+            raise ValueError(f"unsupported pack field type: {expected_type_name}")
+        if not isinstance(value, expected_type):
+            raise ValueError(f"pack_fields.{field_name} must be {expected_type_name}")
+
+
 class WorkflowService:
-    def __init__(self, repository: RunRepository) -> None:
+    def __init__(
+        self,
+        repository: RunRepository,
+        *,
+        domain_registry: DomainPackRegistry | None = None,
+    ) -> None:
         self.repository = repository
+        self.domain_registry = domain_registry or build_default_registry()
+
+    def _pack_for_run(self, run_id: str) -> DomainPack:
+        run = self.repository.load_run_record(run_id)
+        return self.domain_registry.resolve(run.domain_pack)
 
     def start_run(self, run_id: str, domain_pack: str) -> RunRecord:
         run = RunRecord(run_id=run_id, domain_pack=domain_pack, created_at=datetime.now(timezone.utc))
@@ -22,6 +50,11 @@ class WorkflowService:
         return run
 
     def save_intake_draft(self, run_id: str, revision_id: str, intake: IntakeDraft) -> None:
+        pack = self._pack_for_run(run_id)
+        _validate_pack_fields(pack, intake)
+        validation_errors = pack.validate_intake(intake)
+        if validation_errors:
+            raise ValueError("; ".join(validation_errors))
         self.repository.write_revision_json(run_id, "intake", revision_id, intake.model_dump(mode="json"), approved=False)
         self.repository.append_event(run_id, "intake-drafted", {"revision_id": revision_id})
 

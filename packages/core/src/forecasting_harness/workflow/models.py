@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 RevisionStatus = Literal["draft", "approved", "simulated"]
 
@@ -22,14 +22,27 @@ class RevisionRecord(BaseModel):
 
 
 class IntakeDraft(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     event_framing: str
-    primary_actors: list[str] = Field(min_length=2, max_length=2)
-    trigger: str
-    current_phase: str
+    focus_entities: list[str] = Field(
+        min_length=1,
+        validation_alias=AliasChoices("focus_entities", "primary_actors"),
+    )
+    current_development: str = Field(
+        validation_alias=AliasChoices("current_development", "trigger"),
+    )
+    current_stage: str = Field(
+        validation_alias=AliasChoices("current_stage", "current_phase"),
+    )
     time_horizon: str
     known_constraints: list[str] = Field(default_factory=list)
     known_unknowns: list[str] = Field(default_factory=list)
-    suggested_actors: list[str] = Field(default_factory=list)
+    suggested_entities: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("suggested_entities", "suggested_actors"),
+    )
+    pack_fields: dict[str, object] = Field(default_factory=dict)
 
 
 class AssumptionSummary(BaseModel):

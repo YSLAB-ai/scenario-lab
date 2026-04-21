@@ -28,8 +28,15 @@ class InterstateCrisisPack(DomainPack):
     def canonical_phases(self) -> list[str]:
         return list(self.PHASES)
 
+    def validate_intake(self, intake: IntakeDraft) -> list[str]:
+        issues: list[str] = []
+        if len(intake.focus_entities) != 2:
+            issues.append("interstate-crisis requires exactly two focus entities")
+        issues.extend(self.validate_phase(intake.current_stage))
+        return issues
+
     def suggest_related_actors(self, intake: IntakeDraft) -> list[str]:
-        if set(intake.primary_actors) == {"US", "Iran"}:
+        if set(intake.focus_entities) == {"US", "Iran"}:
             return ["China", "Israel", "Gulf States", "Russia"]
         return []
 

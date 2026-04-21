@@ -147,10 +147,10 @@ def test_compile_belief_state_includes_primary_and_suggested_actors(monkeypatch)
     assert state.fields["event_framing"].value == "Assess escalation"
     assert state.fields["event_framing"].normalized_value == "Assess escalation"
     assert state.fields["event_framing"].last_updated_at == datetime(2026, 4, 20, 12, 0, tzinfo=timezone.utc)
-    assert state.fields["trigger"].status == "observed"
-    assert state.fields["trigger"].value == "Exchange of strikes"
-    assert state.fields["trigger"].normalized_value == "Exchange of strikes"
-    assert state.fields["trigger"].last_updated_at == datetime(2026, 4, 20, 12, 0, tzinfo=timezone.utc)
+    assert state.fields["current_development"].status == "observed"
+    assert state.fields["current_development"].value == "Exchange of strikes"
+    assert state.fields["current_development"].normalized_value == "Exchange of strikes"
+    assert state.fields["current_development"].last_updated_at == datetime(2026, 4, 20, 12, 0, tzinfo=timezone.utc)
     assert list(state.constraints.values()) == ["sanctions"]
     assert state.unknowns == ["timing"]
     assert state.approved_evidence_ids == ["ev-1"]

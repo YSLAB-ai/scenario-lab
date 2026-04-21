@@ -156,7 +156,7 @@ def test_start_run_rejects_duplicate_run_ids_with_real_repository(tmp_path, monk
 
 
 def test_save_intake_draft_writes_the_intake_snapshot_and_records_an_event() -> None:
-    repository = _FakeRepository()
+    repository = _FakeRepository(run_record=_make_run())
     service = WorkflowService(repository)
     intake = _make_intake()
 
@@ -166,6 +166,37 @@ def test_save_intake_draft_writes_the_intake_snapshot_and_records_an_event() -> 
         ("run-1", "intake", "rev-1", intake.model_dump(mode="json"), False)
     ]
     assert repository.appended_events == [("run-1", "intake-drafted", {"revision_id": "rev-1"})]
+
+
+def test_save_intake_draft_rejects_invalid_pack_specific_shape() -> None:
+    repository = _FakeRepository(run_record=_make_run())
+    service = WorkflowService(repository)
+    intake = IntakeDraft(
+        event_framing="A policy shift is underway.",
+        focus_entities=["country-a"],
+        current_development="policy change",
+        current_stage="trigger",
+        time_horizon="2026-Q2",
+    )
+
+    with pytest.raises(ValueError, match="exactly two focus entities"):
+        service.save_intake_draft("run-1", "rev-1", intake)
+
+
+def test_save_intake_draft_rejects_unknown_pack_fields() -> None:
+    repository = _FakeRepository(run_record=_make_run())
+    service = WorkflowService(repository)
+    intake = IntakeDraft(
+        event_framing="A policy shift is underway.",
+        focus_entities=["country-a", "country-b"],
+        current_development="policy change",
+        current_stage="trigger",
+        time_horizon="2026-Q2",
+        pack_fields={"unexpected_field": "value"},
+    )
+
+    with pytest.raises(ValueError, match="unknown pack_fields"):
+        service.save_intake_draft("run-1", "rev-1", intake)
 
 
 def test_save_evidence_draft_writes_the_evidence_snapshot_and_records_an_event() -> None:
@@ -315,7 +346,7 @@ def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path:
     service.save_evidence_draft("crisis-1", "r1", evidence)
     service.approve_revision("crisis-1", "r1", assumptions)
 
-    mutated_intake = intake.model_copy(update={"current_phase": "escalation", "trigger": "mutated trigger"})
+    mutated_intake = intake.model_copy(update={"current_stage": "escalation", "current_development": "mutated trigger"})
     mutated_evidence = EvidencePacket(revision_id="r1", items=[])
     service.save_intake_draft("crisis-1", "r1", mutated_intake)
     service.save_evidence_draft("crisis-1", "r1", mutated_evidence)
@@ -326,6 +357,6 @@ def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path:
     report = repository.run_dir("crisis-1").joinpath("reports", "r1.report.md").read_text(encoding="utf-8")
 
     assert approved_state.phase == "trigger"
-    assert approved_state.fields["trigger"].value == "policy change"
+    assert approved_state.fields["current_development"].value == "policy change"
     assert approved_state.approved_evidence_ids == ["r1-ev-0"]
     assert "- Approved evidence items: 1" in report

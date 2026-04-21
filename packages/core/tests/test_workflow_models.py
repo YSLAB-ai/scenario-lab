@@ -37,15 +37,46 @@ def test_revision_record_defaults_to_draft() -> None:
     assert record.parent_revision_id is None
 
 
-def test_intake_draft_requires_two_primary_actors() -> None:
+def test_intake_draft_requires_at_least_one_focus_entity() -> None:
     with pytest.raises(ValidationError, match="primary_actors"):
         IntakeDraft(
             event_framing="A new policy shift is underway.",
-            primary_actors=["actor-1"],
+            primary_actors=[],
             trigger="policy change",
             current_phase="intake",
             time_horizon="2026-Q2",
         )
+
+
+def test_intake_draft_accepts_legacy_aliases() -> None:
+    intake = IntakeDraft.model_validate(
+        {
+            "event_framing": "Assess escalation",
+            "primary_actors": ["US", "Iran"],
+            "trigger": "Exchange of strikes",
+            "current_phase": "trigger",
+            "time_horizon": "30d",
+            "suggested_actors": ["China"],
+        }
+    )
+
+    assert intake.focus_entities == ["US", "Iran"]
+    assert intake.current_development == "Exchange of strikes"
+    assert intake.current_stage == "trigger"
+    assert intake.suggested_entities == ["China"]
+
+
+def test_intake_draft_preserves_pack_fields() -> None:
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        focus_entities=["US", "Iran"],
+        current_development="Exchange of strikes",
+        current_stage="trigger",
+        time_horizon="30d",
+        pack_fields={"military_posture": "high"},
+    )
+
+    assert intake.pack_fields == {"military_posture": "high"}
 
 
 def test_assumption_summary_defaults_to_balanced_profile() -> None:
