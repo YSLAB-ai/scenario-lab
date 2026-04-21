@@ -29,6 +29,7 @@ The local CLI now supports the verified workflow commands:
 - `forecast-harness start-run`
 - `forecast-harness save-intake-draft`
 - `forecast-harness draft-intake-guidance`
+- `forecast-harness draft-conversation-turn`
 - `forecast-harness summarize-run`
 - `forecast-harness summarize-revision`
 - `forecast-harness save-evidence-draft`
@@ -42,17 +43,24 @@ The local CLI now supports the verified workflow commands:
 
 Verified current progress:
 
-- The reusable workflow core now supports registry-backed domain-pack discovery, local corpus ingestion, revisioned runs, direct structured intake/approval inputs, draft/approved artifacts, retrieval-backed evidence drafting, deterministic intake/approval guidance, in-place evidence curation, revision updates from approved parents, belief-state compilation, revisioned simulation outputs, and report generation.
+- The reusable workflow core now supports registry-backed domain-pack discovery, local corpus ingestion, revisioned runs, direct structured intake/approval inputs, draft/approved artifacts, retrieval-backed evidence drafting, deterministic intake/approval guidance, conversation-stage turn drafting, in-place evidence curation, revision updates from approved parents, belief-state compilation, revisioned simulation outputs, and report generation.
 - The repository includes two domain packs: `generic-event` and the `interstate-crisis` reference pack.
-- The current workflow slice test suite passes with `125 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `132 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
+- The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
 - The local corpus can now ingest curated `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into a searchable SQLite/FTS corpus with citation-friendly chunk locations.
+- A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
+  - `evidence` after `save-intake-draft`
+  - `approval` after `draft-evidence-packet` and curation
+  - `simulation` after `approve-revision`
+  - `report` after `simulate`
+  - `approval` again for a child revision created with `begin-revision-update`
 
 ## Remaining Gaps
 
 - The broader analyst workflow is still a local filesystem slice, not the full product described in the design spec.
-- The deterministic core now supports a direct structured input path for intake and approvals, but there is not yet a finished conversational adapter loop that drafts and approves them end to end.
+- The deterministic core now supports a direct structured input path for intake and approvals and a conversation-stage turn contract, but there is not yet a finished conversational adapter loop that drafts and approves them end to end inside Codex or Claude Code.
 - Manual file-backed paths still exist for evidence replacement and bulk edits.
 - The repository still relies on curated local inputs rather than open-web retrieval.
 - The current simulation engine is still a one-step branch enumerator, not a full MCTS implementation.

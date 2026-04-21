@@ -7,6 +7,7 @@
    - `forecast-harness start-run --help`
    - `forecast-harness save-intake-draft --help`
    - `forecast-harness draft-intake-guidance --help`
+   - `forecast-harness draft-conversation-turn --help`
    - `forecast-harness draft-evidence-packet --help`
    - `forecast-harness curate-evidence-draft --help`
    - `forecast-harness save-evidence-draft --help`
@@ -17,15 +18,19 @@
    - `forecast-harness summarize-run --help`
    - `forecast-harness summarize-revision --help`
    - `forecast-harness generate-report --help`
-5. Drive the workflow through the guided sequence rather than loading raw run artifacts into the agent context. For the normal adapter path, prefer direct structured input over temporary JSON files:
+5. Drive the workflow through the guided sequence rather than loading raw run artifacts into the agent context. For the normal adapter path, prefer direct structured input over temporary JSON files, and after each workflow mutation call `forecast-harness draft-conversation-turn` to decide the next user-facing step:
    - `forecast-harness start-run`
    - `forecast-harness save-intake-draft --event-framing ... --focus-entity ... --current-development ...`
+   - `forecast-harness draft-conversation-turn`
    - `forecast-harness draft-intake-guidance`
    - `forecast-harness draft-evidence-packet`
    - `forecast-harness curate-evidence-draft`
+   - `forecast-harness draft-conversation-turn`
    - `forecast-harness draft-approval-packet`
    - `forecast-harness approve-revision --assumption ...`
+   - `forecast-harness draft-conversation-turn`
    - `forecast-harness simulate`
+   - `forecast-harness draft-conversation-turn`
    - `forecast-harness summarize-revision`
    - `forecast-harness summarize-run`
    - `forecast-harness begin-revision-update`

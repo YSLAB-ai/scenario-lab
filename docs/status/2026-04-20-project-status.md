@@ -17,11 +17,13 @@ Date: 2026-04-20
 - The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into the corpus.
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
+- The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
+- The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `125 passed`
+  - Result: `132 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -49,6 +51,17 @@ Date: 2026-04-20
   - `simulation/<revision>.approved.json`
   - `reports/<revision>.report.md`
   - `revisions/<revision>.json`
+- A conversation-stage smoke test can now verify the deterministic stage progression:
+  - `evidence` after saving intake
+  - `approval` after drafting and curating evidence
+  - `simulation` after approving the revision
+  - `report` after simulating the revision
+  - `approval` again after creating child revision `r2` from approved parent `r1`
+- The fresh-install conversation-stage smoke test on 2026-04-20 also verified:
+  - `draft-intake-guidance` returned `domain_pack = interstate-crisis`
+  - the curated evidence draft retained source id `source`
+  - `summarize-revision` returned top branch `Signal resolve`
+  - `reports/r1.report.md` existed after simulation
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -75,7 +88,7 @@ Date: 2026-04-20
 ## Current Gaps
 
 - The current analyst workflow is still not a finished conversational adapter loop.
-- The adapters can now query guidance and summary payloads and use direct structured input for the normal path, but they are still documentation/skill scaffolding rather than a finished conversational analyst experience.
+- The adapters can now query guidance, conversation-turn, and summary payloads and use direct structured input for the normal path, but they are still documentation/skill scaffolding rather than a finished conversational analyst experience.
 - Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
 - The simulation engine is still a one-step branch enumerator. It is not yet a full MCTS implementation with tree expansion, rollouts, and backpropagation.
 - The `interstate-crisis` pack is still a reference pack:
@@ -116,7 +129,10 @@ Date: 2026-04-20
 - `55244fa` `feat: add guided workflow commands`
 - `e2091e9` `feat: add adapter workflow service operations`
 - `38d066d` `feat: add adapter workflow cli commands`
+- `667072a` `feat: add conversation turn model`
+- `f4d66e3` `feat: add conversation turn resolution`
+- `77b57f4` `feat: add conversation turn command`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, and persisted revision lineage for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
