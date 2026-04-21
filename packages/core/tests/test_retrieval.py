@@ -7,22 +7,38 @@ from forecasting_harness.query_api import get_evidence_for_assumption, summarize
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 
 
+def _register_markdown_source(
+    registry: CorpusRegistry,
+    *,
+    source_id: str = "src-1",
+    title: str = "Recent logistics report",
+    published_at: str | None = "2026-04-18",
+    tags: dict[str, str] | None = None,
+    content: str = "Fuel stockpiles are strained.",
+    location: str = "heading:Report",
+) -> None:
+    registry.register_document(
+        source_id=source_id,
+        title=title,
+        source_type="markdown",
+        path=f"/tmp/{source_id}.md",
+        published_at=published_at,
+        tags=tags or {"domain": "conflict", "actor": "state-a"},
+        chunks=[{"chunk_id": "1", "location": location, "content": content}],
+    )
+
+
 def test_registry_registers_documents_and_returns_chunk_hits(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
-    registry.register_document(
-        source_id="src-1",
-        title="Recent logistics report",
-        source_type="markdown",
-        published_at="2026-04-18",
-        tags={"domain": "conflict", "actor": "state-a"},
-        content="# Report\nFuel stockpiles are strained.\n",
-    )
+    _register_markdown_source(registry)
 
     hits = SearchEngine(registry).search(
         RetrievalQuery(text="fuel stockpiles", filters={"domain": "conflict"})
     )
 
     assert hits[0]["source_id"] == "src-1"
+    assert hits[0]["chunk_id"] == "1"
+    assert hits[0]["location"] == "heading:Report"
 
 
 def test_query_api_summarizes_top_branches_without_loading_full_tree():
@@ -37,14 +53,7 @@ def test_query_api_summarizes_top_branches_without_loading_full_tree():
 
 def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
-    registry.register_document(
-        source_id="src-1",
-        title="Recent logistics report",
-        source_type="markdown",
-        published_at="2026-04-18",
-        tags={"domain": "conflict", "actor": "state-a"},
-        content="# Report\nFuel stockpiles are strained.\n",
-    )
+    _register_markdown_source(registry)
 
     assert registry.search_chunks("state-a") == []
     assert registry.search_chunks("(") == []
@@ -63,21 +72,21 @@ def test_registry_search_chunks_raises_for_malformed_schema(tmp_path: Path):
 
 def test_registry_re_registering_source_id_replaces_existing_rows(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
-    registry.register_document(
-        source_id="src-1",
-        title="Recent logistics report",
-        source_type="markdown",
-        published_at="2026-04-18",
-        tags={"domain": "conflict", "actor": "state-a"},
-        content="# Report\nFuel stockpiles are strained.\n",
-    )
+    _register_markdown_source(registry)
     registry.register_document(
         source_id="src-1",
         title="Updated logistics report",
         source_type="markdown",
+        path="/tmp/src-1.md",
         published_at="2026-04-19",
         tags={"domain": "conflict", "actor": "state-a"},
-        content="# Report\nFuel stockpiles are still strained.\n",
+        chunks=[
+            {
+                "chunk_id": "1",
+                "location": "heading:Report",
+                "content": "Fuel stockpiles are still strained.",
+            }
+        ],
     )
 
     hits = SearchEngine(registry).search(
@@ -106,12 +115,41 @@ def test_registry_rejects_malformed_published_at_during_registration(tmp_path: P
             source_id="src-1",
             title="Recent logistics report",
             source_type="markdown",
+            path="/tmp/src-1.md",
             published_at="not-a-date",
             tags={"domain": "conflict", "actor": "state-a"},
-            content="# Report\nFuel stockpiles are strained.\n",
+            chunks=[{"chunk_id": "1", "location": "heading:Report", "content": "Fuel stockpiles are strained."}],
         )
 
     assert SearchEngine(registry).search(RetrievalQuery(text="fuel")) == []
+
+
+def test_registry_persists_document_rows_and_chunk_rows(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Signals",
+        source_type="markdown",
+        path="/tmp/signals.md",
+        published_at=None,
+        tags={"domain": "interstate-crisis"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "Alpha"}],
+    )
+
+    docs = registry.list_documents()
+    hits = registry.search_chunks("Alpha")
+
+    assert docs[0]["chunk_count"] == 1
+    assert docs[0]["published_at"] is None
+    assert hits[0]["location"] == "heading:Overview"
+    assert hits[0]["chunk_id"] == "1"
+
+
+def test_freshness_multiplier_is_neutral_without_published_at(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    engine = SearchEngine(registry)
+
+    assert engine.freshness_multiplier(None) == 1.0
 
 
 def test_query_api_defaults_missing_scores_consistently():

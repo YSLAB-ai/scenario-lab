@@ -17,8 +17,11 @@ class SearchEngine:
     def __init__(self, registry: CorpusRegistry):
         self.registry = registry
 
-    def freshness_multiplier(self, published_at: str) -> float:
-        published_date = datetime.strptime(parse_published_at(published_at), "%Y-%m-%d").date()
+    def freshness_multiplier(self, published_at: str | None) -> float:
+        normalized_published_at = parse_published_at(published_at)
+        if normalized_published_at is None:
+            return 1.0
+        published_date = datetime.strptime(normalized_published_at, "%Y-%m-%d").date()
         age_days = (date.today() - published_date).days
         return min(1.0, max(0.2, 1 - (age_days / 365)))
 
