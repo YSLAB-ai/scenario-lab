@@ -671,6 +671,39 @@ def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None
     assert repository.load_run_record("crisis-1").current_revision_id == "r2"
 
 
+def test_simulate_revision_reuses_parent_tree_when_child_revision_is_compatible(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake_r1 = IntakeDraft(
+        event_framing="Assess escalation",
+        focus_entities=["Japan", "China"],
+        current_development="Naval transit through the Taiwan Strait",
+        current_stage="trigger",
+        time_horizon="30d",
+        pack_fields={"leader_style": "cautious", "military_posture": "forward"},
+    )
+    evidence_r1, assumptions_r1 = _make_revision_inputs("r1", evidence_count=2)[1:]
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake_r1)
+    service.save_evidence_draft("crisis-1", "r1", evidence_r1)
+    service.approve_revision("crisis-1", "r1", assumptions_r1)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+    intake_r2 = intake_r1.model_copy(update={"pack_fields": {"leader_style": "cautious", "military_posture": "reserve"}})
+    service.save_intake_draft("crisis-1", "r2", intake_r2, parent_revision_id="r1")
+    service.approve_revision("crisis-1", "r2", assumptions_r1.model_copy())
+
+    result = service.simulate_revision("crisis-1", "r2", pack=pack)
+
+    assert result["reuse_summary"]["enabled"] is True
+    assert result["reuse_summary"]["source_revision_id"] == "r1"
+    assert result["reuse_summary"]["reused_nodes"] > 0
+    assert result["reuse_summary"]["skipped_nodes"] > 0
+
+
 def test_revision_record_tracks_lifecycle_timestamps(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)

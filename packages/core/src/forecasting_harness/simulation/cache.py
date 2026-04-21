@@ -14,7 +14,7 @@ def should_reuse_node(node: dict[str, Any], compatibility: dict[str, Any]) -> bo
             "unsupported dependency keys for field-based reuse: " + ", ".join(sorted(unsupported_keys))
         )
 
-    if compatibility.get("compatible") is False:
+    if compatibility.get("reusable", compatibility.get("compatible")) is False:
         return False
 
     dependency_fields = set(dependencies.get("fields", []))

@@ -22,11 +22,13 @@ Date: 2026-04-20
 - The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
 - The simulation engine now performs deterministic multi-step MCTS over `BeliefState` and preserves top-level `branches` for workflow compatibility.
+- The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
+- The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
 - The `generic-event` and `interstate-crisis` reference packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `135 passed`
+  - Result: `141 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -70,6 +72,14 @@ Date: 2026-04-20
   - `simulation/r1.approved.json` contained `iterations = 18`
   - the top branch label remained `Signal resolve`
   - `reports/r1.report.md` existed after simulation
+- A fresh-install child-revision smoke test on 2026-04-20 also verified:
+  - `simulation/r2.approved.json` contained `reuse_summary.enabled = true`
+  - `simulation/r2.approved.json` contained `reuse_summary.source_revision_id = r1`
+  - the rerun reused cached nodes (`reused_nodes = 7`) and skipped invalidated nodes (`skipped_nodes = 9`)
+  - the rerun reported `transposition_hits = 37`
+  - the rerun reported `state_table_size = 14`
+  - the rerun reported `node_count = 40`
+  - the top branch label remained `Signal resolve`
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -99,8 +109,6 @@ Date: 2026-04-20
 - The adapters can now query guidance, conversation-turn, and summary payloads and use direct structured input for the normal path, but they are still documentation/skill scaffolding rather than a finished conversational analyst experience.
 - Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
-  - warm-start subtree reuse
-  - transposition-table deduplication across equivalent states
   - calibrated real-world probabilities
 - The `interstate-crisis` pack is still a reference pack rather than a mature validated model.
 - The system does not yet implement:
@@ -143,6 +151,7 @@ Date: 2026-04-20
 - `0e56542` `feat: add deterministic mcts simulation engine`
 - `840a293` `feat: add generic domain search hooks`
 - `4461457` `feat: add deterministic multi-step reference transitions`
+- `20ea8d9` `feat: add deterministic mcts simulation engine`
 
 ## Current Assessment
 

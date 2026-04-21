@@ -45,7 +45,7 @@ Verified current progress:
 
 - The reusable workflow core now supports registry-backed domain-pack discovery, local corpus ingestion, revisioned runs, direct structured intake/approval inputs, draft/approved artifacts, retrieval-backed evidence drafting, deterministic intake/approval guidance, conversation-stage turn drafting, in-place evidence curation, revision updates from approved parents, belief-state compilation, revisioned simulation outputs, and report generation.
 - The repository includes two domain packs: `generic-event` and the `interstate-crisis` reference pack.
-- The current workflow slice test suite passes with `135 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `141 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -54,8 +54,13 @@ Verified current progress:
   - `search_mode = "mcts"`
   - `iterations`
   - `node_count`
+  - `state_table_size`
+  - `transposition_hits`
   - `max_depth_reached`
+  - `reuse_summary`
+  - `tree_nodes`
   - root `branches` preserved for the workflow/report layer
+- Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
   - `evidence` after `save-intake-draft`
@@ -68,6 +73,11 @@ Verified current progress:
   - `simulation/r1.approved.json` contains `iterations = 18` for the `interstate-crisis` pack
   - the top branch remains `Signal resolve`
   - `reports/r1.report.md` exists after simulation
+- A fresh Python 3.13 child-revision smoke test now also verifies:
+  - `simulation/r2.approved.json` reports `reuse_summary.enabled = true`
+  - `simulation/r2.approved.json` reports `source_revision_id = "r1"`
+  - the rerun reused cached nodes (`reused_nodes = 7`) and skipped invalidated ones (`skipped_nodes = 9`)
+  - the rerun reported transposition metadata (`transposition_hits = 37`, `state_table_size = 14`, `node_count = 40`)
 
 ## Remaining Gaps
 
@@ -75,7 +85,6 @@ Verified current progress:
 - The deterministic core now supports a direct structured input path for intake and approvals and a conversation-stage turn contract, but there is not yet a finished conversational adapter loop that drafts and approves them end to end inside Codex or Claude Code.
 - Manual file-backed paths still exist for evidence replacement and bulk edits.
 - The repository still relies on curated local inputs rather than open-web retrieval.
-- The simulation engine is deterministic MCTS, but it still does not implement warm-start subtree reuse from prior runs.
 - The `interstate-crisis` pack is still a reference pack rather than a mature validated geopolitical model.
 - Only one concrete reference domain pack is implemented for the new workflow slice; broader multi-domain coverage remains future work.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.

@@ -5,8 +5,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 from forecasting_harness.artifacts import RunRepository
+from forecasting_harness.compatibility import compare_belief_states
 from forecasting_harness.domain.base import DomainPack
 from forecasting_harness.domain.registry import DomainPackRegistry, build_default_registry
+from forecasting_harness.models import BeliefState
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
@@ -312,6 +314,7 @@ class WorkflowService:
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=True)
         assumptions = self.repository.load_revision_model(run_id, "assumptions", revision_id, AssumptionSummary, approved=True)
         evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=True)
+        revision_record = self.repository.load_revision_record(run_id, revision_id)
 
         state = compile_belief_state(
             run_id=run_id,
@@ -323,8 +326,30 @@ class WorkflowService:
         )
         self.repository.write_revision_json(run_id, "belief-state", revision_id, state.model_dump(mode="json"), approved=True)
 
+        reuse_context: dict[str, object] | None = None
+        parent_revision_id = revision_record.parent_revision_id
+        if (
+            parent_revision_id
+            and self._artifact_exists(run_id, "belief-state", parent_revision_id, approved=True)
+            and self._artifact_exists(run_id, "simulation", parent_revision_id, approved=True)
+        ):
+            parent_state = self.repository.load_revision_model(
+                run_id,
+                "belief-state",
+                parent_revision_id,
+                BeliefState,
+                approved=True,
+            )
+            parent_simulation_path = self.repository.run_dir(run_id) / "simulation" / f"{parent_revision_id}.approved.json"
+            parent_simulation = json.loads(parent_simulation_path.read_text(encoding="utf-8"))
+            reuse_context = {
+                "source_revision_id": parent_revision_id,
+                "compatibility": compare_belief_states(parent_state, state, tolerances={}),
+                "simulation": parent_simulation,
+            }
+
         engine = SimulationEngine(pack, default_objective_profile())
-        result = engine.run(state)
+        result = engine.run(state, reuse_context=reuse_context)
         self.repository.write_revision_json(run_id, "simulation", revision_id, result, approved=True)
 
         self.generate_report(

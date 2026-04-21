@@ -6,6 +6,8 @@ import json
 from math import sqrt
 from typing import Any
 
+from forecasting_harness.simulation.cache import should_reuse_node
+
 
 def scalarize_node_value(metrics: dict[str, float], profile: Any) -> float:
     return profile.scalarize(metrics)
@@ -44,6 +46,13 @@ class _NormalizedOutcome:
 
 
 @dataclass
+class _NodeStats:
+    visits: int = 0
+    value_sum: float = 0.0
+    metric_sums: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
 class _SearchNode:
     node_id: str
     state: Any
@@ -53,27 +62,134 @@ class _SearchNode:
     branch_id: str | None = None
     label: str | None = None
     dependencies: dict[str, Any] = field(default_factory=dict)
-    visits: int = 0
-    value_sum: float = 0.0
-    metric_sums: dict[str, float] = field(default_factory=dict)
+    dependency_hash: str | None = None
+    stats: _NodeStats = field(default_factory=_NodeStats)
     children: list["_SearchNode"] | None = None
 
     @property
     def mean_value(self) -> float:
-        if self.visits == 0:
+        if self.stats.visits == 0:
             return 0.0
-        return self.value_sum / self.visits
+        return self.stats.value_sum / self.stats.visits
 
     @property
     def mean_metrics(self) -> dict[str, float]:
-        if self.visits == 0:
+        if self.stats.visits == 0:
             return {}
-        return {name: value / self.visits for name, value in self.metric_sums.items()}
+        return {name: value / self.stats.visits for name, value in self.stats.metric_sums.items()}
+
+    @property
+    def visits(self) -> int:
+        return self.stats.visits
+
+    @property
+    def value_sum(self) -> float:
+        return self.stats.value_sum
+
+    @property
+    def metric_sums(self) -> dict[str, float]:
+        return self.stats.metric_sums
+
+
+@dataclass
+class _ReuseTracker:
+    enabled: bool = False
+    source_revision_id: str | None = None
+    compatibility: dict[str, Any] = field(default_factory=dict)
+    cached_nodes_by_id: dict[str, dict[str, Any]] = field(default_factory=dict)
+    attempted_node_ids: set[str] = field(default_factory=set)
+    reused_nodes: int = 0
+    skipped_nodes: int = 0
+
+    @classmethod
+    def from_context(cls, reuse_context: dict[str, Any] | None) -> "_ReuseTracker":
+        if not reuse_context:
+            return cls()
+
+        simulation = reuse_context.get("simulation", {})
+        tree_nodes = simulation.get("tree_nodes", []) if isinstance(simulation, dict) else []
+        cached_nodes_by_id = {
+            node["node_id"]: node
+            for node in tree_nodes
+            if isinstance(node, dict) and isinstance(node.get("node_id"), str)
+        }
+        return cls(
+            enabled=True,
+            source_revision_id=reuse_context.get("source_revision_id"),
+            compatibility=dict(reuse_context.get("compatibility", {})),
+            cached_nodes_by_id=cached_nodes_by_id,
+        )
+
+    def maybe_seed(self, node: _SearchNode) -> None:
+        if not self.enabled or node.node_id in self.attempted_node_ids:
+            return
+
+        cached = self.cached_nodes_by_id.get(node.node_id)
+        if cached is None:
+            return
+
+        self.attempted_node_ids.add(node.node_id)
+        if node.depth == 0 and self.compatibility.get("compatible") is False:
+            self.skipped_nodes += 1
+            return
+        if cached.get("state_hash") != node.state_hash and cached.get("dependency_hash") != node.dependency_hash:
+            self.skipped_nodes += 1
+            return
+        if not should_reuse_node(cached, self.compatibility):
+            self.skipped_nodes += 1
+            return
+        if node.stats.visits > 0 or node.stats.value_sum != 0.0 or node.stats.metric_sums:
+            return
+
+        node.stats.visits = int(cached.get("visits", 0))
+        node.stats.value_sum = float(cached.get("value_sum", 0.0))
+        node.stats.metric_sums = {
+            str(name): float(value) for name, value in dict(cached.get("metric_sums", {})).items()
+        }
+        self.reused_nodes += 1
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "source_revision_id": self.source_revision_id,
+            "reused_nodes": self.reused_nodes,
+            "skipped_nodes": self.skipped_nodes,
+            "compatibility": self.compatibility,
+        }
 
 
 def _normalize_for_hash(value: Any) -> Any:
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
+    if hasattr(value, "interaction_model") and hasattr(value, "fields") and hasattr(value, "current_epoch"):
+        return {
+            "interaction_model": _normalize_for_hash(value.interaction_model),
+            "actors": _normalize_for_hash(getattr(value, "actors", [])),
+            "fields": _normalize_for_hash(getattr(value, "fields", {})),
+            "objectives": _normalize_for_hash(getattr(value, "objectives", {})),
+            "capabilities": _normalize_for_hash(getattr(value, "capabilities", {})),
+            "constraints": _normalize_for_hash(getattr(value, "constraints", {})),
+            "unknowns": _normalize_for_hash(getattr(value, "unknowns", [])),
+            "current_epoch": _normalize_for_hash(getattr(value, "current_epoch", None)),
+            "horizon": _normalize_for_hash(getattr(value, "horizon", None)),
+            "domain_pack": _normalize_for_hash(getattr(value, "domain_pack", None)),
+            "phase": _normalize_for_hash(getattr(value, "phase", None)),
+        }
+    if hasattr(value, "normalized_value") and hasattr(value, "status") and hasattr(value, "confidence"):
+        return {
+            "normalized_value": _normalize_for_hash(getattr(value, "normalized_value", None)),
+            "status": _normalize_for_hash(getattr(value, "status", None)),
+            "confidence": _normalize_for_hash(getattr(value, "confidence", None)),
+            "evidence_type": _normalize_for_hash(getattr(value, "evidence_type", None)),
+            "time_scope": _normalize_for_hash(getattr(value, "time_scope", None)),
+            "applicability_notes": _normalize_for_hash(getattr(value, "applicability_notes", None)),
+        }
+    if hasattr(value, "actor_id") and hasattr(value, "name"):
+        return {
+            "actor_id": _normalize_for_hash(getattr(value, "actor_id", None)),
+            "name": _normalize_for_hash(getattr(value, "name", None)),
+            "behavior_profile": _normalize_for_hash(getattr(value, "behavior_profile", None)),
+        }
     if hasattr(value, "model_dump") and callable(value.model_dump):
         return _normalize_for_hash(value.model_dump(mode="json"))
     if hasattr(value, "__dict__"):
@@ -90,6 +206,21 @@ def _normalize_for_hash(value: Any) -> Any:
 def _state_hash(state: Any) -> str:
     payload = json.dumps(_normalize_for_hash(state), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def _dependency_hash(state: Any, dependencies: dict[str, Any]) -> str | None:
+    dependency_fields = sorted(set(dependencies.get("fields", [])))
+    if not dependency_fields:
+        return None
+
+    state_fields = getattr(state, "fields", {})
+    payload = {
+        "phase": _normalize_for_hash(getattr(state, "phase", None)),
+        "current_epoch": _normalize_for_hash(getattr(state, "current_epoch", None)),
+        "fields": {field_name: _normalize_for_hash(state_fields.get(field_name)) for field_name in dependency_fields},
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
 def _search_config(domain_pack: Any) -> SearchConfig:
@@ -145,10 +276,16 @@ def _is_terminal(domain_pack: Any, state: Any, depth: int) -> bool:
     return False
 
 
-def _merge_dependencies(action_context: dict[str, Any], outcome: _NormalizedOutcome) -> dict[str, Any]:
-    merged = dict(action_context.get("dependencies", {}))
-    for key, value in outcome.dependencies.items():
-        merged[key] = value
+def _merge_dependencies(*dependency_maps: dict[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {}
+    for dependency_map in dependency_maps:
+        for key, value in dependency_map.items():
+            if isinstance(value, list) and isinstance(merged.get(key), list):
+                merged[key] = list(dict.fromkeys([*merged[key], *value]))
+            elif isinstance(value, list):
+                merged[key] = list(dict.fromkeys(value))
+            else:
+                merged[key] = value
     return merged
 
 
@@ -160,10 +297,34 @@ def _mean_metrics(node: _SearchNode) -> dict[str, float]:
     return node.mean_metrics
 
 
+def _serialize_tree_node(node: _SearchNode) -> dict[str, Any]:
+    return {
+        "node_id": node.node_id,
+        "state_hash": node.state_hash,
+        "depth": node.depth,
+        "branch_id": node.branch_id,
+        "label": node.label,
+        "prior": node.prior,
+        "dependencies": node.dependencies,
+        "dependency_hash": node.dependency_hash,
+        "visits": node.visits,
+        "value_sum": node.value_sum,
+        "metric_sums": node.metric_sums,
+        "score": node.mean_value,
+        "metrics": node.mean_metrics,
+        "child_ids": [child.node_id for child in node.children or []],
+    }
+
+
 class SimulationEngine:
     def __init__(self, domain_pack: Any, objective_profile: Any) -> None:
         self.domain_pack = domain_pack
         self.objective_profile = objective_profile
+        self._all_nodes: dict[str, _SearchNode] = {}
+        self._state_table: dict[str, _NodeStats] = {}
+        self._seen_state_hashes: set[str] = set()
+        self._transposition_hits = 0
+        self._reuse_tracker = _ReuseTracker()
 
     def _validate_root_state(self, state: Any) -> None:
         expected_interaction_model = self.domain_pack.interaction_model()
@@ -176,6 +337,22 @@ class SimulationEngine:
         validation_errors = self.domain_pack.validate_state(state)
         if validation_errors:
             raise ValueError(f"invalid state: {'; '.join(validation_errors)}")
+
+    def _register_node(self, node: _SearchNode) -> None:
+        self._all_nodes.setdefault(node.node_id, node)
+        self._seen_state_hashes.add(node.state_hash)
+        self._reuse_tracker.maybe_seed(node)
+
+    def _shared_stats_for(self, state_hash: str, depth: int) -> _NodeStats:
+        if depth <= 1:
+            return _NodeStats()
+        stats = self._state_table.get(state_hash)
+        if stats is not None:
+            self._transposition_hits += 1
+            return stats
+        stats = _NodeStats()
+        self._state_table[state_hash] = stats
+        return stats
 
     def _expand_node(self, node: _SearchNode) -> list[_SearchNode]:
         if node.children is not None:
@@ -191,6 +368,11 @@ class SimulationEngine:
                 child_state_hash = _state_hash(outcome.next_state)
                 outcome_label = outcome.outcome_label
                 label = action["label"] if not outcome_label else f"{action['label']} ({outcome_label})"
+                child_dependencies = _merge_dependencies(
+                    node.dependencies,
+                    action.get("dependencies", {}),
+                    outcome.dependencies,
+                )
                 child = _SearchNode(
                     node_id=f"{node.node_id}/{branch_id}",
                     state=outcome.next_state,
@@ -199,9 +381,12 @@ class SimulationEngine:
                     prior=action["prior"] * outcome.weight,
                     branch_id=branch_id,
                     label=label,
-                    dependencies=_merge_dependencies(action, outcome),
+                    dependencies=child_dependencies,
+                    dependency_hash=_dependency_hash(outcome.next_state, child_dependencies),
+                    stats=self._shared_stats_for(child_state_hash, node.depth + 1),
                 )
                 children.append(child)
+                self._register_node(child)
         node.children = children
         return children
 
@@ -249,9 +434,14 @@ class SimulationEngine:
         value = scalarize_node_value(metrics, self.objective_profile)
         return value, metrics, rollout_depth
 
-    def run(self, state: Any) -> dict[str, Any]:
+    def run(self, state: Any, reuse_context: dict[str, Any] | None = None) -> dict[str, Any]:
         self._validate_root_state(state)
         config = _search_config(self.domain_pack)
+        self._all_nodes = {}
+        self._state_table = {}
+        self._seen_state_hashes = set()
+        self._transposition_hits = 0
+        self._reuse_tracker = _ReuseTracker.from_context(reuse_context)
         root = _SearchNode(
             node_id="root",
             state=state,
@@ -259,7 +449,7 @@ class SimulationEngine:
             depth=0,
             prior=1.0,
         )
-        all_nodes: dict[str, _SearchNode] = {root.node_id: root}
+        self._register_node(root)
         max_depth_reached = 0
 
         for _ in range(config.iterations):
@@ -276,8 +466,6 @@ class SimulationEngine:
 
             if not _is_terminal(self.domain_pack, node.state, node.depth) and node.depth < config.max_depth:
                 children = self._expand_node(node)
-                for child in children:
-                    all_nodes.setdefault(child.node_id, child)
                 unvisited_children = [child for child in children if child.visits == 0]
                 if unvisited_children:
                     node = max(unvisited_children, key=lambda child: (child.prior, child.branch_id or child.node_id))
@@ -287,10 +475,10 @@ class SimulationEngine:
             max_depth_reached = max(max_depth_reached, reached_depth)
             metric_updates = _metric_sums(metrics)
             for ancestor in path:
-                ancestor.visits += 1
-                ancestor.value_sum += value
+                ancestor.stats.visits += 1
+                ancestor.stats.value_sum += value
                 for name, metric_value in metric_updates.items():
-                    ancestor.metric_sums[name] = ancestor.metric_sums.get(name, 0.0) + metric_value
+                    ancestor.stats.metric_sums[name] = ancestor.stats.metric_sums.get(name, 0.0) + metric_value
 
         root_children = self._expand_node(root)
         branches = sorted(
@@ -313,7 +501,11 @@ class SimulationEngine:
         return {
             "search_mode": "mcts",
             "iterations": config.iterations,
-            "node_count": len(all_nodes),
+            "node_count": len(self._all_nodes),
+            "state_table_size": len(self._seen_state_hashes),
+            "transposition_hits": self._transposition_hits,
             "max_depth_reached": max_depth_reached,
+            "reuse_summary": self._reuse_tracker.summary(),
+            "tree_nodes": [_serialize_tree_node(node) for _, node in sorted(self._all_nodes.items())],
             "branches": branches,
         }
