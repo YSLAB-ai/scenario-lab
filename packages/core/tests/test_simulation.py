@@ -3,6 +3,9 @@ from types import SimpleNamespace
 import pytest
 
 from forecasting_harness.domain.base import InteractionModel
+from forecasting_harness.domain.generic_event import GenericEventPack
+from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
+from forecasting_harness.models import BeliefState
 from forecasting_harness.models import ObjectiveProfile
 from forecasting_harness.simulation import SimulationEngine, scalarize_node_value
 from forecasting_harness.simulation.cache import should_reuse_node
@@ -358,3 +361,56 @@ def test_simulation_engine_supports_weighted_transition_outcomes() -> None:
     assert [branch["branch_id"] for branch in result["branches"]] == ["signal", "signal-2"]
     assert result["branches"][0]["prior"] == pytest.approx(0.35)
     assert result["branches"][1]["prior"] == pytest.approx(0.15)
+
+
+def test_interstate_crisis_pack_transitions_change_follow_on_actions() -> None:
+    pack = InterstateCrisisPack()
+    root_state = BeliefState(
+        run_id="run-1",
+        interaction_model=InteractionModel.EVENT_DRIVEN,
+        actors=[],
+        fields={},
+        objectives={},
+        capabilities={},
+        constraints={},
+        unknowns=[],
+        current_epoch="trigger",
+        horizon="30d",
+        phase="trigger",
+    )
+
+    root_actions = [action.get("branch_id") or action.get("action_id") for action in pack.propose_actions(root_state)]
+    signaling_state = pack.sample_transition(root_state, pack.propose_actions(root_state)[0])[0]
+    signaling_actions = [
+        action.get("branch_id") or action.get("action_id") for action in pack.propose_actions(signaling_state)
+    ]
+
+    assert root_actions == ["signal", "limited-response", "open-negotiation"]
+    assert signaling_state.phase == "signaling"
+    assert signaling_actions != root_actions
+    assert "intercept" in signaling_actions
+
+
+def test_generic_event_pack_transitions_change_follow_on_actions() -> None:
+    pack = GenericEventPack()
+    root_state = BeliefState(
+        run_id="run-1",
+        interaction_model=InteractionModel.EVENT_DRIVEN,
+        actors=[],
+        fields={},
+        objectives={},
+        capabilities={},
+        constraints={},
+        unknowns=[],
+        current_epoch="start",
+        horizon="30d",
+        phase=None,
+    )
+
+    root_actions = [action.get("branch_id") or action.get("action_id") for action in pack.propose_actions(root_state)]
+    next_state = pack.sample_transition(root_state, pack.propose_actions(root_state)[0])[0]
+    next_actions = [action.get("branch_id") or action.get("action_id") for action in pack.propose_actions(next_state)]
+
+    assert root_actions == ["maintain-course", "signal-negotiation"]
+    assert next_state.phase == "stabilization"
+    assert next_actions != root_actions
