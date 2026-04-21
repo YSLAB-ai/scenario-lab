@@ -67,3 +67,39 @@ class EvidencePacketItem(BaseModel):
 class EvidencePacket(BaseModel):
     revision_id: str
     items: list[EvidencePacketItem] = Field(default_factory=list)
+
+
+class IntakeGuidance(BaseModel):
+    domain_pack: str
+    current_stage: str
+    canonical_stages: list[str] = Field(default_factory=list)
+    suggested_entities: list[str] = Field(default_factory=list)
+    follow_up_questions: list[str] = Field(default_factory=list)
+    pack_field_schema: dict[str, str] = Field(default_factory=dict)
+    default_objective_profile: dict[str, object]
+
+
+class ApprovalPacket(BaseModel):
+    revision_id: str
+    intake_summary: dict[str, object]
+    assumption_summary: list[str] = Field(default_factory=list)
+    objective_profile: dict[str, object]
+    evidence_summary: list[dict[str, object]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class RunSummary(BaseModel):
+    run_id: str
+    domain_pack: str
+    current_revision_id: str | None = None
+    revisions: list[dict[str, object]] = Field(default_factory=list)
+
+
+class RevisionSummary(BaseModel):
+    revision_id: str
+    status: RevisionStatus
+    parent_revision_id: str | None = None
+    evidence_item_count: int = 0
+    assumption_count: int = 0
+    top_branches: list[dict[str, object]] = Field(default_factory=list)
+    available_sections: list[str] = Field(default_factory=list)

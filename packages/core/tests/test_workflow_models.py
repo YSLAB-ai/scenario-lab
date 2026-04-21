@@ -5,12 +5,16 @@ import pytest
 from pydantic import ValidationError
 
 from forecasting_harness.workflow import (
+    ApprovalPacket,
     AssumptionSummary,
     EvidencePacket,
     EvidencePacketItem,
+    IntakeGuidance,
     IntakeDraft,
+    RevisionSummary,
     RevisionRecord,
     RevisionStatus,
+    RunSummary,
     RunRecord,
 )
 
@@ -109,3 +113,52 @@ def test_evidence_packet_item_preserves_evidence_metadata() -> None:
     assert item.passage_ids == []
     assert item.citation_refs == []
     assert item.raw_passages == []
+
+
+def test_intake_guidance_preserves_pack_assistance_fields() -> None:
+    guidance = IntakeGuidance(
+        domain_pack="interstate-crisis",
+        current_stage="trigger",
+        canonical_stages=["trigger", "signaling"],
+        suggested_entities=["China"],
+        follow_up_questions=["Which outside actor has leverage?"],
+        pack_field_schema={"military_posture": "str"},
+        default_objective_profile={"name": "balanced"},
+    )
+
+    assert guidance.domain_pack == "interstate-crisis"
+    assert guidance.suggested_entities == ["China"]
+
+
+def test_run_summary_preserves_revision_order() -> None:
+    summary = RunSummary(
+        run_id="crisis-1",
+        domain_pack="interstate-crisis",
+        current_revision_id="r2",
+        revisions=[{"revision_id": "r1", "status": "approved"}, {"revision_id": "r2", "status": "simulated"}],
+    )
+
+    assert [item["revision_id"] for item in summary.revisions] == ["r1", "r2"]
+
+
+def test_approval_packet_and_revision_summary_capture_narrow_fields() -> None:
+    packet = ApprovalPacket(
+        revision_id="r1",
+        intake_summary={"event_framing": "Assess escalation"},
+        assumption_summary=["known unknown: timing"],
+        objective_profile={"name": "balanced"},
+        evidence_summary=[{"source_id": "src-1", "passage_count": 1}],
+        warnings=["no evidence drafted yet"],
+    )
+    summary = RevisionSummary(
+        revision_id="r1",
+        status="draft",
+        parent_revision_id=None,
+        evidence_item_count=0,
+        assumption_count=1,
+        top_branches=[{"label": "Signal resolve", "score": -0.06}],
+        available_sections=["intake", "evidence"],
+    )
+
+    assert packet.evidence_summary[0]["source_id"] == "src-1"
+    assert summary.available_sections == ["intake", "evidence"]
