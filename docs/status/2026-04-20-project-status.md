@@ -5,7 +5,7 @@ Date: 2026-04-20
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
-- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, two domain packs (`generic-event` and `interstate-crisis`), thin Codex and Claude adapter scaffolding, and a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`.
+- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, seven domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, and a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`.
 - Domain packs are now discovered through a registry instead of hardcoded CLI branching.
 - The workflow now supports generic intake fields with compatibility aliases:
   - `focus_entities`
@@ -25,10 +25,12 @@ Date: 2026-04-20
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
-- The `generic-event` and `interstate-crisis` reference packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
+- The domain registry now exposes reusable domain template packs for company action, election shock, market shock, supply-chain disruption, and regulatory enforcement in addition to the existing generic and interstate packs.
+- The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for six high-value domains.
+- The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `141 passed`
+  - Result: `146 passed`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`
@@ -80,6 +82,14 @@ Date: 2026-04-20
   - the rerun reported `state_table_size = 14`
   - the rerun reported `node_count = 40`
   - the top branch label remained `Signal resolve`
+- A CLI verification on 2026-04-20 also confirmed `forecast-harness list-domain-packs` returned:
+  - `company-action`
+  - `election-shock`
+  - `generic-event`
+  - `interstate-crisis`
+  - `market-shock`
+  - `regulatory-enforcement`
+  - `supply-chain-disruption`
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
   - drafting intake guidance for an `interstate-crisis` run
@@ -110,11 +120,10 @@ Date: 2026-04-20
 - Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
   - calibrated real-world probabilities
-- The `interstate-crisis` pack is still a reference pack rather than a mature validated model.
+- The built-in domain packs are templates rather than mature validated models.
 - The system does not yet implement:
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
-  - mature multi-domain packs
   - historical replay and calibration
   - rule extraction / knowledge compiler
 
@@ -152,7 +161,9 @@ Date: 2026-04-20
 - `840a293` `feat: add generic domain search hooks`
 - `4461457` `feat: add deterministic multi-step reference transitions`
 - `20ea8d9` `feat: add deterministic mcts simulation engine`
+- `51eac3d` `feat: add reusable domain template packs`
+- `668952b` `docs: add domain knowledge manifests`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection across multiple built-in domain templates, generic intake aliases, a repo-owned knowledge-manifest scaffold, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/conversation-turn/summarization surfaces for adapters, direct structured adapter inputs, in-place evidence curation, persisted revision lineage, a verified deterministic MCTS simulation engine, and a verified conversation-stage progression for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
