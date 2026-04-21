@@ -33,6 +33,8 @@ The local CLI now supports the verified workflow commands:
 - `forecast-harness summarize-run`
 - `forecast-harness summarize-revision`
 - `forecast-harness save-evidence-draft`
+- `forecast-harness draft-retrieval-plan`
+- `forecast-harness draft-ingestion-plan`
 - `forecast-harness draft-evidence-packet`
 - `forecast-harness curate-evidence-draft`
 - `forecast-harness draft-approval-packet`
@@ -52,7 +54,7 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `153 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `159 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -68,6 +70,9 @@ Verified current progress:
 - The repo-owned domain manifests now affect retrieval directly by supplying:
   - domain-specific semantic alias groups for local semantic search
   - evidence-category term maps used to diversify drafted evidence packets
+- The workflow core can now draft deterministic manifest-aware planning payloads for:
+  - retrieval query expansion
+  - corpus ingestion gaps
 - The simulation engine now runs deterministic multi-step MCTS over `BeliefState` and writes simulation payloads with:
   - `search_mode = "mcts"`
   - `iterations`
@@ -100,6 +105,12 @@ Verified current progress:
 - The retrieval layer now supports semantic-only local matches where exact FTS terms would miss, for example `ceo response` retrieving a chunk about a `chief executive`.
 - The workflow can now use manifest-specific semantic aliases, for example matching `military buildup` to a chunk about `force posture` inside the `interstate-crisis` domain without exact lexical overlap.
 - Evidence drafting can now label and diversify packets using manifest evidence categories such as `force posture` and `diplomatic signaling`.
+- Evidence drafting can now also run with no explicit `query_text`; the core generates deterministic manifest-aware query variants from the intake.
+- The CLI now exposes `draft-retrieval-plan` and `draft-ingestion-plan` so adapters can ask the core what to search for and what the local corpus is still missing.
+- A direct CLI smoke check now verifies:
+  - `draft-retrieval-plan` returns deterministic `query_variants` for the current intake
+  - `draft-ingestion-plan` reports covered and missing manifest evidence categories from the local corpus
+  - `draft-evidence-packet` succeeds without `--query-text`
 
 ## Remaining Gaps
 
@@ -110,5 +121,5 @@ Verified current progress:
 - The semantic retrieval layer is a deterministic local baseline, not a neural embedding model.
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The source manifests define what to ingest, but they do not yet populate the local corpus automatically.
-- The source manifests now guide retrieval, but they do not yet drive automatic query planning beyond alias expansion and category coverage.
+- The source manifests now guide retrieval planning and ingestion-gap reporting, but they do not yet trigger automatic ingestion or open-web acquisition.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.

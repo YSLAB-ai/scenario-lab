@@ -288,6 +288,164 @@ def test_draft_evidence_packet_command(tmp_path: Path) -> None:
     assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]
 
 
+def test_draft_evidence_packet_command_can_omit_query_text(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    intake_path = tmp_path / "intake.json"
+
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from forecasting_harness.retrieval import CorpusRegistry
+
+    corpus = CorpusRegistry(corpus_db)
+    corpus.register_document(
+        source_id="doc-1",
+        title="Posture shift",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Force posture hardens near the strait after the naval transit.",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "draft-evidence-packet",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]
+
+
+def test_draft_retrieval_plan_command(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["draft-retrieval-plan", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["domain_pack"] == "interstate-crisis"
+    assert "force posture" in payload["target_evidence_categories"]
+    assert "Japan China Naval transit through the Taiwan Strait force posture" in payload["query_variants"]
+
+
+def test_draft_ingestion_plan_command(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    intake_path = tmp_path / "intake.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from forecasting_harness.retrieval import CorpusRegistry
+
+    corpus = CorpusRegistry(corpus_db)
+    corpus.register_document(
+        source_id="doc-1",
+        title="Posture shift",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Force posture hardens near the strait.",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "draft-ingestion-plan",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["domain_pack"] == "interstate-crisis"
+    assert payload["corpus_source_count"] == 1
+    assert "diplomatic signaling" in payload["missing_evidence_categories"]
+
+
 def test_draft_intake_guidance_command_returns_pack_guidance(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

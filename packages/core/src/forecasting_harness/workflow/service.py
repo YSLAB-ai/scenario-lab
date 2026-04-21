@@ -20,13 +20,16 @@ from forecasting_harness.workflow.models import (
     AssumptionSummary,
     ConversationTurn,
     EvidencePacket,
+    IngestionPlan,
     IntakeDraft,
     IntakeGuidance,
+    RetrievalPlan,
     RevisionRecord,
     RevisionSummary,
     RunRecord,
     RunSummary,
 )
+from forecasting_harness.workflow.planning import build_query_variants, classify_text
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.reporting import render_report
 
@@ -214,20 +217,46 @@ class WorkflowService:
         revision_id: str,
         *,
         pack: DomainPack,
-        query_text: str,
+        query_text: str | None = None,
         max_per_source: int = 2,
         max_total: int = 6,
     ) -> EvidencePacket:
         if self.corpus_registry is None:
             raise ValueError("corpus_registry is required for evidence drafting")
 
-        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        retrieval_plan = self.draft_retrieval_plan(run_id, revision_id, pack=pack, query_text=query_text)
         manifest = load_domain_manifest(pack.slug())
         search_engine = SearchEngine(self.corpus_registry)
-        hits = search_engine.search(
-            RetrievalQuery(text=query_text, filters=pack.retrieval_filters(intake)),
-            freshness_policy=pack.freshness_policy(),
-            alias_groups=manifest.alias_groups(),
+        merged_hits: dict[tuple[str, str], dict[str, object]] = {}
+        for variant in retrieval_plan.query_variants:
+            hits = search_engine.search(
+                RetrievalQuery(text=variant, filters=retrieval_plan.filters),
+                freshness_policy=pack.freshness_policy(),
+                alias_groups=manifest.alias_groups(),
+            )
+            for hit in hits:
+                key = (str(hit["source_id"]), str(hit["chunk_id"]))
+                result = dict(hit)
+                if key not in merged_hits:
+                    result["matched_queries"] = [variant]
+                    merged_hits[key] = result
+                    continue
+                merged = merged_hits[key]
+                merged["score"] = max(float(merged.get("score", 0.0)), float(result.get("score", 0.0)))
+                merged["semantic_score"] = max(
+                    float(merged.get("semantic_score", 0.0)), float(result.get("semantic_score", 0.0))
+                )
+                merged["lexical_score"] = max(
+                    float(merged.get("lexical_score", 0.0)), float(result.get("lexical_score", 0.0))
+                )
+                matched_queries = list(merged.get("matched_queries", []))
+                if variant not in matched_queries:
+                    matched_queries.append(variant)
+                merged["matched_queries"] = matched_queries
+
+        hits = sorted(
+            merged_hits.values(),
+            key=lambda item: (-float(item.get("score", 0.0)), str(item.get("source_id", "")), str(item.get("chunk_id", ""))),
         )
         packet = build_evidence_packet(
             revision_id,
@@ -241,9 +270,92 @@ class WorkflowService:
         self.repository.append_event(
             run_id,
             "evidence-packet-drafted",
-            {"revision_id": revision_id, "query_text": query_text},
+            {"revision_id": revision_id, "query_text": retrieval_plan.base_query},
         )
         return packet
+
+    def draft_retrieval_plan(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        pack: DomainPack,
+        query_text: str | None = None,
+    ) -> RetrievalPlan:
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        manifest = load_domain_manifest(pack.slug())
+        query_variants = build_query_variants(intake, manifest, query_text=query_text)
+        base_query = query_variants[0] if query_variants else ""
+        return RetrievalPlan(
+            revision_id=revision_id,
+            domain_pack=pack.slug(),
+            base_query=base_query,
+            query_variants=query_variants,
+            filters=pack.retrieval_filters(intake),
+            target_evidence_categories=list(manifest.evidence_categories),
+        )
+
+    def draft_ingestion_plan(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        pack: DomainPack,
+    ) -> IngestionPlan:
+        if self.corpus_registry is None:
+            raise ValueError("corpus_registry is required for ingestion planning")
+
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        manifest = load_domain_manifest(pack.slug())
+        filters = pack.retrieval_filters(intake)
+
+        documents = [
+            document
+            for document in self.corpus_registry.list_documents()
+            if all((document.get("tags") or {}).get(key) == value for key, value in filters.items())
+        ]
+        chunks = [
+            hit
+            for hit in self.corpus_registry.search_chunks("")
+            if all((hit.get("tags") or {}).get(key) == value for key, value in filters.items())
+        ]
+
+        category_terms = manifest.category_terms()
+        covered: set[str] = set()
+        for chunk in chunks:
+            matched = classify_text(
+                " ".join(
+                    [
+                        str(chunk.get("title", "")),
+                        str(chunk.get("content", "")),
+                    ]
+                ),
+                category_terms=category_terms,
+            )
+            if matched:
+                covered.add(matched)
+
+        covered_categories = [category for category in manifest.evidence_categories if category in covered]
+        missing_categories = [category for category in manifest.evidence_categories if category not in covered]
+        return IngestionPlan(
+            revision_id=revision_id,
+            domain_pack=pack.slug(),
+            corpus_source_count=len(documents),
+            current_sources=[
+                {
+                    "source_id": str(document["source_id"]),
+                    "title": str(document["title"]),
+                    "source_type": str(document["source_type"]),
+                    "published_at": document.get("published_at"),
+                }
+                for document in documents
+            ],
+            covered_evidence_categories=covered_categories,
+            missing_evidence_categories=missing_categories,
+            recommended_source_types=list(manifest.recommended_source_types),
+            starter_sources=[source.model_dump(mode="json") for source in manifest.starter_sources],
+            ingestion_priorities=list(manifest.ingestion_priorities),
+        )
 
     def curate_evidence_draft(self, run_id: str, revision_id: str, evidence_ids: list[str]) -> EvidencePacket:
         packet = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)

@@ -70,6 +70,27 @@ class EvidencePacket(BaseModel):
     items: list[EvidencePacketItem] = Field(default_factory=list)
 
 
+class RetrievalPlan(BaseModel):
+    revision_id: str
+    domain_pack: str
+    base_query: str
+    query_variants: list[str] = Field(default_factory=list)
+    filters: dict[str, str] = Field(default_factory=dict)
+    target_evidence_categories: list[str] = Field(default_factory=list)
+
+
+class IngestionPlan(BaseModel):
+    revision_id: str
+    domain_pack: str
+    corpus_source_count: int = 0
+    current_sources: list[dict[str, object]] = Field(default_factory=list)
+    covered_evidence_categories: list[str] = Field(default_factory=list)
+    missing_evidence_categories: list[str] = Field(default_factory=list)
+    recommended_source_types: list[str] = Field(default_factory=list)
+    starter_sources: list[dict[str, str]] = Field(default_factory=list)
+    ingestion_priorities: list[str] = Field(default_factory=list)
+
+
 class IntakeGuidance(BaseModel):
     domain_pack: str
     current_stage: str

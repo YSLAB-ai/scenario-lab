@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-import re
+
+from forecasting_harness.workflow.planning import classify_text
 
 from forecasting_harness.workflow.models import EvidencePacket, EvidencePacketItem
 
@@ -24,11 +25,6 @@ def _candidate_sort_key(candidate: tuple[str, int, dict[str, object]]) -> tuple[
     source_id, source_rank, hit = candidate
     return (*_sort_key(hit), source_id, source_rank)
 
-
-def _normalize_text(value: str) -> str:
-    return " ".join(re.findall(r"[a-z0-9]+", value.lower()))
-
-
 def _classify_hit(
     hit: dict[str, object],
     *,
@@ -41,15 +37,7 @@ def _classify_hit(
             " ".join(f"{key} {value}" for key, value in (hit.get("tags") or {}).items()),
         ]
     )
-    normalized_text = _normalize_text(text)
-    best_match: tuple[int, str] | None = None
-    for category, terms in category_terms.items():
-        score = sum(1 for term in terms if _normalize_text(term) in normalized_text)
-        if score <= 0:
-            continue
-        if best_match is None or score > best_match[0]:
-            best_match = (score, category)
-    return None if best_match is None else best_match[1]
+    return classify_text(text, category_terms=category_terms)
 
 
 def draft_evidence_packet(

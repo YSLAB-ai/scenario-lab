@@ -18,8 +18,10 @@ from forecasting_harness.workflow.models import (
     ConversationTurn,
     EvidencePacket,
     EvidencePacketItem,
+    IngestionPlan,
     IntakeGuidance,
     IntakeDraft,
+    RetrievalPlan,
     RunRecord,
 )
 from forecasting_harness.workflow.service import WorkflowService
@@ -608,6 +610,106 @@ def test_draft_evidence_packet_uses_manifest_categories_for_diverse_packet_reaso
         "Candidate passage for approved evidence packet: diplomatic signaling",
         "Candidate passage for approved evidence packet: force posture",
     }
+
+
+def test_draft_retrieval_plan_uses_manifest_categories_and_entities(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    plan = service.draft_retrieval_plan("crisis-1", "r1", pack=pack)
+
+    assert isinstance(plan, RetrievalPlan)
+    assert plan.domain_pack == "interstate-crisis"
+    assert plan.filters == {"domain": "interstate-crisis"}
+    assert "force posture" in plan.target_evidence_categories
+    assert plan.query_variants[0] == "Japan China Naval transit through the Taiwan Strait trigger"
+    assert "Japan China Naval transit through the Taiwan Strait force posture" in plan.query_variants
+
+
+def test_draft_ingestion_plan_reports_missing_manifest_categories(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="doc-1",
+        title="Posture shift",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Force posture hardens near the strait.",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    plan = service.draft_ingestion_plan("crisis-1", "r1", pack=pack)
+
+    assert isinstance(plan, IngestionPlan)
+    assert plan.domain_pack == "interstate-crisis"
+    assert plan.corpus_source_count == 1
+    assert plan.covered_evidence_categories == ["force posture"]
+    assert "diplomatic signaling" in plan.missing_evidence_categories
+    assert plan.starter_sources[0]["kind"] == "official communications"
+
+
+def test_draft_evidence_packet_can_generate_query_variants_without_explicit_query_text(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="doc-1",
+        title="Posture shift",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Force posture hardens near the strait after the naval transit.",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    packet = service.draft_evidence_packet("crisis-1", "r1", pack=pack, query_text=None)
+
+    assert [item.source_id for item in packet.items] == ["doc-1"]
+    assert packet.items[0].reason == "Candidate passage for approved evidence packet: force posture"
 
 
 def test_curate_evidence_draft_keeps_requested_ids_and_records_event() -> None:
