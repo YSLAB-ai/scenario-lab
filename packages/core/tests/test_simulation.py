@@ -60,6 +60,13 @@ def test_should_reuse_node_rejects_overlapping_changed_fields() -> None:
     assert should_reuse_node(node, compatibility) is False
 
 
+def test_should_reuse_node_allows_reusable_partial_reruns() -> None:
+    node = {"node_id": "n1", "dependencies": {"fields": ["fuel_days"]}}
+    compatibility = {"changed_fields": ["morale"], "compatible": False, "reusable": True}
+
+    assert should_reuse_node(node, compatibility) is True
+
+
 def test_simulation_engine_returns_mcts_metadata_and_multi_step_backed_up_scores() -> None:
     class DomainPackStub:
         def interaction_model(self) -> InteractionModel:
@@ -361,6 +368,116 @@ def test_simulation_engine_supports_weighted_transition_outcomes() -> None:
     assert [branch["branch_id"] for branch in result["branches"]] == ["signal", "signal-2"]
     assert result["branches"][0]["prior"] == pytest.approx(0.35)
     assert result["branches"][1]["prior"] == pytest.approx(0.15)
+
+
+def test_simulation_engine_reports_transposition_hits_for_equivalent_non_root_states() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def search_config(self) -> dict[str, float]:
+            return {"iterations": 16, "max_depth": 4, "rollout_depth": 2, "c_puct": 1.1}
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return getattr(state, "name", "").startswith("terminal")
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            if state.name == "root":
+                return [
+                    {"branch_id": "path-a", "label": "Path A", "prior": 0.5},
+                    {"branch_id": "path-b", "label": "Path B", "prior": 0.5},
+                ]
+            if state.name in {"a-1", "b-1"}:
+                return [{"action_id": "advance", "label": "Advance", "prior": 1.0}]
+            return []
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            if state.name == "root" and action_context.get("branch_id") == "path-a":
+                return [SimpleNamespace(name="a-1", score_metrics={"escalation": 0.4, "negotiation": 0.3}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+            if state.name == "root" and action_context.get("branch_id") == "path-b":
+                return [SimpleNamespace(name="b-1", score_metrics={"escalation": 0.4, "negotiation": 0.3}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+            return [SimpleNamespace(name="terminal-shared", score_metrics={"escalation": 0.2, "negotiation": 0.7}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+    profile = ObjectiveProfile(
+        name="avoid-escalation",
+        metric_weights={"escalation": -1.0, "negotiation": 0.5},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    result = engine.run(SimpleNamespace(name="root", interaction_model=InteractionModel.EVENT_DRIVEN))
+
+    assert result["transposition_hits"] > 0
+    assert result["state_table_size"] < result["node_count"]
+
+
+def test_simulation_engine_reuses_compatible_cached_nodes_from_prior_tree() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def search_config(self) -> dict[str, float]:
+            return {"iterations": 6, "max_depth": 3, "rollout_depth": 2, "c_puct": 1.0}
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return getattr(state, "name", "").startswith("terminal")
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            if state.name == "root":
+                return [
+                    {"branch_id": "stable-path", "label": "Stable path", "prior": 0.55, "dependencies": {"fields": ["fuel_days"]}},
+                    {"branch_id": "changed-path", "label": "Changed path", "prior": 0.45, "dependencies": {"fields": ["morale"]}},
+                ]
+            if state.name in {"stable-1", "changed-1"}:
+                return [{"action_id": "close", "label": "Close", "prior": 1.0}]
+            return []
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            if state.name == "root" and action_context.get("branch_id") == "stable-path":
+                return [SimpleNamespace(name="stable-1", score_metrics={"escalation": 0.2, "negotiation": 0.5}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+            if state.name == "root" and action_context.get("branch_id") == "changed-path":
+                return [SimpleNamespace(name="changed-1", score_metrics={"escalation": 0.5, "negotiation": 0.2}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+            if state.name == "stable-1":
+                return [SimpleNamespace(name="terminal-stable", score_metrics={"escalation": 0.1, "negotiation": 0.8}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+            return [SimpleNamespace(name="terminal-changed", score_metrics={"escalation": 0.8, "negotiation": 0.1}, interaction_model=InteractionModel.EVENT_DRIVEN)]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+    profile = ObjectiveProfile(
+        name="avoid-escalation",
+        metric_weights={"escalation": -1.0, "negotiation": 0.5},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    root = SimpleNamespace(name="root", interaction_model=InteractionModel.EVENT_DRIVEN)
+    first = engine.run(root)
+    second = engine.run(
+        root,
+        reuse_context={
+            "source_revision_id": "r1",
+            "compatibility": {"compatible": False, "reusable": True, "changed_fields": ["morale"]},
+            "simulation": first,
+        },
+    )
+
+    assert second["reuse_summary"]["enabled"] is True
+    assert second["reuse_summary"]["source_revision_id"] == "r1"
+    assert second["reuse_summary"]["reused_nodes"] > 0
+    assert second["reuse_summary"]["skipped_nodes"] > 0
+    assert second["tree_nodes"]
 
 
 def test_interstate_crisis_pack_transitions_change_follow_on_actions() -> None:
