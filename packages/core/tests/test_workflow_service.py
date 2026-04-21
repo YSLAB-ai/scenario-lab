@@ -462,6 +462,103 @@ def test_draft_evidence_packet_from_corpus_persists_a_revision_draft(tmp_path: P
     assert [item.source_id for item in stored_packet.items] == ["doc-1"]
 
 
+def test_curate_evidence_draft_keeps_requested_ids_and_records_event() -> None:
+    repository = _FakeRepository(run_record=_make_run("crisis-1"))
+    packet = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="source-1",
+                source_title="Source 1",
+                reason="First",
+            ),
+            EvidencePacketItem(
+                evidence_id="r1-ev-2",
+                source_id="source-2",
+                source_title="Source 2",
+                reason="Second",
+            ),
+        ],
+    )
+    repository.revision_payloads[("crisis-1", "evidence", "r1", False)] = packet.model_dump(mode="json")
+    service = WorkflowService(repository)
+
+    curated = service.curate_evidence_draft("crisis-1", "r1", ["r1-ev-2"])
+
+    assert [item.evidence_id for item in curated.items] == ["r1-ev-2"]
+    assert repository.written_revision_json[-1] == (
+        "crisis-1",
+        "evidence",
+        "r1",
+        curated.model_dump(mode="json"),
+        False,
+    )
+    assert repository.appended_events[-1] == (
+        "crisis-1",
+        "evidence-curated",
+        {"revision_id": "r1", "evidence_ids": ["r1-ev-2"]},
+    )
+
+
+def test_curate_evidence_draft_rejects_unknown_ids() -> None:
+    repository = _FakeRepository(run_record=_make_run("crisis-1"))
+    repository.revision_payloads[("crisis-1", "evidence", "r1", False)] = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="source-1",
+                source_title="Source 1",
+                reason="First",
+            )
+        ],
+    ).model_dump(mode="json")
+    service = WorkflowService(repository)
+
+    with pytest.raises(ValueError, match="unknown evidence ids"):
+        service.curate_evidence_draft("crisis-1", "r1", ["missing-id"])
+
+
+def test_begin_revision_update_copies_parent_artifacts_and_preserves_lineage(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake_r1, evidence_r1, assumptions_r1 = _make_revision_inputs("r1", evidence_count=2)
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake_r1)
+    service.save_evidence_draft("crisis-1", "r1", evidence_r1)
+    service.approve_revision("crisis-1", "r1", assumptions_r1)
+
+    payload = service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+
+    assert payload == {
+        "revision_id": "r2",
+        "parent_revision_id": "r1",
+        "copied_sections": ["intake", "evidence"],
+    }
+    copied_intake = repository.load_revision_model("crisis-1", "intake", "r2", IntakeDraft, approved=False)
+    copied_evidence = repository.load_revision_model("crisis-1", "evidence", "r2", EvidencePacket, approved=False)
+    assert copied_intake == intake_r1
+    assert copied_evidence.revision_id == "r2"
+    assert [item.evidence_id for item in copied_evidence.items] == [item.evidence_id for item in evidence_r1.items]
+    assert repository.load_revision_record("crisis-1", "r2").parent_revision_id == "r1"
+    assert not (repository.run_dir("crisis-1") / "assumptions" / "r2.approved.json").exists()
+
+
+def test_begin_revision_update_requires_approved_parent_sections(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", _make_intake())
+
+    with pytest.raises(FileNotFoundError):
+        service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+
+
 def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)

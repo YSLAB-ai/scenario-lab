@@ -38,6 +38,10 @@ def test_adapter_install_docs_reference_guided_query_style_workflow() -> None:
     assert "query-style commands" in claude_skill
     assert "query-style commands" in codex_doc
     assert "query-style commands" in claude_doc
+    assert "direct structured input" in codex_doc
+    assert "direct structured input" in claude_doc
+    assert "direct structured input" in codex_skill
+    assert "direct structured input" in claude_skill
     assert "forecast-harness demo-run" not in codex_doc
     assert "forecast-harness demo-run" not in claude_doc
     assert "forecast-harness demo-run" not in codex_skill
@@ -72,8 +76,10 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness draft-intake-guidance" in codex_doc
     assert "forecast-harness draft-evidence-packet" in codex_doc
     assert "forecast-harness save-evidence-draft" in codex_doc
+    assert "forecast-harness curate-evidence-draft" in codex_doc
     assert "forecast-harness draft-approval-packet" in codex_doc
     assert "forecast-harness approve-revision" in codex_doc
+    assert "forecast-harness begin-revision-update" in codex_doc
     assert "forecast-harness simulate" in codex_doc
     assert "forecast-harness summarize-run" in codex_doc
     assert "forecast-harness summarize-revision" in codex_doc
@@ -83,8 +89,10 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness draft-intake-guidance" in claude_doc
     assert "forecast-harness draft-evidence-packet" in claude_doc
     assert "forecast-harness save-evidence-draft" in claude_doc
+    assert "forecast-harness curate-evidence-draft" in claude_doc
     assert "forecast-harness draft-approval-packet" in claude_doc
     assert "forecast-harness approve-revision" in claude_doc
+    assert "forecast-harness begin-revision-update" in claude_doc
     assert "forecast-harness simulate" in claude_doc
     assert "forecast-harness summarize-run" in claude_doc
     assert "forecast-harness summarize-revision" in claude_doc
@@ -94,8 +102,10 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness draft-intake-guidance" in codex_skill
     assert "forecast-harness draft-evidence-packet" in codex_skill
     assert "forecast-harness save-evidence-draft" in codex_skill
+    assert "forecast-harness curate-evidence-draft" in codex_skill
     assert "forecast-harness draft-approval-packet" in codex_skill
     assert "forecast-harness approve-revision" in codex_skill
+    assert "forecast-harness begin-revision-update" in codex_skill
     assert "forecast-harness simulate" in codex_skill
     assert "forecast-harness summarize-run" in codex_skill
     assert "forecast-harness summarize-revision" in codex_skill
@@ -105,8 +115,10 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness draft-intake-guidance" in claude_skill
     assert "forecast-harness draft-evidence-packet" in claude_skill
     assert "forecast-harness save-evidence-draft" in claude_skill
+    assert "forecast-harness curate-evidence-draft" in claude_skill
     assert "forecast-harness draft-approval-packet" in claude_skill
     assert "forecast-harness approve-revision" in claude_skill
+    assert "forecast-harness begin-revision-update" in claude_skill
     assert "forecast-harness simulate" in claude_skill
     assert "forecast-harness summarize-run" in claude_skill
     assert "forecast-harness summarize-revision" in claude_skill

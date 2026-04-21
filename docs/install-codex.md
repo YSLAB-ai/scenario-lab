@@ -8,21 +8,25 @@
    - `forecast-harness save-intake-draft --help`
    - `forecast-harness draft-intake-guidance --help`
    - `forecast-harness draft-evidence-packet --help`
+   - `forecast-harness curate-evidence-draft --help`
    - `forecast-harness save-evidence-draft --help`
    - `forecast-harness draft-approval-packet --help`
    - `forecast-harness approve-revision --help`
+   - `forecast-harness begin-revision-update --help`
    - `forecast-harness simulate --help`
    - `forecast-harness summarize-run --help`
    - `forecast-harness summarize-revision --help`
    - `forecast-harness generate-report --help`
-5. Drive the workflow through the guided sequence rather than loading raw run artifacts into the agent context:
+5. Drive the workflow through the guided sequence rather than loading raw run artifacts into the agent context. For the normal adapter path, prefer direct structured input over temporary JSON files:
    - `forecast-harness start-run`
-   - `forecast-harness save-intake-draft`
+   - `forecast-harness save-intake-draft --event-framing ... --focus-entity ... --current-development ...`
    - `forecast-harness draft-intake-guidance`
    - `forecast-harness draft-evidence-packet`
-   - `forecast-harness save-evidence-draft`
+   - `forecast-harness curate-evidence-draft`
    - `forecast-harness draft-approval-packet`
-   - `forecast-harness approve-revision`
+   - `forecast-harness approve-revision --assumption ...`
    - `forecast-harness simulate`
    - `forecast-harness summarize-revision`
    - `forecast-harness summarize-run`
+   - `forecast-harness begin-revision-update`
+6. Use `forecast-harness save-evidence-draft` only when the adapter needs to replace the drafted packet from a file rather than curating the existing draft in place.
