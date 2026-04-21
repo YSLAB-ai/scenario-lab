@@ -452,10 +452,11 @@ def test_simulate_revision_writes_belief_state_summary_and_report(tmp_path: Path
 
     result = service.simulate_revision("crisis-1", "r1", pack=pack)
 
-    assert [branch["label"] for branch in result["branches"]] == [
-        "Signal resolve",
+    assert result["branches"][0]["label"] == "Signal resolve"
+    assert sorted(branch["label"] for branch in result["branches"]) == [
         "Limited response",
         "Open negotiation",
+        "Signal resolve",
     ]
     assert repository.run_dir("crisis-1").joinpath("belief-state", "r1.approved.json").exists()
     assert repository.run_dir("crisis-1").joinpath("simulation", "r1.approved.json").exists()

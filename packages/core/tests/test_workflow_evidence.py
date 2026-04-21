@@ -220,3 +220,5 @@ def test_domain_pack_workflow_hooks_default_to_empty_collections() -> None:
     assert pack.canonical_phases() == []
     assert pack.suggest_related_actors(intake) == []
     assert pack.retrieval_filters(intake) == {}
+    assert pack.search_config() == {}
+    assert pack.is_terminal(state=object(), depth=0) is False

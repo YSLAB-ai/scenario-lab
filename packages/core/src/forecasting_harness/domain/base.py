@@ -36,6 +36,9 @@ class DomainPack(ABC):
     def retrieval_filters(self, intake: "IntakeDraft") -> dict[str, str]:
         return {}
 
+    def search_config(self) -> dict[str, int | float]:
+        return {}
+
     @abstractmethod
     def extend_schema(self) -> dict[str, Any]:
         raise NotImplementedError
@@ -62,6 +65,9 @@ class DomainPack(ABC):
 
     def freshness_policy(self) -> dict[str, float]:
         return {}
+
+    def is_terminal(self, state: "BeliefState", depth: int) -> bool:
+        return False
 
     def default_objective_profile(self) -> "ObjectiveProfile":
         from forecasting_harness.objectives import default_objective_profile as _default_objective_profile
