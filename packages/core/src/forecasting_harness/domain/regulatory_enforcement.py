@@ -4,11 +4,14 @@ from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
 from forecasting_harness.domain.template_utils import (
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
     any_term_matches,
     bounded,
     compose_signal_text,
     count_term_matches,
     numeric_field,
+    state_signal_text,
     string_field,
     with_updates,
 )
@@ -99,13 +102,17 @@ class RegulatoryEnforcementPack(DomainPack):
         else:
             compliance_posture = "mixed"
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "enforcement_momentum": round(bounded(enforcement_momentum), 3),
             "compliance_posture": compliance_posture,
             "litigation_readiness": round(bounded(litigation_readiness), 3),
             "public_attention": round(bounded(public_attention), 3),
             "remedy_severity": round(bounded(remedy_severity), 3),
-        }
+            },
+        )
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
@@ -119,7 +126,7 @@ class RegulatoryEnforcementPack(DomainPack):
         attention = numeric_field(state, "public_attention", 0.45)
         litigate_prior = 0.4 if posture == "adversarial" else 0.25
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "cooperate-early",
                     "label": "Cooperate early",
@@ -145,21 +152,25 @@ class RegulatoryEnforcementPack(DomainPack):
                     "dependencies": {"fields": ["enforcement_momentum", "public_attention", "remedy_severity"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "inquiry":
-            return [
+            actions = [
                 {"action_id": "narrow-scope", "label": "Narrow scope", "prior": bounded(0.15 + max(0.0, 0.75 - remedy) * 0.18)},
                 {"action_id": "expand-record", "label": "Expand record", "prior": bounded(0.12 + momentum * 0.12 + remedy * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "negotiation":
-            return [
+            actions = [
                 {"action_id": "settlement-framework", "label": "Settlement framework", "prior": bounded(0.16 + max(0.0, 0.7 - readiness) * 0.16 + max(0.0, 0.75 - remedy) * 0.12)},
                 {"action_id": "contest-findings", "label": "Contest findings", "prior": bounded(0.12 + readiness * 0.22 + max(0.0, remedy - 0.45) * 0.1)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "remedy":
-            return [
+            actions = [
                 {"action_id": "consent-order", "label": "Consent order", "prior": bounded(0.14 + max(0.0, 0.8 - readiness) * 0.16)},
                 {"action_id": "monitor-plan", "label": "Monitor plan", "prior": bounded(0.14 + remedy * 0.18 + attention * 0.08)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:

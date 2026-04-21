@@ -4,7 +4,15 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import any_term_matches, bounded, compose_signal_text, count_term_matches
+from forecasting_harness.domain.template_utils import (
+    any_term_matches,
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    state_signal_text,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 if TYPE_CHECKING:
@@ -177,7 +185,10 @@ class InterstateCrisisPack(DomainPack):
         )
         geographic_flashpoint += 0.08 * count_term_matches(text, ["militant attack", "proxy militias", "carrier", "strait"])
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "alliance_pressure": round(bounded(alliance_pressure), 3),
             "leader_style": leader_style,
             "geographic_flashpoint": round(bounded(geographic_flashpoint), 3),
@@ -185,7 +196,8 @@ class InterstateCrisisPack(DomainPack):
             "military_posture": military_posture,
             "tension_index": round(bounded(tension_index), 3),
             "diplomatic_channel": round(bounded(diplomatic_channel), 3),
-        }
+            },
+        )
 
     def validate_phase(self, phase: str) -> list[str]:
         if phase not in self.PHASES:
@@ -208,7 +220,7 @@ class InterstateCrisisPack(DomainPack):
         posture_adjustment = 0.08 if military_posture in {"high-alert", "forward-deployed", "contested"} else 0.0
 
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "signal",
                     "branch_id": "signal",
@@ -245,29 +257,34 @@ class InterstateCrisisPack(DomainPack):
                     "dependencies": {"fields": ["diplomatic_channel", "leader_style", "mediation_window", "tension_index"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "signaling":
-            return [
+            actions = [
                 {"action_id": "signal-resolve", "label": "Signal resolve", "prior": bounded(0.2 + diplomacy * 0.2 + mediation * 0.18 - max(0.0, tension - 0.65) * 0.1)},
                 {"action_id": "intercept", "label": "Intercept", "prior": bounded(0.08 + hawkish_adjustment + flashpoint * 0.18 + max(0.0, tension - 0.55) * 0.24 - mediation * 0.08)},
                 {"action_id": "allied-pressure", "label": "Allied pressure", "prior": bounded(0.04 + alliance * 0.34 + diplomacy * 0.08)},
                 {"action_id": "crisis-talks", "label": "Crisis talks", "prior": bounded(0.08 + mediation * 0.36 + diplomacy * 0.18 - max(0.0, tension - 0.75) * 0.08)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "limited-response":
-            return [
+            actions = [
                 {"action_id": "contain-response", "label": "Contain response", "prior": bounded(0.2 + diplomacy * 0.14 + mediation * 0.16 - max(0.0, tension - 0.75) * 0.08)},
                 {"action_id": "retaliate", "label": "Retaliate", "prior": bounded(0.12 + hawkish_adjustment + flashpoint * 0.14 + max(0.0, tension - 0.6) * 0.22 - mediation * 0.1)},
                 {"action_id": "ceasefire-channel", "label": "Ceasefire channel", "prior": bounded(0.12 + mediation * 0.24 + diplomacy * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "escalation":
-            return [
+            actions = [
                 {"action_id": "force-projection", "label": "Force projection", "prior": bounded(0.24 + hawkish_adjustment + flashpoint * 0.18 + max(0.0, tension - 0.7) * 0.2)},
                 {"action_id": "emergency-backchannel", "label": "Emergency backchannel", "prior": bounded(0.12 + mediation * 0.28 + diplomacy * 0.16)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "negotiation-deescalation":
-            return [
+            actions = [
                 {"action_id": "confidence-measures", "label": "Confidence measures", "prior": bounded(0.18 + diplomacy * 0.25 + mediation * 0.28 - max(0.0, tension - 0.55) * 0.08)},
                 {"action_id": "stalemate-return", "label": "Stalemate return", "prior": bounded(0.15 + max(0.0, tension - 0.45) * 0.32 + flashpoint * 0.12 - mediation * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(
