@@ -22,25 +22,28 @@ The local CLI now supports the verified workflow commands:
 
 - `forecast-harness version`
 - `forecast-harness demo-run`
+- `forecast-harness list-domain-packs`
 - `forecast-harness start-run`
 - `forecast-harness save-intake-draft`
 - `forecast-harness save-evidence-draft`
+- `forecast-harness draft-evidence-packet`
 - `forecast-harness approve-revision`
 - `forecast-harness simulate`
 - `forecast-harness generate-report`
 
 Verified current progress:
 
-- The reusable workflow core now supports revisioned runs, draft/approved artifacts, belief-state compilation, revisioned simulation outputs, and report generation.
+- The reusable workflow core now supports registry-backed domain-pack discovery, revisioned runs, draft/approved artifacts, retrieval-backed evidence drafting, belief-state compilation, revisioned simulation outputs, and report generation.
 - The repository includes two domain packs: `generic-event` and the `interstate-crisis` reference pack.
-- The current workflow slice test suite passes with `84 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
-- The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, and `reports/<revision>.report.md`.
+- The current workflow slice test suite passes with `96 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`.
+- The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
 
 ## Remaining Gaps
 
 - The broader analyst workflow is still a local filesystem slice, not the full product described in the design spec.
 - Intake, evidence, and assumptions are still file-backed JSON inputs; there is not yet a conversational adapter loop that drafts and approves them end to end.
-- The repository still relies on curated local inputs rather than open-web retrieval.
+- The repository still relies on curated local inputs rather than open-web retrieval, and there is still no end-user ingestion pipeline for curated PDF, Markdown, CSV, and JSON corpora.
 - The current simulation engine is still a one-step branch enumerator, not a full MCTS implementation.
 - The `interstate-crisis` pack is still a reference pack with fixed actions, transitions, and scores.
 - Only one concrete reference domain pack is implemented for the new workflow slice; broader multi-domain coverage remains future work.
