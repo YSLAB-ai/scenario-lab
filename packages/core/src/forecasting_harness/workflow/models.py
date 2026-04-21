@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 RevisionStatus = Literal["draft", "approved", "simulated"]
+ConversationStage = Literal["intake", "evidence", "approval", "simulation", "report"]
 
 
 class RunRecord(BaseModel):
@@ -103,3 +104,14 @@ class RevisionSummary(BaseModel):
     assumption_count: int = 0
     top_branches: list[dict[str, object]] = Field(default_factory=list)
     available_sections: list[str] = Field(default_factory=list)
+
+
+class ConversationTurn(BaseModel):
+    run_id: str
+    revision_id: str
+    stage: ConversationStage
+    headline: str
+    user_message: str
+    recommended_command: str | None = None
+    available_sections: list[str] = Field(default_factory=list)
+    context: dict[str, object] = Field(default_factory=dict)

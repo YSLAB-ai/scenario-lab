@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from forecasting_harness.workflow import (
     ApprovalPacket,
     AssumptionSummary,
+    ConversationTurn,
     EvidencePacket,
     EvidencePacketItem,
     IntakeGuidance,
@@ -162,3 +163,19 @@ def test_approval_packet_and_revision_summary_capture_narrow_fields() -> None:
 
     assert packet.evidence_summary[0]["source_id"] == "src-1"
     assert summary.available_sections == ["intake", "evidence"]
+
+
+def test_conversation_turn_captures_stage_and_context() -> None:
+    turn = ConversationTurn(
+        run_id="crisis-1",
+        revision_id="r1",
+        stage="approval",
+        headline="Review approval packet",
+        user_message="Evidence draft is ready.",
+        recommended_command="forecast-harness approve-revision",
+        available_sections=["intake", "evidence"],
+        context={"revision_id": "r1"},
+    )
+
+    assert turn.stage == "approval"
+    assert turn.context["revision_id"] == "r1"
