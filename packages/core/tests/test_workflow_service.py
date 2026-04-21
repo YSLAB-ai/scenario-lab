@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 
 import pytest
@@ -10,10 +11,13 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.models import BeliefState
 from forecasting_harness.retrieval import CorpusRegistry
+from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.workflow.models import (
+    ApprovalPacket,
     AssumptionSummary,
     EvidencePacket,
     EvidencePacketItem,
+    IntakeGuidance,
     IntakeDraft,
     RunRecord,
 )
@@ -235,6 +239,92 @@ def test_save_evidence_draft_rejects_revision_id_mismatches() -> None:
 
     assert repository.written_revision_json == []
     assert repository.appended_events == []
+
+
+def test_draft_intake_guidance_uses_domain_pack_hooks(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        primary_actors=["US", "Iran"],
+        trigger="Exchange of strikes",
+        current_phase="trigger",
+        time_horizon="30d",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+
+    guidance = service.draft_intake_guidance("crisis-1", "r1")
+
+    assert isinstance(guidance, IntakeGuidance)
+    assert guidance.domain_pack == "interstate-crisis"
+    assert guidance.current_stage == "trigger"
+    assert "China" in guidance.suggested_entities
+    assert "military_posture" in guidance.pack_field_schema
+
+
+def test_draft_approval_packet_summarizes_evidence_and_warnings(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, _ = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    packet = service.draft_approval_packet("crisis-1", "r1")
+
+    assert isinstance(packet, ApprovalPacket)
+    assert packet.revision_id == "r1"
+    assert packet.evidence_summary[0]["source_id"] == "source-0"
+    assert "known unknowns remain unresolved" in packet.warnings
+
+
+def test_summarize_run_returns_revision_statuses(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    intake_r1, evidence_r1, assumptions_r1 = _make_revision_inputs("r1")
+    service.save_intake_draft("crisis-1", "r1", intake_r1)
+    service.save_evidence_draft("crisis-1", "r1", evidence_r1)
+    service.approve_revision("crisis-1", "r1", assumptions_r1)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    intake_r2, evidence_r2, assumptions_r2 = _make_revision_inputs("r2")
+    service.save_intake_draft("crisis-1", "r2", intake_r2, parent_revision_id="r1")
+    service.save_evidence_draft("crisis-1", "r2", evidence_r2, parent_revision_id="r1")
+    service.approve_revision("crisis-1", "r2", assumptions_r2)
+
+    summary = service.summarize_run("crisis-1")
+
+    assert summary.current_revision_id == "r2"
+    assert [item["status"] for item in summary.revisions] == ["simulated", "approved"]
+
+
+def test_summarize_revision_returns_available_sections_and_top_branches(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    summary = service.summarize_revision("crisis-1", "r1")
+
+    assert "intake" in summary.available_sections
+    assert "simulation" in summary.available_sections
+    assert summary.top_branches[0]["label"] == summarize_top_branches(
+        json.loads((repository.run_dir("crisis-1") / "simulation" / "r1.approved.json").read_text(encoding="utf-8"))["branches"]
+    )[0]["label"]
 
 
 def test_approve_revision_freezes_revision_artifacts_and_advances_the_run() -> None:

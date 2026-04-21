@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any
 
@@ -7,10 +8,21 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.base import DomainPack
 from forecasting_harness.domain.registry import DomainPackRegistry, build_default_registry
 from forecasting_harness.objectives import default_objective_profile
+from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
-from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RevisionRecord, RunRecord
+from forecasting_harness.workflow.models import (
+    ApprovalPacket,
+    AssumptionSummary,
+    EvidencePacket,
+    IntakeDraft,
+    IntakeGuidance,
+    RevisionRecord,
+    RevisionSummary,
+    RunRecord,
+    RunSummary,
+)
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.reporting import render_report
 
@@ -112,6 +124,67 @@ class WorkflowService:
             approved=False,
         )
         self.repository.append_event(run_id, "evidence-drafted", {"revision_id": revision_id})
+
+    def draft_intake_guidance(self, run_id: str, revision_id: str) -> IntakeGuidance:
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        pack = self._pack_for_run(run_id)
+        profile = pack.default_objective_profile()
+        return IntakeGuidance(
+            domain_pack=pack.slug(),
+            current_stage=intake.current_stage,
+            canonical_stages=pack.canonical_phases(),
+            suggested_entities=pack.suggest_related_actors(intake),
+            follow_up_questions=pack.suggest_questions(),
+            pack_field_schema=pack.extend_schema(),
+            default_objective_profile=profile.model_dump(mode="json"),
+        )
+
+    def draft_approval_packet(self, run_id: str, revision_id: str) -> ApprovalPacket:
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
+        pack = self._pack_for_run(run_id)
+        profile = pack.default_objective_profile()
+
+        warnings: list[str] = []
+        if not evidence.items:
+            warnings.append("no evidence drafted yet")
+        if intake.known_unknowns:
+            warnings.append("known unknowns remain unresolved")
+        if not intake.suggested_entities:
+            warnings.append("no suggested entities included yet")
+
+        outside_entities = sorted(set(intake.suggested_entities) - set(intake.focus_entities))
+        assumption_summary: list[str] = [f"known unknown: {value}" for value in intake.known_unknowns]
+        if not evidence.items:
+            assumption_summary.append("evidence gap: no cited evidence approved yet")
+        for entity in outside_entities:
+            assumption_summary.append(f"suggested external entity: {entity}")
+
+        return ApprovalPacket(
+            revision_id=revision_id,
+            intake_summary={
+                "event_framing": intake.event_framing,
+                "focus_entities": intake.focus_entities,
+                "current_development": intake.current_development,
+                "current_stage": intake.current_stage,
+                "time_horizon": intake.time_horizon,
+                "known_constraints": intake.known_constraints,
+                "known_unknowns": intake.known_unknowns,
+            },
+            assumption_summary=assumption_summary,
+            objective_profile=profile.model_dump(mode="json"),
+            evidence_summary=[
+                {
+                    "evidence_id": item.evidence_id,
+                    "source_id": item.source_id,
+                    "source_title": item.source_title,
+                    "reason": item.reason,
+                    "passage_count": len(item.raw_passages),
+                }
+                for item in evidence.items
+            ],
+            warnings=warnings,
+        )
 
     def draft_evidence_packet(
         self,
@@ -222,3 +295,56 @@ class WorkflowService:
         self.repository.write_revision_markdown(run_id, revision_id, "report.md", content)
         self.repository.append_event(run_id, "report-generated", {"revision_id": revision_id})
         return content
+
+    def summarize_run(self, run_id: str) -> RunSummary:
+        run = self.repository.load_run_record(run_id)
+        revisions = self.repository.list_revision_records(run_id)
+        return RunSummary(
+            run_id=run.run_id,
+            domain_pack=run.domain_pack,
+            current_revision_id=run.current_revision_id,
+            revisions=[record.model_dump(mode="json") for record in revisions],
+        )
+
+    def summarize_revision(self, run_id: str, revision_id: str) -> RevisionSummary:
+        record = self.repository.load_revision_record(run_id, revision_id)
+        run_dir = self.repository.run_dir(run_id)
+        available_sections: list[str] = []
+        evidence_item_count = 0
+        assumption_count = 0
+        top_branches: list[dict[str, object]] = []
+
+        for section in ("intake", "evidence", "assumptions", "belief-state", "simulation"):
+            draft_path = run_dir / section / f"{revision_id}.draft.json"
+            approved_path = run_dir / section / f"{revision_id}.approved.json"
+            if draft_path.exists() or approved_path.exists():
+                available_sections.append(section)
+
+        evidence_path = run_dir / "evidence" / f"{revision_id}.draft.json"
+        if not evidence_path.exists():
+            evidence_path = run_dir / "evidence" / f"{revision_id}.approved.json"
+        if evidence_path.exists():
+            evidence = EvidencePacket.model_validate_json(evidence_path.read_text(encoding="utf-8"))
+            evidence_item_count = len(evidence.items)
+
+        assumptions_path = run_dir / "assumptions" / f"{revision_id}.approved.json"
+        if assumptions_path.exists():
+            assumptions = AssumptionSummary.model_validate_json(assumptions_path.read_text(encoding="utf-8"))
+            assumption_count = len(assumptions.summary)
+
+        simulation_path = run_dir / "simulation" / f"{revision_id}.approved.json"
+        if simulation_path.exists():
+            simulation = json.loads(simulation_path.read_text(encoding="utf-8"))
+            branches = simulation.get("branches", [])
+            if isinstance(branches, list):
+                top_branches = summarize_top_branches(branches)
+
+        return RevisionSummary(
+            revision_id=record.revision_id,
+            status=record.status,
+            parent_revision_id=record.parent_revision_id,
+            evidence_item_count=evidence_item_count,
+            assumption_count=assumption_count,
+            top_branches=top_branches,
+            available_sections=available_sections,
+        )
