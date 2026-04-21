@@ -279,6 +279,166 @@ def test_draft_evidence_packet_command(tmp_path: Path) -> None:
     assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]
 
 
+def test_draft_intake_guidance_command_returns_pack_guidance(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "primary_actors": ["US", "Iran"],
+                "trigger": "Exchange of strikes",
+                "current_phase": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["draft-intake-guidance", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["domain_pack"] == "interstate-crisis"
+    assert "China" in payload["suggested_entities"]
+
+
+def test_draft_approval_packet_command_returns_grouped_summary(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "primary_actors": ["US", "Iran"],
+                "trigger": "Exchange of strikes",
+                "current_phase": "trigger",
+                "time_horizon": "30d",
+                "known_unknowns": ["US response posture"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "revision_id": "r1",
+                "items": [
+                    {
+                        "evidence_id": "r1-ev-1",
+                        "source_id": "doc-1",
+                        "source_title": "Doc 1",
+                        "reason": "Relevant context",
+                        "raw_passages": ["Alpha"],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["draft-approval-packet", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["revision_id"] == "r1"
+    assert "warnings" in payload
+    assert payload["evidence_summary"][0]["source_id"] == "doc-1"
+
+
+def test_summarize_run_and_revision_commands_return_narrow_json(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+    assumptions_path = tmp_path / "assumptions.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "primary_actors": ["US", "Iran"],
+                "trigger": "Exchange of strikes",
+                "current_phase": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {"revision_id": "r1", "items": [{"evidence_id": "r1-ev-1", "source_id": "doc-1", "source_title": "Doc 1", "reason": "Relevant context"}]},
+        ),
+        encoding="utf-8",
+    )
+    assumptions_path.write_text(json.dumps({"summary": ["Both sides avoid immediate total war"]}), encoding="utf-8")
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["approve-revision", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(assumptions_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["simulate", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    ).exit_code == 0
+
+    run_result = runner.invoke(app, ["summarize-run", "--root", str(root), "--run-id", "crisis-1"])
+    revision_result = runner.invoke(
+        app,
+        ["summarize-revision", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert run_result.exit_code == 0
+    assert revision_result.exit_code == 0
+    run_payload = json.loads(run_result.stdout)
+    revision_payload = json.loads(revision_result.stdout)
+    assert run_payload["current_revision_id"] == "r1"
+    assert revision_payload["revision_id"] == "r1"
+    assert revision_payload["top_branches"][0]["label"] == "Signal resolve"
+
+
 def test_ingest_file_command_registers_a_searchable_source(tmp_path: Path) -> None:
     source = tmp_path / "signals.md"
     source.write_text("# Overview\nJapan issues a warning.\n", encoding="utf-8")

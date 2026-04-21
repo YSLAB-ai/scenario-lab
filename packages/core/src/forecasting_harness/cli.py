@@ -293,6 +293,15 @@ def save_evidence_draft(
     print(f"saved evidence {revision_id}")
 
 
+@app.command("draft-intake-guidance")
+def draft_intake_guidance(
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+) -> None:
+    print(_service(root).draft_intake_guidance(run_id, revision_id).model_dump_json())
+
+
 @app.command("draft-evidence-packet")
 def draft_evidence_packet_command(
     root: Path = typer.Option(Path(".forecast")),
@@ -306,6 +315,15 @@ def draft_evidence_packet_command(
     service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
     packet = service.draft_evidence_packet(run_id, revision_id, pack=pack, query_text=query_text)
     print(packet.model_dump_json())
+
+
+@app.command("draft-approval-packet")
+def draft_approval_packet(
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+) -> None:
+    print(_service(root).draft_approval_packet(run_id, revision_id).model_dump_json())
 
 
 @app.command("approve-revision")
@@ -352,6 +370,23 @@ def generate_report(
         unsupported_count=len(assumptions.summary),
     )
     print(f"reported {revision_id}")
+
+
+@app.command("summarize-run")
+def summarize_run(
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+) -> None:
+    print(_service(root).summarize_run(run_id).model_dump_json())
+
+
+@app.command("summarize-revision")
+def summarize_revision(
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+) -> None:
+    print(_service(root).summarize_revision(run_id, revision_id).model_dump_json())
 
 
 def main() -> None:
