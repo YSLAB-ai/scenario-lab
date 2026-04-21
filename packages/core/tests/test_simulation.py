@@ -57,7 +57,7 @@ def test_should_reuse_node_rejects_overlapping_changed_fields() -> None:
     assert should_reuse_node(node, compatibility) is False
 
 
-def test_simulation_engine_sorts_branches_by_score() -> None:
+def test_simulation_engine_returns_mcts_metadata_and_multi_step_backed_up_scores() -> None:
     class DomainPackStub:
         def interaction_model(self) -> InteractionModel:
             return InteractionModel.EVENT_DRIVEN
@@ -65,16 +65,68 @@ def test_simulation_engine_sorts_branches_by_score() -> None:
         def validate_state(self, state: object) -> list[str]:
             return []
 
+        def search_config(self) -> dict[str, float]:
+            return {"iterations": 18, "max_depth": 3, "rollout_depth": 3, "c_puct": 1.2}
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return getattr(state, "name", "").startswith("terminal")
+
         def propose_actions(self, state: object) -> list[dict[str, object]]:
-            return [
-                {"branch_id": "b-1", "label": "low", "dependencies": {"fields": ["fuel_days"]}},
-                {"branch_id": "b-2", "label": "high", "dependencies": {"fields": ["morale"]}},
-            ]
+            if state.name == "root":
+                return [
+                    {
+                        "branch_id": "low-path",
+                        "label": "Low path",
+                        "prior": 0.6,
+                        "dependencies": {"fields": ["fuel_days"]},
+                    },
+                    {
+                        "branch_id": "setup-path",
+                        "label": "Setup path",
+                        "prior": 0.4,
+                        "dependencies": {"fields": ["morale"]},
+                    },
+                ]
+            if state.name == "low-1":
+                return [{"action_id": "coast", "label": "Coast", "prior": 1.0}]
+            if state.name == "setup-1":
+                return [{"action_id": "close-deal", "label": "Close deal", "prior": 1.0}]
+            return []
 
         def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
-            if action_context["branch_id"] == "b-1":
-                return [SimpleNamespace(score_metrics={"escalation": 0.8, "negotiation": 0.0})]
-            return [SimpleNamespace(score_metrics={"escalation": 0.1, "negotiation": 0.8})]
+            if state.name == "root" and action_context.get("branch_id") == "low-path":
+                return [
+                    SimpleNamespace(
+                        name="low-1",
+                        score_metrics={"escalation": 0.1, "negotiation": 0.4},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    )
+                ]
+            if state.name == "root" and action_context.get("branch_id") == "setup-path":
+                return [
+                    SimpleNamespace(
+                        name="setup-1",
+                        score_metrics={"escalation": 0.4, "negotiation": 0.2},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    )
+                ]
+            if state.name == "low-1":
+                return [
+                    SimpleNamespace(
+                        name="terminal-low",
+                        score_metrics={"escalation": 0.7, "negotiation": 0.1},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    )
+                ]
+            if state.name == "setup-1":
+                return [
+                    SimpleNamespace(
+                        name="terminal-win",
+                        score_metrics={"escalation": 0.1, "negotiation": 0.9},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    )
+                ]
+            return []
 
         def score_state(self, state: object) -> dict[str, float]:
             return state.score_metrics
@@ -87,11 +139,19 @@ def test_simulation_engine_sorts_branches_by_score() -> None:
         asymmetry_penalties={},
     )
     engine = SimulationEngine(DomainPackStub(), profile)
-    state = SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN)
+    state = SimpleNamespace(name="root", interaction_model=InteractionModel.EVENT_DRIVEN)
 
     result = engine.run(state)
 
-    assert [branch["branch_id"] for branch in result["branches"]] == ["b-2", "b-1"]
+    assert result["search_mode"] == "mcts"
+    assert result["iterations"] == 18
+    assert result["node_count"] >= 5
+    assert result["max_depth_reached"] >= 2
+    assert [branch["branch_id"] for branch in result["branches"]] == ["setup-path", "low-path"]
+    assert result["branches"][0]["visits"] > 0
+    assert result["branches"][0]["prior"] == pytest.approx(0.4)
+    assert result["branches"][0]["metrics"]["negotiation"] == pytest.approx(0.9)
+    assert result["branches"][0]["score"] > result["branches"][1]["score"]
 
 
 def test_simulation_engine_rejects_interaction_model_mismatch() -> None:
@@ -164,6 +224,9 @@ def test_simulation_engine_assigns_deterministic_fallback_branch_ids() -> None:
         def validate_state(self, state: object) -> list[str]:
             return []
 
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return True
+
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return [
                 {"action_id": "signal-negotiation", "label": "Signal negotiation"},
@@ -208,6 +271,9 @@ def test_simulation_engine_makes_shared_fallback_branch_ids_globally_unique() ->
         def validate_state(self, state: object) -> list[str]:
             return []
 
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return True
+
         def propose_actions(self, state: object) -> list[dict[str, object]]:
             return [
                 {"action_id": "signal-negotiation", "label": "Signal negotiation A"},
@@ -238,3 +304,57 @@ def test_simulation_engine_makes_shared_fallback_branch_ids_globally_unique() ->
         "signal-negotiation",
         "signal-negotiation-2",
     ]
+
+
+def test_simulation_engine_supports_weighted_transition_outcomes() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return True
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            return [{"branch_id": "signal", "label": "Signal", "prior": 0.5}]
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            return [
+                {
+                    "outcome_id": "warning",
+                    "weight": 0.7,
+                    "next_state": SimpleNamespace(
+                        score_metrics={"escalation": 0.2, "negotiation": 0.5},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    ),
+                },
+                {
+                    "outcome_id": "misread",
+                    "weight": 0.3,
+                    "next_state": SimpleNamespace(
+                        score_metrics={"escalation": 0.8, "negotiation": 0.1},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    ),
+                },
+            ]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+    profile = ObjectiveProfile(
+        name="avoid-escalation",
+        metric_weights={"escalation": -1.0, "negotiation": 0.5},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    state = SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN)
+
+    result = engine.run(state)
+
+    assert [branch["branch_id"] for branch in result["branches"]] == ["signal", "signal-2"]
+    assert result["branches"][0]["prior"] == pytest.approx(0.35)
+    assert result["branches"][1]["prior"] == pytest.approx(0.15)
