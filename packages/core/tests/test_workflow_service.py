@@ -333,6 +333,8 @@ def test_summarize_revision_returns_available_sections_and_top_branches(tmp_path
     assert summary.top_branches[0]["label"] == summarize_top_branches(
         json.loads((repository.run_dir("crisis-1") / "simulation" / "r1.approved.json").read_text(encoding="utf-8"))["branches"]
     )[0]["label"]
+    assert summary.scenario_families
+    assert summary.scenario_families[0]["terminal_phase"]
 
 
 def test_draft_conversation_turn_returns_intake_stage_when_revision_is_empty(tmp_path: Path) -> None:
@@ -449,7 +451,8 @@ def test_draft_conversation_turn_returns_report_stage_from_simulated_revision(tm
     assert turn.stage == "report"
     assert turn.recommended_command == "forecast-harness begin-revision-update"
     assert turn.context["revision_id"] == "r1"
-    assert turn.context["top_branches"][0]["label"] == "Signal resolve"
+    assert turn.context["top_branches"][0]["label"] == service.summarize_revision("crisis-1", "r1").top_branches[0]["label"]
+    assert turn.context["scenario_families"]
 
 
 def test_approve_revision_freezes_revision_artifacts_and_advances_the_run() -> None:
@@ -490,12 +493,12 @@ def test_simulate_revision_writes_belief_state_summary_and_report(tmp_path: Path
 
     result = service.simulate_revision("crisis-1", "r1", pack=pack)
 
-    assert result["branches"][0]["label"] == "Signal resolve"
-    assert sorted(branch["label"] for branch in result["branches"]) == [
-        "Limited response",
-        "Open negotiation",
-        "Signal resolve",
-    ]
+    assert result["branches"]
+    branch_labels = {branch["label"] for branch in result["branches"]}
+    assert any(label.startswith("Signal resolve") for label in branch_labels)
+    assert any(label.startswith("Limited response") for label in branch_labels)
+    assert any(label.startswith("Alliance consultation") for label in branch_labels)
+    assert any(label.startswith("Open negotiation") for label in branch_labels)
     assert repository.run_dir("crisis-1").joinpath("belief-state", "r1.approved.json").exists()
     assert repository.run_dir("crisis-1").joinpath("simulation", "r1.approved.json").exists()
     report_path = repository.run_dir("crisis-1").joinpath("reports", "r1.report.md")
@@ -504,6 +507,7 @@ def test_simulate_revision_writes_belief_state_summary_and_report(tmp_path: Path
     assert "# Scenario Report" in report
     assert "- Revision: r1" in report
     assert "- Unsupported assumptions: 1" in report
+    assert "## Scenario Families" in report
     assert "low-credibility exploratory run" not in report
 
 

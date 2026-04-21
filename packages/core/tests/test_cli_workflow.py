@@ -850,7 +850,8 @@ def test_summarize_run_and_revision_commands_return_narrow_json(tmp_path: Path) 
     revision_payload = json.loads(revision_result.stdout)
     assert run_payload["current_revision_id"] == "r1"
     assert revision_payload["revision_id"] == "r1"
-    assert revision_payload["top_branches"][0]["label"] == "Signal resolve"
+    assert revision_payload["top_branches"]
+    assert revision_payload["scenario_families"]
 
 
 def test_draft_conversation_turn_command_returns_report_stage_for_simulated_revision(tmp_path: Path) -> None:

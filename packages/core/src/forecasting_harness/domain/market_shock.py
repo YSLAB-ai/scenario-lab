@@ -82,11 +82,15 @@ class MarketShockPack(DomainPack):
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
+        liquidity = numeric_field(state, "liquidity_stress", 0.45)
+        rates = numeric_field(state, "rate_pressure", 0.55)
+        credibility = numeric_field(state, "policy_credibility", 0.5)
         if phase == "trigger":
             return [
-                {"action_id": "hawkish-guidance", "label": "Hawkish guidance", "prior": 0.35, "dependencies": {"fields": ["rate_pressure", "policy_credibility"]}},
-                {"action_id": "emergency-liquidity", "label": "Emergency liquidity", "prior": 0.4, "dependencies": {"fields": ["liquidity_stress"]}},
-                {"action_id": "wait-and-see", "label": "Wait and see", "prior": 0.25, "dependencies": {"fields": ["policy_credibility"]}},
+                {"action_id": "hawkish-guidance", "label": "Hawkish guidance", "prior": bounded(0.18 + rates * 0.25), "dependencies": {"fields": ["rate_pressure", "policy_credibility"]}},
+                {"action_id": "emergency-liquidity", "label": "Emergency liquidity", "prior": bounded(0.22 + liquidity * 0.25), "dependencies": {"fields": ["liquidity_stress"]}},
+                {"action_id": "wait-and-see", "label": "Wait and see", "prior": bounded(0.12 + max(0.0, credibility - 0.35) * 0.25), "dependencies": {"fields": ["policy_credibility"]}},
+                {"action_id": "coordinated-backstop", "label": "Coordinated backstop", "prior": bounded(0.16 + liquidity * 0.15 + credibility * 0.1), "dependencies": {"fields": ["liquidity_stress", "policy_credibility"]}},
             ]
         if phase == "repricing":
             return [
@@ -118,6 +122,14 @@ class MarketShockPack(DomainPack):
             return [with_updates(state, phase="policy-response", field_updates={"liquidity_stress": max(0.0, liquidity - 0.18), "policy_credibility": credibility + 0.08})]
         if phase == "trigger" and action_id == "wait-and-see":
             return [with_updates(state, phase="repricing", field_updates={"liquidity_stress": liquidity + 0.1, "policy_credibility": credibility - 0.08})]
+        if phase == "trigger" and action_id == "coordinated-backstop":
+            return [
+                with_updates(
+                    state,
+                    phase="policy-response",
+                    field_updates={"liquidity_stress": max(0.0, liquidity - 0.12), "policy_credibility": credibility + 0.12},
+                )
+            ]
         if phase == "repricing" and action_id == "verbal-backstop":
             return [with_updates(state, phase="liquidity-stabilization", field_updates={"liquidity_stress": max(0.0, liquidity - 0.1), "policy_credibility": credibility + 0.08})]
         if phase == "repricing" and action_id == "forced-deleveraging":

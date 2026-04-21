@@ -88,11 +88,15 @@ class ElectionShockPack(DomainPack):
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
+        margin = numeric_field(state, "poll_margin", 0.0)
+        turnout = numeric_field(state, "turnout_energy", 0.5)
+        discipline = numeric_field(state, "message_discipline", 0.5)
         if phase == "trigger":
             return [
-                {"action_id": "message-reset", "label": "Message reset", "prior": 0.4, "dependencies": {"fields": ["message_discipline"]}},
-                {"action_id": "opposition-attack", "label": "Opposition attack", "prior": 0.35, "dependencies": {"fields": ["poll_margin"]}},
-                {"action_id": "ground-game-surge", "label": "Ground game surge", "prior": 0.4, "dependencies": {"fields": ["turnout_energy"]}},
+                {"action_id": "message-reset", "label": "Message reset", "prior": bounded(0.25 + max(0.0, 0.55 - discipline) * 0.3), "dependencies": {"fields": ["message_discipline"]}},
+                {"action_id": "opposition-attack", "label": "Opposition attack", "prior": bounded(0.2 + max(0.0, -margin) * 0.04), "dependencies": {"fields": ["poll_margin"]}},
+                {"action_id": "ground-game-surge", "label": "Ground game surge", "prior": bounded(0.22 + turnout * 0.25), "dependencies": {"fields": ["turnout_energy"]}},
+                {"action_id": "elite-reassurance", "label": "Elite reassurance", "prior": bounded(0.14 + max(0.0, 0.45 - discipline) * 0.25), "dependencies": {"fields": ["message_discipline", "poll_margin"]}},
             ]
         if phase == "narrative-fight":
             return [
@@ -119,11 +123,26 @@ class ElectionShockPack(DomainPack):
         phase = getattr(state, "phase", None) or "trigger"
 
         if phase == "trigger" and action_id == "message-reset":
-            return [with_updates(state, phase="narrative-fight", field_updates={"message_discipline": discipline + 0.15, "poll_margin": margin + 0.3})]
+            return [
+                {
+                    "next_state": with_updates(state, phase="narrative-fight", field_updates={"message_discipline": discipline + 0.15, "poll_margin": margin + 0.3}),
+                    "weight": 0.6,
+                    "outcome_id": "reset-holds",
+                    "outcome_label": "reset holds",
+                },
+                {
+                    "next_state": with_updates(state, phase="turnout-drive", field_updates={"message_discipline": discipline + 0.05, "turnout_energy": turnout + 0.08}),
+                    "weight": 0.4,
+                    "outcome_id": "reset-to-turnout",
+                    "outcome_label": "reset shifts to turnout",
+                },
+            ]
         if phase == "trigger" and action_id == "opposition-attack":
             return [with_updates(state, phase="narrative-fight", field_updates={"message_discipline": max(0.0, discipline - 0.1), "poll_margin": margin - 0.4})]
         if phase == "trigger" and action_id == "ground-game-surge":
             return [with_updates(state, phase="turnout-drive", field_updates={"turnout_energy": turnout + 0.18, "poll_margin": margin + 0.1})]
+        if phase == "trigger" and action_id == "elite-reassurance":
+            return [with_updates(state, phase="coalition-shaping", field_updates={"message_discipline": discipline + 0.1, "poll_margin": margin + 0.15})]
         if phase == "narrative-fight" and action_id == "endorsement-push":
             return [with_updates(state, phase="coalition-shaping", field_updates={"poll_margin": margin + 0.4, "message_discipline": discipline + 0.05})]
         if phase == "narrative-fight" and action_id == "contrast-campaign":

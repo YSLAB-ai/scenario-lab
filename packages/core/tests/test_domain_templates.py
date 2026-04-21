@@ -107,6 +107,7 @@ def test_domain_template_pack_exposes_stages_actions_and_transitions(
     actions = pack.propose_actions(state)
 
     assert actions
-    next_state = pack.sample_transition(state, actions[0])[0]
+    transition = pack.sample_transition(state, actions[0])[0]
+    next_state = transition["next_state"] if isinstance(transition, dict) else transition
     assert next_state.phase != state.phase
     assert pack.score_state(next_state)

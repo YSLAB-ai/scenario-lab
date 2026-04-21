@@ -13,7 +13,7 @@ from forecasting_harness.domain.template_utils import normalize_text, term_match
 from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.models import BeliefState
 from forecasting_harness.objectives import default_objective_profile
-from forecasting_harness.query_api import summarize_top_branches
+from forecasting_harness.query_api import summarize_scenario_families, summarize_top_branches
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
@@ -901,6 +901,7 @@ class WorkflowService:
         evidence_item_count = 0
         assumption_count = 0
         top_branches: list[dict[str, object]] = []
+        scenario_families: list[dict[str, object]] = []
 
         evidence_path = run_dir / "evidence" / f"{revision_id}.draft.json"
         if not evidence_path.exists():
@@ -920,6 +921,7 @@ class WorkflowService:
             branches = simulation.get("branches", [])
             if isinstance(branches, list):
                 top_branches = summarize_top_branches(branches)
+                scenario_families = summarize_scenario_families(branches)
 
         return RevisionSummary(
             revision_id=record.revision_id,
@@ -928,5 +930,6 @@ class WorkflowService:
             evidence_item_count=evidence_item_count,
             assumption_count=assumption_count,
             top_branches=top_branches,
+            scenario_families=scenario_families,
             available_sections=available_sections,
         )

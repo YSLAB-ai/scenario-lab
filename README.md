@@ -43,6 +43,7 @@ The local CLI now supports the verified workflow commands:
 - `forecast-harness approve-revision`
 - `forecast-harness begin-revision-update`
 - `forecast-harness simulate`
+- `forecast-harness run-replay-suite`
 - `forecast-harness generate-report`
 
 Verified current progress:
@@ -56,7 +57,7 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `186 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `193 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -89,6 +90,25 @@ Verified current progress:
   - `reuse_summary`
   - `tree_nodes`
   - root `branches` preserved for the workflow/report layer
+- The workflow now also supports deterministic replay-suite execution through `forecast-harness run-replay-suite`, so curated scenario cases can be re-run and scored for top-branch accuracy, evidence-source accuracy, and inferred-field coverage.
+- Post-search reporting now synthesizes:
+  - root-route-aware `scenario_families`
+  - explicit top-branch path detail
+  - search-summary metadata in the generated report
+- The interstate-crisis pack now infers richer causal state fields from approved evidence:
+  - `alliance_pressure`
+  - `mediation_window`
+  - `geographic_flashpoint`
+- The company-action pack now infers richer causal state fields from approved evidence:
+  - `board_cohesion`
+  - `operational_stability`
+- The checked-in 10-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate and company templates instead of collapsing those scenarios into one repeated root strategy.
+- The latest verified smoke campaign on 2026-04-21 produced these top branches:
+  - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
+  - `Japan-China Strait` -> `Signal resolve (managed signal)`
+  - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
+  - `Apple CEO transition` -> `Stakeholder reset`
+  - `Boeing post-reporting` -> `Contain message (message lands)`
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
@@ -128,6 +148,8 @@ Verified current progress:
   - cross-run evidence contamination inside the same domain
   - ingestion planning that treated old same-domain coverage as sufficient for a new scenario
   - missing pack-field inference from approved evidence
+  - over-convergent interstate root strategies driven by coarse alliance modeling
+  - over-convergent company root strategies driven by shallow board and operations modeling
 - A direct CLI smoke check now verifies:
   - `draft-retrieval-plan` returns deterministic `query_variants` for the current intake
   - `draft-ingestion-plan` reports covered and missing manifest evidence categories from the local corpus
@@ -150,3 +172,4 @@ Verified current progress:
 - The source manifests now guide retrieval planning and ingestion-gap reporting, but they do not yet trigger automatic ingestion or open-web acquisition.
 - The source manifests now guide ingestion orchestration, but they do not yet schedule ingestion work automatically or acquire files from outside the local workspace.
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.
+- The replay suite infrastructure now exists, but the repo still does not contain a large curated historical replay library or calibration loop that tunes model behavior against real outcomes.

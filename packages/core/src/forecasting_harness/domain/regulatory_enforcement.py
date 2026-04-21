@@ -92,12 +92,14 @@ class RegulatoryEnforcementPack(DomainPack):
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
         posture = string_field(state, "compliance_posture", "mixed")
+        momentum = numeric_field(state, "enforcement_momentum", 0.5)
         litigate_prior = 0.4 if posture == "adversarial" else 0.25
         if phase == "trigger":
             return [
                 {"action_id": "cooperate-early", "label": "Cooperate early", "prior": 0.45, "dependencies": {"fields": ["compliance_posture"]}},
                 {"action_id": "litigate", "label": "Litigate", "prior": litigate_prior, "dependencies": {"fields": ["compliance_posture", "enforcement_momentum"]}},
                 {"action_id": "internal-remediation", "label": "Internal remediation", "prior": 0.35, "dependencies": {"fields": ["public_attention"]}},
+                {"action_id": "independent-review", "label": "Independent review", "prior": bounded(0.16 + max(0.0, 0.7 - momentum) * 0.2), "dependencies": {"fields": ["enforcement_momentum", "public_attention"]}},
             ]
         if phase == "inquiry":
             return [
@@ -128,6 +130,8 @@ class RegulatoryEnforcementPack(DomainPack):
             return [with_updates(state, phase="inquiry", field_updates={"enforcement_momentum": momentum + 0.1, "public_attention": attention + 0.08})]
         if phase == "trigger" and action_id == "internal-remediation":
             return [with_updates(state, phase="negotiation", field_updates={"enforcement_momentum": max(0.0, momentum - 0.08), "public_attention": attention})]
+        if phase == "trigger" and action_id == "independent-review":
+            return [with_updates(state, phase="negotiation", field_updates={"enforcement_momentum": max(0.0, momentum - 0.06), "public_attention": max(0.0, attention - 0.02)})]
         if phase == "inquiry" and action_id == "narrow-scope":
             return [with_updates(state, phase="negotiation", field_updates={"enforcement_momentum": max(0.0, momentum - 0.05), "public_attention": attention - 0.03})]
         if phase == "inquiry" and action_id == "expand-record":

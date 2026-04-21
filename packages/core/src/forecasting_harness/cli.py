@@ -13,6 +13,7 @@ from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.retrieval import CorpusRegistry, detect_source_type, ingest_file
+from forecasting_harness.replay import ReplayCase, run_replay_suite
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
@@ -311,6 +312,14 @@ def ingest_directory_command(
 @app.command("list-corpus-sources")
 def list_corpus_sources(corpus_db: Path = typer.Option(...)) -> None:
     print(json.dumps(CorpusRegistry(corpus_db).list_documents()))
+
+
+@app.command("run-replay-suite")
+def run_replay_suite_command(
+    input: Path = typer.Option(...),
+) -> None:
+    cases = [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
+    print(run_replay_suite(cases).model_dump_json())
 
 
 @app.command("demo-run")

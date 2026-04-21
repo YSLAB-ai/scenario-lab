@@ -89,11 +89,15 @@ class SupplyChainDisruptionPack(DomainPack):
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
+        inventory = integer_field(state, "inventory_cover_days", 18)
+        transport = numeric_field(state, "transport_reliability", 0.55)
+        substitution = numeric_field(state, "substitution_flexibility", 0.4)
         if phase == "trigger":
             return [
-                {"action_id": "allocate-inventory", "label": "Allocate inventory", "prior": 0.45, "dependencies": {"fields": ["inventory_cover_days"]}},
-                {"action_id": "expedite-alternatives", "label": "Expedite alternatives", "prior": 0.35, "dependencies": {"fields": ["substitution_flexibility"]}},
-                {"action_id": "customer-prioritization", "label": "Customer prioritization", "prior": 0.3, "dependencies": {"fields": ["inventory_cover_days", "transport_reliability"]}},
+                {"action_id": "allocate-inventory", "label": "Allocate inventory", "prior": bounded(0.18 + max(0, 14 - inventory) * 0.03), "dependencies": {"fields": ["inventory_cover_days"]}},
+                {"action_id": "expedite-alternatives", "label": "Expedite alternatives", "prior": bounded(0.16 + max(0.0, 0.65 - substitution) * 0.18), "dependencies": {"fields": ["substitution_flexibility"]}},
+                {"action_id": "customer-prioritization", "label": "Customer prioritization", "prior": bounded(0.14 + max(0, 12 - inventory) * 0.02 + max(0.0, 0.55 - transport) * 0.12), "dependencies": {"fields": ["inventory_cover_days", "transport_reliability"]}},
+                {"action_id": "reserve-logistics", "label": "Reserve logistics", "prior": bounded(0.16 + max(0.0, 0.6 - transport) * 0.2), "dependencies": {"fields": ["transport_reliability"]}},
             ]
         if phase == "triage":
             return [
@@ -125,6 +129,8 @@ class SupplyChainDisruptionPack(DomainPack):
             return [with_updates(state, phase="rerouting", field_updates={"substitution_flexibility": substitution + 0.15, "inventory_cover_days": max(1, inventory - 2)})]
         if phase == "trigger" and action_id == "customer-prioritization":
             return [with_updates(state, phase="triage", field_updates={"inventory_cover_days": max(1, inventory - 3), "transport_reliability": transport + 0.03})]
+        if phase == "trigger" and action_id == "reserve-logistics":
+            return [with_updates(state, phase="rerouting", field_updates={"transport_reliability": transport + 0.12, "inventory_cover_days": max(1, inventory - 2)})]
         if phase == "triage" and action_id == "reroute-logistics":
             return [with_updates(state, phase="rerouting", field_updates={"transport_reliability": transport + 0.15, "inventory_cover_days": max(1, inventory - 1)})]
         if phase == "triage" and action_id == "demand-shaping":

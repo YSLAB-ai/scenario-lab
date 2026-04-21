@@ -150,6 +150,7 @@ class RevisionSummary(BaseModel):
     evidence_item_count: int = 0
     assumption_count: int = 0
     top_branches: list[dict[str, object]] = Field(default_factory=list)
+    scenario_families: list[dict[str, object]] = Field(default_factory=list)
     available_sections: list[str] = Field(default_factory=list)
 
 
