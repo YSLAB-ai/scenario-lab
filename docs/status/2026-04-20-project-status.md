@@ -16,23 +16,24 @@ Date: 2026-04-20
 - The corpus now supports document metadata plus citation-friendly chunk rows in the local SQLite/FTS registry.
 - The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into the corpus.
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
+- The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
 - The test suite passed on 2026-04-20 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `107 passed in 0.29s`
+  - Result: `117 passed in 0.36s`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
-  - `forecast-harness version`
-  - `forecast-harness list-domain-packs`
   - `forecast-harness ingest-file`
-  - `forecast-harness ingest-directory`
-  - `forecast-harness list-corpus-sources`
   - `forecast-harness start-run`
   - `forecast-harness save-intake-draft`
+  - `forecast-harness draft-intake-guidance`
   - `forecast-harness draft-evidence-packet`
   - `forecast-harness save-evidence-draft`
+  - `forecast-harness draft-approval-packet`
   - `forecast-harness approve-revision`
   - `forecast-harness simulate`
+  - `forecast-harness summarize-revision`
+  - `forecast-harness summarize-run`
   - `forecast-harness generate-report`
 - The clean install workflow run produced these revisioned artifacts for a test run:
   - `run.json`
@@ -48,8 +49,11 @@ Date: 2026-04-20
   - `revisions/<revision>.json`
 - A smoke test on 2026-04-20 verified:
   - ingesting a Markdown file into `corpus.db`
-  - listing corpus sources from that database
-  - drafting an evidence packet for an `interstate-crisis` run from the ingested chunk
+  - drafting intake guidance for an `interstate-crisis` run
+  - drafting an evidence packet for that run from the ingested chunk
+  - building a grouped approval packet
+  - simulating the approved revision
+  - summarizing both the revision and the run through the new narrow summary commands
 - Codex and Claude install notes exist:
   - `docs/install-codex.md`
   - `docs/install-claude-code.md`
@@ -66,12 +70,12 @@ Date: 2026-04-20
 ## Current Gaps
 
 - The current analyst workflow is still file-backed. Users provide intake, evidence, and assumptions as JSON inputs rather than through a conversational adapter loop.
+- The adapters can now query guidance and summary payloads from the core, but they are still documentation/skill scaffolding rather than a finished conversational analyst experience.
 - The simulation engine is still a one-step branch enumerator. It is not yet a full MCTS implementation with tree expansion, rollouts, and backpropagation.
 - The `interstate-crisis` pack is still a reference pack:
   - action generation is fixed
   - transition sampling returns the input state
   - scoring is fixed
-- The adapters are still documentation and skill scaffolding rather than a seamless conversational analyst experience.
 - The system does not yet implement:
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
@@ -101,7 +105,10 @@ Date: 2026-04-20
 - `af7d99e` `feat: add corpus ingestion parsers`
 - `9666884` `feat: persist corpus documents and chunks`
 - `478825b` `feat: add corpus ingestion commands`
+- `3da1b02` `feat: add guided workflow models`
+- `c3359ce` `feat: add guided workflow summaries`
+- `55244fa` `feat: add guided workflow commands`
 
 ## Current Assessment
 
-The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, and persisted revision lineage for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
+The repository is a verified, runnable workflow prototype of the forecasting harness. It now supports registry-backed domain selection, generic intake aliases, local corpus ingestion, retrieval-backed evidence packet drafting, deterministic guidance/summarization surfaces for adapters, and persisted revision lineage for the reference interstate-crisis workflow, but it is not yet a full forecasting product.
