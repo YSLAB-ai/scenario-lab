@@ -145,6 +145,57 @@ def test_registry_persists_document_rows_and_chunk_rows(tmp_path: Path) -> None:
     assert hits[0]["chunk_id"] == "1"
 
 
+def test_registry_persists_chunk_vector_rows(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Leadership response",
+        source_type="markdown",
+        path="/tmp/leadership.md",
+        published_at="2026-04-20",
+        tags={"domain": "company-action"},
+        chunks=[
+            {"chunk_id": "1", "location": "heading:Overview", "content": "The chief executive stabilized messaging quickly."}
+        ],
+    )
+
+    with registry._connect() as connection:
+        rows = connection.execute(
+            "SELECT source_id, chunk_id, embedding_version, token_count, vector_json FROM chunk_vectors"
+        ).fetchall()
+
+    assert len(rows) == 1
+    assert rows[0]["source_id"] == "src-1"
+    assert rows[0]["chunk_id"] == "1"
+    assert rows[0]["embedding_version"]
+    assert rows[0]["token_count"] > 0
+    assert rows[0]["vector_json"]
+
+
+def test_search_engine_returns_semantic_hit_without_exact_lexical_match(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Leadership response",
+        source_type="markdown",
+        path="/tmp/leadership.md",
+        published_at="2026-04-20",
+        tags={"domain": "company-action"},
+        chunks=[
+            {"chunk_id": "1", "location": "heading:Overview", "content": "The chief executive stabilized messaging quickly."}
+        ],
+    )
+
+    hits = SearchEngine(registry).search(
+        RetrievalQuery(text="ceo response", filters={"domain": "company-action"})
+    )
+
+    assert hits
+    assert hits[0]["source_id"] == "src-1"
+    assert hits[0]["semantic_score"] > 0
+    assert hits[0]["lexical_score"] == 0.0
+
+
 def test_freshness_multiplier_is_neutral_without_published_at(tmp_path: Path) -> None:
     registry = CorpusRegistry(tmp_path / "corpus.db")
     engine = SearchEngine(registry)
