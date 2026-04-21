@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 
 import pytest
@@ -9,10 +10,15 @@ import pytest
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.models import BeliefState
+from forecasting_harness.retrieval import CorpusRegistry
+from forecasting_harness.query_api import summarize_top_branches
 from forecasting_harness.workflow.models import (
+    ApprovalPacket,
     AssumptionSummary,
+    ConversationTurn,
     EvidencePacket,
     EvidencePacketItem,
+    IntakeGuidance,
     IntakeDraft,
     RunRecord,
 )
@@ -30,11 +36,13 @@ class _FrozenDateTime:
 class _FakeRepository:
     initialized_runs: list[RunRecord] = field(default_factory=list)
     saved_runs: list[RunRecord] = field(default_factory=list)
+    saved_revision_records: list[object] = field(default_factory=list)
     written_revision_json: list[tuple[str, str, str, object, bool]] = field(default_factory=list)
     loaded_revision_models: list[tuple[str, str, str, type, bool]] = field(default_factory=list)
     appended_events: list[tuple[str, str, dict[str, object]]] = field(default_factory=list)
     run_record: RunRecord | None = None
     revision_payloads: dict[tuple[str, str, str, bool], object] = field(default_factory=dict)
+    revision_records: dict[tuple[str, str], object] = field(default_factory=dict)
 
     def init_run(self, run: RunRecord) -> None:
         self.initialized_runs.append(run)
@@ -47,6 +55,16 @@ class _FakeRepository:
         assert self.run_record is not None
         assert self.run_record.run_id == run_id
         return self.run_record
+
+    def save_revision_record(self, run_id: str, record: object) -> None:
+        self.saved_revision_records.append(record)
+        self.revision_records[(run_id, record.revision_id)] = record
+
+    def load_revision_record(self, run_id: str, revision_id: str):
+        try:
+            return self.revision_records[(run_id, revision_id)]
+        except KeyError as exc:
+            raise FileNotFoundError(revision_id) from exc
 
     def write_revision_json(
         self,
@@ -156,7 +174,7 @@ def test_start_run_rejects_duplicate_run_ids_with_real_repository(tmp_path, monk
 
 
 def test_save_intake_draft_writes_the_intake_snapshot_and_records_an_event() -> None:
-    repository = _FakeRepository()
+    repository = _FakeRepository(run_record=_make_run())
     service = WorkflowService(repository)
     intake = _make_intake()
 
@@ -166,6 +184,37 @@ def test_save_intake_draft_writes_the_intake_snapshot_and_records_an_event() -> 
         ("run-1", "intake", "rev-1", intake.model_dump(mode="json"), False)
     ]
     assert repository.appended_events == [("run-1", "intake-drafted", {"revision_id": "rev-1"})]
+
+
+def test_save_intake_draft_rejects_invalid_pack_specific_shape() -> None:
+    repository = _FakeRepository(run_record=_make_run())
+    service = WorkflowService(repository)
+    intake = IntakeDraft(
+        event_framing="A policy shift is underway.",
+        focus_entities=["country-a"],
+        current_development="policy change",
+        current_stage="trigger",
+        time_horizon="2026-Q2",
+    )
+
+    with pytest.raises(ValueError, match="exactly two focus entities"):
+        service.save_intake_draft("run-1", "rev-1", intake)
+
+
+def test_save_intake_draft_rejects_unknown_pack_fields() -> None:
+    repository = _FakeRepository(run_record=_make_run())
+    service = WorkflowService(repository)
+    intake = IntakeDraft(
+        event_framing="A policy shift is underway.",
+        focus_entities=["country-a", "country-b"],
+        current_development="policy change",
+        current_stage="trigger",
+        time_horizon="2026-Q2",
+        pack_fields={"unexpected_field": "value"},
+    )
+
+    with pytest.raises(ValueError, match="unknown pack_fields"):
+        service.save_intake_draft("run-1", "rev-1", intake)
 
 
 def test_save_evidence_draft_writes_the_evidence_snapshot_and_records_an_event() -> None:
@@ -191,6 +240,178 @@ def test_save_evidence_draft_rejects_revision_id_mismatches() -> None:
 
     assert repository.written_revision_json == []
     assert repository.appended_events == []
+
+
+def test_draft_intake_guidance_uses_domain_pack_hooks(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        primary_actors=["US", "Iran"],
+        trigger="Exchange of strikes",
+        current_phase="trigger",
+        time_horizon="30d",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+
+    guidance = service.draft_intake_guidance("crisis-1", "r1")
+
+    assert isinstance(guidance, IntakeGuidance)
+    assert guidance.domain_pack == "interstate-crisis"
+    assert guidance.current_stage == "trigger"
+    assert "China" in guidance.suggested_entities
+    assert "military_posture" in guidance.pack_field_schema
+
+
+def test_draft_approval_packet_summarizes_evidence_and_warnings(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, _ = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    packet = service.draft_approval_packet("crisis-1", "r1")
+
+    assert isinstance(packet, ApprovalPacket)
+    assert packet.revision_id == "r1"
+    assert packet.evidence_summary[0]["source_id"] == "source-0"
+    assert "known unknowns remain unresolved" in packet.warnings
+
+
+def test_summarize_run_returns_revision_statuses(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    intake_r1, evidence_r1, assumptions_r1 = _make_revision_inputs("r1")
+    service.save_intake_draft("crisis-1", "r1", intake_r1)
+    service.save_evidence_draft("crisis-1", "r1", evidence_r1)
+    service.approve_revision("crisis-1", "r1", assumptions_r1)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    intake_r2, evidence_r2, assumptions_r2 = _make_revision_inputs("r2")
+    service.save_intake_draft("crisis-1", "r2", intake_r2, parent_revision_id="r1")
+    service.save_evidence_draft("crisis-1", "r2", evidence_r2, parent_revision_id="r1")
+    service.approve_revision("crisis-1", "r2", assumptions_r2)
+
+    summary = service.summarize_run("crisis-1")
+
+    assert summary.current_revision_id == "r2"
+    assert [item["status"] for item in summary.revisions] == ["simulated", "approved"]
+
+
+def test_summarize_revision_returns_available_sections_and_top_branches(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    summary = service.summarize_revision("crisis-1", "r1")
+
+    assert "intake" in summary.available_sections
+    assert "simulation" in summary.available_sections
+    assert summary.top_branches[0]["label"] == summarize_top_branches(
+        json.loads((repository.run_dir("crisis-1") / "simulation" / "r1.approved.json").read_text(encoding="utf-8"))["branches"]
+    )[0]["label"]
+
+
+def test_draft_conversation_turn_returns_intake_stage_when_revision_is_empty(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r0", _make_intake())
+    turn = service.draft_conversation_turn("crisis-1", "r-empty")
+
+    assert isinstance(turn, ConversationTurn)
+    assert turn.stage == "intake"
+    assert turn.recommended_command == "forecast-harness save-intake-draft"
+    assert turn.available_sections == []
+
+
+def test_draft_conversation_turn_returns_evidence_stage_from_intake_draft(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = _make_intake()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "evidence"
+    assert turn.recommended_command == "forecast-harness draft-evidence-packet"
+    assert turn.context["domain_pack"] == "interstate-crisis"
+
+
+def test_draft_conversation_turn_returns_approval_stage_from_evidence_draft(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, _ = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "approval"
+    assert turn.recommended_command == "forecast-harness approve-revision"
+    assert turn.context["revision_id"] == "r1"
+
+
+def test_draft_conversation_turn_returns_simulation_stage_from_approved_revision(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "simulation"
+    assert turn.recommended_command == "forecast-harness simulate"
+    assert turn.context["evidence_item_count"] == 1
+
+
+def test_draft_conversation_turn_returns_report_stage_from_simulated_revision(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    turn = service.draft_conversation_turn("crisis-1", "r1")
+
+    assert turn.stage == "report"
+    assert turn.recommended_command == "forecast-harness begin-revision-update"
+    assert turn.context["revision_id"] == "r1"
+    assert turn.context["top_branches"][0]["label"] == "Signal resolve"
 
 
 def test_approve_revision_freezes_revision_artifacts_and_advances_the_run() -> None:
@@ -280,6 +501,151 @@ def test_generate_report_writes_revision_specific_reports_and_credibility_note(t
     assert "low-credibility exploratory run" not in second_report
 
 
+def test_draft_evidence_packet_from_corpus_persists_a_revision_draft(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="doc-1",
+        title="Taiwan Strait Signals",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Japan and China exchange warnings in the Taiwan Strait.",
+    )
+    corpus.register_document(
+        source_id="doc-2",
+        title="Unrelated Market Note",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "market-shock"},
+        content="Oil futures rise after unrelated macro news.",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    packet = service.draft_evidence_packet(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        query_text="Taiwan Strait warnings",
+    )
+
+    assert [item.source_id for item in packet.items] == ["doc-1"]
+    stored_packet = repository.load_revision_model("crisis-1", "evidence", "r1", EvidencePacket, approved=False)
+    assert [item.source_id for item in stored_packet.items] == ["doc-1"]
+
+
+def test_curate_evidence_draft_keeps_requested_ids_and_records_event() -> None:
+    repository = _FakeRepository(run_record=_make_run("crisis-1"))
+    packet = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="source-1",
+                source_title="Source 1",
+                reason="First",
+            ),
+            EvidencePacketItem(
+                evidence_id="r1-ev-2",
+                source_id="source-2",
+                source_title="Source 2",
+                reason="Second",
+            ),
+        ],
+    )
+    repository.revision_payloads[("crisis-1", "evidence", "r1", False)] = packet.model_dump(mode="json")
+    service = WorkflowService(repository)
+
+    curated = service.curate_evidence_draft("crisis-1", "r1", ["r1-ev-2"])
+
+    assert [item.evidence_id for item in curated.items] == ["r1-ev-2"]
+    assert repository.written_revision_json[-1] == (
+        "crisis-1",
+        "evidence",
+        "r1",
+        curated.model_dump(mode="json"),
+        False,
+    )
+    assert repository.appended_events[-1] == (
+        "crisis-1",
+        "evidence-curated",
+        {"revision_id": "r1", "evidence_ids": ["r1-ev-2"]},
+    )
+
+
+def test_curate_evidence_draft_rejects_unknown_ids() -> None:
+    repository = _FakeRepository(run_record=_make_run("crisis-1"))
+    repository.revision_payloads[("crisis-1", "evidence", "r1", False)] = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="source-1",
+                source_title="Source 1",
+                reason="First",
+            )
+        ],
+    ).model_dump(mode="json")
+    service = WorkflowService(repository)
+
+    with pytest.raises(ValueError, match="unknown evidence ids"):
+        service.curate_evidence_draft("crisis-1", "r1", ["missing-id"])
+
+
+def test_begin_revision_update_copies_parent_artifacts_and_preserves_lineage(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake_r1, evidence_r1, assumptions_r1 = _make_revision_inputs("r1", evidence_count=2)
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake_r1)
+    service.save_evidence_draft("crisis-1", "r1", evidence_r1)
+    service.approve_revision("crisis-1", "r1", assumptions_r1)
+
+    payload = service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+
+    assert payload == {
+        "revision_id": "r2",
+        "parent_revision_id": "r1",
+        "copied_sections": ["intake", "evidence"],
+    }
+    copied_intake = repository.load_revision_model("crisis-1", "intake", "r2", IntakeDraft, approved=False)
+    copied_evidence = repository.load_revision_model("crisis-1", "evidence", "r2", EvidencePacket, approved=False)
+    assert copied_intake == intake_r1
+    assert copied_evidence.revision_id == "r2"
+    assert [item.evidence_id for item in copied_evidence.items] == [item.evidence_id for item in evidence_r1.items]
+    assert repository.load_revision_record("crisis-1", "r2").parent_revision_id == "r1"
+    assert not (repository.run_dir("crisis-1") / "assumptions" / "r2.approved.json").exists()
+
+
+def test_begin_revision_update_requires_approved_parent_sections(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", _make_intake())
+
+    with pytest.raises(FileNotFoundError):
+        service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+
+
 def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)
@@ -304,6 +670,39 @@ def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None
     assert repository.load_run_record("crisis-1").current_revision_id == "r2"
 
 
+def test_revision_record_tracks_lifecycle_timestamps(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    revision = repository.load_revision_record("crisis-1", "r1")
+
+    assert revision.status == "simulated"
+    assert revision.created_at is not None
+    assert revision.approved_at is not None
+    assert revision.simulated_at is not None
+
+
+def test_revision_record_preserves_parent_revision_id(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", _make_intake())
+    service.save_intake_draft("crisis-1", "r2", _make_intake(), parent_revision_id="r1")
+
+    revision = repository.load_revision_record("crisis-1", "r2")
+    assert revision.parent_revision_id == "r1"
+
+
 def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)
@@ -315,7 +714,7 @@ def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path:
     service.save_evidence_draft("crisis-1", "r1", evidence)
     service.approve_revision("crisis-1", "r1", assumptions)
 
-    mutated_intake = intake.model_copy(update={"current_phase": "escalation", "trigger": "mutated trigger"})
+    mutated_intake = intake.model_copy(update={"current_stage": "escalation", "current_development": "mutated trigger"})
     mutated_evidence = EvidencePacket(revision_id="r1", items=[])
     service.save_intake_draft("crisis-1", "r1", mutated_intake)
     service.save_evidence_draft("crisis-1", "r1", mutated_evidence)
@@ -326,6 +725,6 @@ def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path:
     report = repository.run_dir("crisis-1").joinpath("reports", "r1.report.md").read_text(encoding="utf-8")
 
     assert approved_state.phase == "trigger"
-    assert approved_state.fields["trigger"].value == "policy change"
+    assert approved_state.fields["current_development"].value == "policy change"
     assert approved_state.approved_evidence_ids == ["r1-ev-0"]
     assert "- Approved evidence items: 1" in report

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from forecasting_harness.models import BeliefState
-from forecasting_harness.workflow.models import RunRecord
+from forecasting_harness.workflow.models import RevisionRecord, RunRecord
 
 RESERVED_ARTIFACT_NAMES = {"belief-state.json"}
 
@@ -36,6 +36,26 @@ class RunRepository:
         if run.run_id != run_id:
             raise ValueError(f"run_id mismatch: expected {run_id!r}, got {run.run_id!r}")
         return run
+
+    def save_revision_record(self, run_id: str, record: RevisionRecord) -> None:
+        self._validate_path_segment(record.revision_id, "revision_id")
+        revision_dir = self._require_initialized_run(run_id) / "revisions"
+        revision_dir.mkdir(parents=True, exist_ok=True)
+        (revision_dir / f"{record.revision_id}.json").write_text(record.model_dump_json(indent=2), encoding="utf-8")
+
+    def load_revision_record(self, run_id: str, revision_id: str) -> RevisionRecord:
+        self._validate_path_segment(revision_id, "revision_id")
+        path = self.run_dir(run_id) / "revisions" / f"{revision_id}.json"
+        return RevisionRecord.model_validate_json(path.read_text(encoding="utf-8"))
+
+    def list_revision_records(self, run_id: str) -> list[RevisionRecord]:
+        revision_dir = self.run_dir(run_id) / "revisions"
+        if not revision_dir.exists():
+            return []
+        return [
+            RevisionRecord.model_validate_json(path.read_text(encoding="utf-8"))
+            for path in sorted(revision_dir.glob("*.json"))
+        ]
 
     def save_belief_state(self, run_id: str, state: BeliefState) -> None:
         if state.run_id != run_id:

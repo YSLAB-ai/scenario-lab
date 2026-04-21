@@ -27,6 +27,9 @@ class DomainPack(ABC):
     def canonical_phases(self) -> list[str]:
         return []
 
+    def validate_intake(self, intake: "IntakeDraft") -> list[str]:
+        return []
+
     def suggest_related_actors(self, intake: "IntakeDraft") -> list[str]:
         return []
 
