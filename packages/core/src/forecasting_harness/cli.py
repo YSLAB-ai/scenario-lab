@@ -222,7 +222,7 @@ def _register_ingested_document(registry: CorpusRegistry, path: Path, *, source_
         published_at=published_at,
         tags=tags,
     )
-    registry.register_document(
+    actual_source_id = registry.register_document(
         source_id=document.source_id,
         title=document.title,
         source_type=document.source_type,
@@ -239,7 +239,7 @@ def _register_ingested_document(registry: CorpusRegistry, path: Path, *, source_
         ],
     )
     return {
-        "source_id": document.source_id,
+        "source_id": actual_source_id,
         "title": document.title,
         "source_type": document.source_type,
         "path": document.path,

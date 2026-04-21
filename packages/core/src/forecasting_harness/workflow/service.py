@@ -9,6 +9,7 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.compatibility import compare_belief_states
 from forecasting_harness.domain.base import DomainPack
 from forecasting_harness.domain.registry import DomainPackRegistry, build_default_registry
+from forecasting_harness.domain.template_utils import normalize_text, term_match_score
 from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.models import BeliefState
 from forecasting_harness.objectives import default_objective_profile
@@ -102,6 +103,28 @@ class WorkflowService:
             description=description,
             required_options=required_options or [],
         )
+
+    def _hit_matches_entity_names(self, hit: dict[str, object], *, entity_names: list[str]) -> bool:
+        tags = hit.get("tags") or {}
+
+        search_text = " ".join(
+            [
+                str(hit.get("title", "")),
+                str(hit.get("content", "")),
+                " ".join(f"{key} {value}" for key, value in (tags.items() if isinstance(tags, dict) else [])),
+            ]
+        )
+        normalized_text = normalize_text(search_text)
+        return any(term_match_score(normalized_text, entity_name) > 0 for entity_name in entity_names if entity_name)
+
+    def _hit_run_tag(self, hit: dict[str, object]) -> str | None:
+        tags = hit.get("tags") or {}
+        if not isinstance(tags, dict):
+            return None
+        value = tags.get("run_id")
+        if value in (None, ""):
+            return None
+        return str(value)
 
     def _ensure_revision_record(
         self,
@@ -243,6 +266,7 @@ class WorkflowService:
         if self.corpus_registry is None:
             raise ValueError("corpus_registry is required for evidence drafting")
 
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         retrieval_plan = self.draft_retrieval_plan(run_id, revision_id, pack=pack, query_text=query_text)
         manifest = load_domain_manifest(pack.slug())
         search_engine = SearchEngine(self.corpus_registry)
@@ -277,6 +301,18 @@ class WorkflowService:
             merged_hits.values(),
             key=lambda item: (-float(item.get("score", 0.0)), str(item.get("source_id", "")), str(item.get("chunk_id", ""))),
         )
+        current_run_hits = [hit for hit in hits if self._hit_run_tag(hit) == run_id]
+        focus_hits = [
+            hit for hit in hits if self._hit_matches_entity_names(hit, entity_names=intake.focus_entities)
+        ]
+        fallback_hits = [hit for hit in hits if self._hit_run_tag(hit) in (None, run_id)]
+
+        if current_run_hits:
+            hits = current_run_hits
+        elif focus_hits:
+            hits = focus_hits
+        else:
+            hits = fallback_hits
         packet = build_evidence_packet(
             revision_id,
             hits,
@@ -327,21 +363,63 @@ class WorkflowService:
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         manifest = load_domain_manifest(pack.slug())
         filters = pack.retrieval_filters(intake)
+        retrieval_plan = self.draft_retrieval_plan(run_id, revision_id, pack=pack)
+        search_engine = SearchEngine(self.corpus_registry)
 
         documents = [
             document
             for document in self.corpus_registry.list_documents()
             if all((document.get("tags") or {}).get(key) == value for key, value in filters.items())
         ]
-        chunks = [
-            hit
-            for hit in self.corpus_registry.search_chunks("")
-            if all((hit.get("tags") or {}).get(key) == value for key, value in filters.items())
+
+        merged_hits: dict[tuple[str, str], dict[str, object]] = {}
+        for variant in retrieval_plan.query_variants:
+            hits = search_engine.search(
+                RetrievalQuery(text=variant, filters=filters),
+                freshness_policy=pack.freshness_policy(),
+                alias_groups=manifest.alias_groups(),
+            )
+            for hit in hits:
+                key = (str(hit["source_id"]), str(hit["chunk_id"]))
+                result = dict(hit)
+                if key not in merged_hits:
+                    result["matched_queries"] = [variant]
+                    merged_hits[key] = result
+                    continue
+                merged = merged_hits[key]
+                merged["score"] = max(float(merged.get("score", 0.0)), float(result.get("score", 0.0)))
+                matched_queries = list(merged.get("matched_queries", []))
+                if variant not in matched_queries:
+                    matched_queries.append(variant)
+                merged["matched_queries"] = matched_queries
+
+        chunks = sorted(
+            merged_hits.values(),
+            key=lambda item: (-float(item.get("score", 0.0)), str(item.get("source_id", "")), str(item.get("chunk_id", ""))),
+        )
+
+        current_run_chunks = [chunk for chunk in chunks if self._hit_run_tag(chunk) == run_id]
+        focus_chunks = [
+            chunk for chunk in chunks if self._hit_matches_entity_names(chunk, entity_names=intake.focus_entities)
+        ]
+        if current_run_chunks:
+            relevant_chunks = current_run_chunks
+        elif focus_chunks:
+            relevant_chunks = focus_chunks
+        else:
+            relevant_chunks = []
+
+        relevant_source_ids = {str(chunk.get("source_id", "")) for chunk in relevant_chunks}
+        relevant_documents = [
+            document
+            for document in documents
+            if str(document.get("source_id", "")) in relevant_source_ids
+            or (document.get("tags") or {}).get("run_id") == run_id
         ]
 
         category_terms = manifest.category_terms()
         covered: set[str] = set()
-        for chunk in chunks:
+        for chunk in relevant_chunks:
             matched = classify_text(
                 " ".join(
                     [
@@ -359,7 +437,7 @@ class WorkflowService:
         return IngestionPlan(
             revision_id=revision_id,
             domain_pack=pack.slug(),
-            corpus_source_count=len(documents),
+            corpus_source_count=len(relevant_documents),
             current_sources=[
                 {
                     "source_id": str(document["source_id"]),
@@ -367,7 +445,7 @@ class WorkflowService:
                     "source_type": str(document["source_type"]),
                     "published_at": document.get("published_at"),
                 }
-                for document in documents
+                for document in relevant_documents
             ],
             covered_evidence_categories=covered_categories,
             missing_evidence_categories=missing_categories,
@@ -403,6 +481,7 @@ class WorkflowService:
                 continue
 
             document = ingest_file(candidate)
+            resolved_source_id = self.corpus_registry.resolve_source_id(document.source_id, document.path)
             content_text = compact_query([document.title, " ".join(chunk.content for chunk in document.chunks)])
             scores = category_match_scores(
                 content_text,
@@ -417,12 +496,12 @@ class WorkflowService:
             for index, category in enumerate(candidate_categories):
                 if category in scores:
                     priority_score += float((len(candidate_categories) - index) * scores[category])
-            recommended_tags = {"domain": pack.slug(), "source_role": source.kind}
+            recommended_tags = {"domain": pack.slug(), "source_role": source.kind, "run_id": run_id}
             recommended_tags["evidence_category"] = matched_categories[0]
             recommendations.append(
                 IngestionRecommendation(
                     path=str(candidate.resolve()),
-                    source_id=document.source_id,
+                    source_id=resolved_source_id,
                     title=document.title,
                     source_type=document.source_type,
                     source_role=source.kind,
@@ -474,7 +553,7 @@ class WorkflowService:
                 title=recommendation.title,
                 tags=recommendation.recommended_tags,
             )
-            self.corpus_registry.register_document(
+            actual_source_id = self.corpus_registry.register_document(
                 source_id=document.source_id,
                 title=document.title,
                 source_type=document.source_type,
@@ -490,7 +569,7 @@ class WorkflowService:
                     for chunk in document.chunks
                 ],
             )
-            ingested_source_ids.append(document.source_id)
+            ingested_source_ids.append(actual_source_id)
 
         return BatchIngestionResult(
             ingested_count=len(ingested_source_ids),
@@ -586,6 +665,7 @@ class WorkflowService:
             intake=intake,
             assumptions=assumptions,
             approved_evidence_ids=[item.evidence_id for item in evidence.items],
+            approved_evidence_items=evidence.items,
         )
         self.repository.write_revision_json(run_id, "belief-state", revision_id, state.model_dump(mode="json"), approved=True)
 

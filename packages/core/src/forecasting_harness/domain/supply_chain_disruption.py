@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, integer_field, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, integer_field, numeric_field, with_updates
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -44,6 +44,45 @@ class SupplyChainDisruptionPack(DomainPack):
 
     def extend_schema(self) -> dict[str, Any]:
         return {"inventory_cover_days": "int", "substitution_flexibility": "float", "transport_reliability": "float"}
+
+    def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+            assumptions.summary,
+            evidence_passages,
+        )
+
+        inventory_cover_days = 18
+        inventory_cover_days -= 4 * count_term_matches(
+            text,
+            ["single-source", "thin inventory", "launches committed", "port delays", "export restrictions"],
+        )
+        inventory_cover_days += 2 * count_term_matches(text, ["buffer", "allocation measures"])
+        inventory_cover_days = max(3, min(30, inventory_cover_days))
+
+        substitution_flexibility = 0.4
+        substitution_flexibility -= 0.12 * count_term_matches(
+            text,
+            ["no easy substitute", "specialized", "rare-earth", "hardest to replace"],
+        )
+        substitution_flexibility += 0.08 * count_term_matches(text, ["alternate sources", "qualify alternate", "supplier onboard"])
+
+        transport_reliability = 0.55
+        transport_reliability -= 0.12 * count_term_matches(
+            text,
+            ["flooding", "port delays", "logistics disruption", "export restrictions", "congestion"],
+        )
+        transport_reliability += 0.05 * count_term_matches(text, ["reroute", "logistics partners"])
+
+        return {
+            "inventory_cover_days": int(inventory_cover_days),
+            "substitution_flexibility": round(bounded(substitution_flexibility), 3),
+            "transport_reliability": round(bounded(transport_reliability), 3),
+        }
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"

@@ -70,7 +70,12 @@ def test_pack_suggests_crisis_questions_and_schema() -> None:
         "Which outside actor has the most leverage over the next phase?",
         "What constraint most limits immediate escalation?",
     ]
-    assert pack.extend_schema() == {"military_posture": "str", "leader_style": "str"}
+    assert pack.extend_schema() == {
+        "military_posture": "str",
+        "leader_style": "str",
+        "tension_index": "float",
+        "diplomatic_channel": "float",
+    }
 
 
 def test_pack_validates_phase_membership_and_state_phase() -> None:

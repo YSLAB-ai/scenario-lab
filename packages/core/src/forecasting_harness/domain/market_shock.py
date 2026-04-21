@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, numeric_field, with_updates
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -44,6 +44,38 @@ class MarketShockPack(DomainPack):
 
     def extend_schema(self) -> dict[str, Any]:
         return {"liquidity_stress": "float", "rate_pressure": "float", "policy_credibility": "float"}
+
+    def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+            assumptions.summary,
+            evidence_passages,
+        )
+
+        liquidity_stress = 0.45 + 0.1 * count_term_matches(
+            text,
+            ["liquidity", "funding market", "credit spreads", "market functioning", "deleveraging"],
+        )
+        rate_pressure = 0.5 + 0.1 * count_term_matches(
+            text,
+            ["rate hike", "hawkish", "repricing", "yield shock", "inflation credibility"],
+        )
+        rate_pressure -= 0.08 * count_term_matches(text, ["rate cut", "easing", "swap lines"])
+        policy_credibility = 0.5 + 0.06 * count_term_matches(
+            text,
+            ["credibility restored", "clear guidance", "market functioning"],
+        )
+        policy_credibility -= 0.08 * count_term_matches(text, ["instability", "surprise decision", "wait and see"])
+
+        return {
+            "liquidity_stress": round(bounded(liquidity_stress), 3),
+            "rate_pressure": round(bounded(rate_pressure), 3),
+            "policy_credibility": round(bounded(policy_credibility), 3),
+        }
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"

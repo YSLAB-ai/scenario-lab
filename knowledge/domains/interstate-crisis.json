@@ -4,8 +4,8 @@
   "actor_categories": ["state", "ally", "external power", "military command", "regional bloc"],
   "evidence_categories": ["force posture", "diplomatic signaling", "alliance commitments", "leader behavior", "economic constraints"],
   "evidence_category_terms": {
-    "force posture": ["force posture", "military buildup", "troop movement", "deployment", "readiness"],
-    "diplomatic signaling": ["diplomatic signaling", "backchannel", "warning", "red line", "official statement"],
+    "force posture": ["force posture", "military buildup", "troop movement", "deployment", "readiness", "mobilization", "intercept threat"],
+    "diplomatic signaling": ["diplomatic signaling", "backchannel", "warning", "red line", "official statement", "retaliatory threats", "mediators urge restraint"],
     "alliance commitments": ["alliance commitment", "treaty obligation", "mutual defense", "security guarantee"],
     "leader behavior": ["leader behavior", "decision style", "personal rhetoric", "crisis management style"],
     "economic constraints": ["sanctions", "trade exposure", "economic constraint", "energy shock", "fiscal strain"]

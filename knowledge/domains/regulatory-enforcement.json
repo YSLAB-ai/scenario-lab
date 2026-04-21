@@ -4,11 +4,11 @@
   "actor_categories": ["agency", "target entity", "external counsel", "monitor", "industry peers", "state enforcers"],
   "evidence_categories": ["enforcement momentum", "compliance posture", "public attention", "settlement precedent", "remedy severity"],
   "evidence_category_terms": {
-    "enforcement momentum": ["enforcement momentum", "investigation pace", "agency escalation", "subpoena"],
-    "compliance posture": ["compliance posture", "remediation", "controls", "monitoring"],
+    "enforcement momentum": ["enforcement momentum", "investigation pace", "agency escalation", "subpoena", "case expansion"],
+    "compliance posture": ["compliance posture", "remediation", "controls", "monitoring", "internal remediation"],
     "public attention": ["public attention", "headline risk", "media scrutiny", "political pressure"],
-    "settlement precedent": ["settlement precedent", "consent order", "prior case", "precedent"],
-    "remedy severity": ["remedy severity", "penalty", "injunction", "monitor", "structural remedy"]
+    "settlement precedent": ["settlement precedent", "consent order", "prior case", "precedent", "comparable settlement"],
+    "remedy severity": ["remedy severity", "penalty", "injunction", "monitor", "structural remedy", "structural remedies"]
   },
   "key_state_fields": ["enforcement_momentum", "compliance_posture", "public_attention"],
   "canonical_stages": ["trigger", "inquiry", "negotiation", "remedy", "resolution"],
@@ -29,6 +29,6 @@
     ["compliance posture", "remediation posture", "control environment"],
     ["public attention", "headline pressure", "media scrutiny"],
     ["settlement precedent", "precedent case", "comparable settlement"],
-    ["remedy severity", "penalty severity", "structural remedy"]
+    ["remedy severity", "penalty severity", "structural remedy", "structural remedies"]
   ]
 }

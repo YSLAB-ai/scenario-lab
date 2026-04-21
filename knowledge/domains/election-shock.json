@@ -4,11 +4,11 @@
   "actor_categories": ["candidate", "party", "media", "donors", "voter blocs", "endorsers"],
   "evidence_categories": ["polling", "turnout signals", "message discipline", "coalition dynamics", "campaign resources"],
   "evidence_category_terms": {
-    "polling": ["poll", "polling average", "survey"],
-    "turnout signals": ["turnout", "early vote", "enthusiasm", "ground game"],
-    "message discipline": ["message discipline", "campaign narrative", "debate response"],
-    "coalition dynamics": ["endorsement", "coalition", "swing bloc", "base support"],
-    "campaign resources": ["fundraising", "ad spend", "field offices", "cash on hand"]
+    "polling": ["poll", "polling average", "survey", "poll margin"],
+    "turnout signals": ["turnout", "early vote", "enthusiasm", "ground game", "turnout organizers", "mobilization"],
+    "message discipline": ["message discipline", "campaign narrative", "debate response", "messaging", "message reset", "debate collapse"],
+    "coalition dynamics": ["endorsement", "coalition", "swing bloc", "base support", "party leadership"],
+    "campaign resources": ["fundraising", "ad spend", "field offices", "cash on hand", "donor confidence", "donors"]
   },
   "key_state_fields": ["poll_margin", "turnout_energy", "message_discipline"],
   "canonical_stages": ["trigger", "narrative-fight", "turnout-drive", "coalition-shaping", "resolution"],
@@ -27,8 +27,8 @@
   "semantic_alias_groups": [
     ["polling", "survey trend", "poll average"],
     ["turnout", "voter enthusiasm", "mobilization"],
-    ["message discipline", "narrative control", "campaign message"],
+    ["message discipline", "narrative control", "campaign message", "messaging"],
     ["coalition shift", "endorsement movement", "bloc realignment"],
-    ["campaign resources", "fundraising", "cash advantage"]
+    ["campaign resources", "fundraising", "cash advantage", "donor confidence"]
   ]
 }

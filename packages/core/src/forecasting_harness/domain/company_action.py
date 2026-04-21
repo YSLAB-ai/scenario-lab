@@ -3,7 +3,15 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, integer_field, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import (
+    any_term_matches,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    integer_field,
+    numeric_field,
+    with_updates,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -44,6 +52,47 @@ class CompanyActionPack(DomainPack):
 
     def extend_schema(self) -> dict[str, Any]:
         return {"cash_runway_months": "int", "brand_sentiment": "float", "regulatory_pressure": "float"}
+
+    def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+            assumptions.summary,
+            evidence_passages,
+        )
+
+        cash_runway = 18
+        cash_runway -= 4 * count_term_matches(
+            text,
+            ["weak quarter", "margin pressure", "funding pressure", "cash burn", "cash preservation"],
+        )
+        cash_runway -= 2 * count_term_matches(text, ["product delays", "delivery concerns", "supplier reassurance"])
+        cash_runway += 3 * count_term_matches(text, ["balance sheet", "liquidity", "capital raise"])
+        cash_runway = max(3, min(48, cash_runway))
+
+        brand_sentiment = 0.58
+        brand_sentiment -= 0.08 * count_term_matches(
+            text,
+            ["investor concern", "product delays", "delivery concerns", "customer backlash", "credibility pressure"],
+        )
+        brand_sentiment += 0.04 * count_term_matches(text, ["succession clarity", "supplier reassurance", "stabilize messaging"])
+        brand_sentiment = bounded(brand_sentiment)
+
+        regulatory_pressure = 0.25
+        regulatory_pressure += 0.12 * count_term_matches(
+            text,
+            ["regulatory scrutiny", "safety scrutiny", "enforcement", "investigation", "agency pressure"],
+        )
+        regulatory_pressure = bounded(regulatory_pressure)
+
+        return {
+            "cash_runway_months": int(cash_runway),
+            "brand_sentiment": round(brand_sentiment, 3),
+            "regulatory_pressure": round(regulatory_pressure, 3),
+        }
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"

@@ -4,11 +4,8 @@ import re
 from typing import Iterable
 
 from forecasting_harness.knowledge.manifests import DomainManifest, StarterSource
+from forecasting_harness.domain.template_utils import normalize_text, term_match_score
 from forecasting_harness.workflow.models import IngestionTask, IntakeDraft
-
-
-def normalize_text(value: str) -> str:
-    return " ".join(re.findall(r"[a-z0-9]+", value.lower()))
 
 
 def compact_query(parts: Iterable[str]) -> str:
@@ -23,7 +20,7 @@ def classify_text(
     normalized_text = normalize_text(text)
     best_match: tuple[int, str] | None = None
     for category, terms in category_terms.items():
-        score = sum(1 for term in terms if normalize_text(term) in normalized_text)
+        score = sum(term_match_score(normalized_text, term) for term in terms)
         if score <= 0:
             continue
         if best_match is None or score > best_match[0]:
@@ -39,7 +36,7 @@ def category_match_scores(
     normalized_text = normalize_text(text)
     scores: dict[str, int] = {}
     for category, terms in category_terms.items():
-        score = sum(1 for term in terms if normalize_text(term) in normalized_text)
+        score = sum(term_match_score(normalized_text, term) for term in terms)
         if score > 0:
             scores[category] = score
     return scores

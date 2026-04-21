@@ -97,6 +97,36 @@ def test_registry_re_registering_source_id_replaces_existing_rows(tmp_path: Path
     assert hits[0]["title"] == "Updated logistics report"
 
 
+def test_registry_disambiguates_colliding_source_ids_for_distinct_paths(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+
+    first_id = registry.register_document(
+        source_id="doc-1",
+        title="First note",
+        source_type="markdown",
+        path="/tmp/a/doc-1.md",
+        published_at="2026-04-19",
+        tags={"domain": "conflict"},
+        chunks=[{"chunk_id": "1", "location": "heading:A", "content": "alpha"}],
+    )
+    second_id = registry.register_document(
+        source_id="doc-1",
+        title="Second note",
+        source_type="markdown",
+        path="/tmp/b/doc-1.md",
+        published_at="2026-04-20",
+        tags={"domain": "conflict"},
+        chunks=[{"chunk_id": "1", "location": "heading:B", "content": "beta"}],
+    )
+
+    docs = registry.list_documents()
+
+    assert first_id == "doc-1"
+    assert second_id.startswith("doc-1-")
+    assert second_id != first_id
+    assert {doc["source_id"] for doc in docs} == {first_id, second_id}
+
+
 def test_freshness_multiplier_clamps_future_dates_and_rejects_malformed_dates(tmp_path: Path):
     registry = CorpusRegistry(tmp_path / "corpus.db")
     engine = SearchEngine(registry)

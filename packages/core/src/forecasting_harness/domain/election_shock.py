@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, numeric_field, with_updates
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -44,6 +44,44 @@ class ElectionShockPack(DomainPack):
 
     def extend_schema(self) -> dict[str, Any]:
         return {"poll_margin": "float", "turnout_energy": "float", "message_discipline": "float"}
+
+    def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+            assumptions.summary,
+            evidence_passages,
+        )
+
+        poll_margin = 0.0
+        poll_margin -= 0.8 * count_term_matches(
+            text,
+            ["debate collapse", "campaign collapse", "donor confidence", "competency issue", "investor concern"],
+        )
+        poll_margin += 0.5 * count_term_matches(text, ["endorsement surge", "poll lead", "momentum gain"])
+
+        turnout_energy = 0.5 + 0.08 * count_term_matches(
+            text,
+            ["ground game", "turnout organizers", "mobilization", "early vote", "base support"],
+        )
+        turnout_energy = bounded(turnout_energy)
+
+        message_discipline = 0.5
+        message_discipline -= 0.1 * count_term_matches(
+            text,
+            ["scrambles", "message reset", "debate collapse", "messaging", "narrative fight"],
+        )
+        message_discipline += 0.05 * count_term_matches(text, ["stabilize messaging", "discipline message"])
+        message_discipline = bounded(message_discipline)
+
+        return {
+            "poll_margin": round(poll_margin, 3),
+            "turnout_energy": round(turnout_energy, 3),
+            "message_discipline": round(message_discipline, 3),
+        }
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"

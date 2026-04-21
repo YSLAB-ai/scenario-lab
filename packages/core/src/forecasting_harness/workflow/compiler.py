@@ -5,7 +5,7 @@ import re
 
 from forecasting_harness.domain.base import DomainPack
 from forecasting_harness.models import Actor, BeliefField, BeliefState
-from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
+from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacketItem, IntakeDraft
 
 
 def _actor_id_from_name(name: str) -> str:
@@ -33,6 +33,7 @@ def compile_belief_state(
     intake: IntakeDraft,
     assumptions: AssumptionSummary,
     approved_evidence_ids: list[str],
+    approved_evidence_items: list[EvidencePacketItem] | None = None,
 ) -> BeliefState:
     canonical_phases = pack.canonical_phases()
     if canonical_phases and intake.current_stage not in canonical_phases:
@@ -60,12 +61,28 @@ def compile_belief_state(
             last_updated_at=now,
         ),
     }
+    inferred_pack_fields = pack.infer_pack_fields(
+        intake,
+        assumptions,
+        approved_evidence_items or [],
+    )
     for field_name, value in intake.pack_fields.items():
         fields[field_name] = BeliefField(
             value=value,
             normalized_value=value,
             status="observed",
             confidence=1.0,
+            last_updated_at=now,
+        )
+    for field_name, value in inferred_pack_fields.items():
+        if field_name in fields:
+            continue
+        fields[field_name] = BeliefField(
+            value=value,
+            normalized_value=value,
+            status="inferred",
+            supporting_evidence_ids=list(approved_evidence_ids),
+            confidence=0.65,
             last_updated_at=now,
         )
     return BeliefState(

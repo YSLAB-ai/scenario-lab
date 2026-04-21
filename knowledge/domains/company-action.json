@@ -4,11 +4,11 @@
   "actor_categories": ["company", "board", "regulator", "creditors", "customers", "competitors"],
   "evidence_categories": ["financial resilience", "leadership behavior", "customer reaction", "regulatory pressure", "operational resilience"],
   "evidence_category_terms": {
-    "financial resilience": ["cash runway", "liquidity", "balance sheet", "leverage"],
-    "leadership behavior": ["chief executive", "ceo", "management tone", "board response"],
-    "customer reaction": ["customer churn", "returns", "complaints", "demand response"],
-    "regulatory pressure": ["enforcement", "investigation", "agency pressure", "consent order"],
-    "operational resilience": ["plant disruption", "supply continuity", "production recovery", "operations"]
+    "financial resilience": ["cash runway", "liquidity", "balance sheet", "leverage", "margin pressure", "cash preservation", "weak quarter"],
+    "leadership behavior": ["chief executive", "ceo", "management tone", "board response", "succession", "executive transition", "investor concern"],
+    "customer reaction": ["customer churn", "returns", "complaints", "demand response", "supplier reassurance", "customer reassurance"],
+    "regulatory pressure": ["enforcement", "investigation", "agency pressure", "consent order", "safety scrutiny", "regulatory scrutiny"],
+    "operational resilience": ["plant disruption", "supply continuity", "production recovery", "operations", "product delays", "delivery concerns", "roadmap credibility"]
   },
   "key_state_fields": ["cash_runway_months", "brand_sentiment", "regulatory_pressure"],
   "canonical_stages": ["trigger", "board-response", "market-response", "restructuring", "resolution"],
@@ -26,10 +26,11 @@
   "freshness_notes": "Current filings and management statements generally dominate older materials. Historical crisis analogs remain useful for executive style and board behavior."
   ,
   "semantic_alias_groups": [
-    ["ceo", "chief executive", "management"],
+    ["ceo", "chief executive", "management", "succession", "leadership transition"],
     ["cash crunch", "liquidity stress", "funding pressure"],
     ["customer backlash", "customer reaction", "consumer response"],
-    ["factory outage", "operational disruption", "production interruption"],
-    ["regulatory scrutiny", "regulatory pressure", "agency pressure"]
+    ["factory outage", "operational disruption", "production interruption", "product delays"],
+    ["regulatory scrutiny", "regulatory pressure", "agency pressure", "safety scrutiny"],
+    ["investor concern", "credibility pressure", "market anxiety"]
   ]
 }

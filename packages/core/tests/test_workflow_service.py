@@ -8,7 +8,10 @@ from pathlib import Path
 import pytest
 
 from forecasting_harness.artifacts import RunRepository
+from forecasting_harness.domain.company_action import CompanyActionPack
+from forecasting_harness.domain.election_shock import ElectionShockPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
+from forecasting_harness.domain.regulatory_enforcement import RegulatoryEnforcementPack
 from forecasting_harness.models import BeliefState
 from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.query_api import summarize_top_branches
@@ -645,6 +648,94 @@ def test_draft_evidence_packet_uses_manifest_categories_for_diverse_packet_reaso
     }
 
 
+def test_draft_evidence_packet_prefers_current_run_documents_over_same_domain_history(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="A Japan-China naval incident raises confrontation risk",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    corpus.register_document(
+        source_id="older-doc",
+        title="Older domain note",
+        source_type="markdown",
+        path="/tmp/older.md",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis", "run_id": "other-run"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "United States and Iran warn of retaliation in the Gulf."}],
+    )
+    corpus.register_document(
+        source_id="current-doc",
+        title="Current run note",
+        source_type="markdown",
+        path="/tmp/current.md",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis", "run_id": "crisis-1"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "Japan and China exchange warnings after a naval transit in the Taiwan Strait."}],
+    )
+
+    packet = service.draft_evidence_packet(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        query_text=None,
+    )
+
+    assert [item.source_id for item in packet.items] == ["current-doc"]
+
+
+def test_draft_evidence_packet_does_not_use_only_suggested_entity_overlap_from_other_runs(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            suggested_entities=["United States", "Taiwan"],
+            current_development="A Japan-China naval incident raises confrontation risk",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    corpus.register_document(
+        source_id="other-run-doc",
+        title="Foreign run note",
+        source_type="markdown",
+        path="/tmp/other-run.md",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis", "run_id": "other-run"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "The United States warns Iran of retaliation in the Gulf."}],
+    )
+
+    packet = service.draft_evidence_packet(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        query_text=None,
+    )
+
+    assert packet.items == []
+
+
 def test_draft_retrieval_plan_uses_manifest_categories_and_entities(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)
@@ -685,7 +776,7 @@ def test_draft_ingestion_plan_reports_missing_manifest_categories(tmp_path: Path
         source_type="markdown",
         published_at="2026-04-20",
         tags={"domain": "interstate-crisis"},
-        content="Force posture hardens near the strait.",
+        content="Japan and China harden force posture near the Taiwan Strait after the naval transit.",
     )
 
     service.start_run(run_id="crisis-1", domain_pack=pack.slug())
@@ -711,6 +802,88 @@ def test_draft_ingestion_plan_reports_missing_manifest_categories(tmp_path: Path
     assert plan.starter_sources[0]["kind"] == "official communications"
     assert plan.ingest_tasks[0].evidence_category == "diplomatic signaling"
     assert plan.ingest_tasks[0].source_role == "official communications"
+
+
+def test_draft_ingestion_plan_ignores_other_run_domain_coverage(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="other-doc",
+        title="Foreign run note",
+        source_type="markdown",
+        path="/tmp/other-run.md",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis", "run_id": "other-run"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "The United States warns Iran of retaliation while both sides mobilize."}],
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    plan = service.draft_ingestion_plan("crisis-1", "r1", pack=pack)
+
+    assert plan.corpus_source_count == 0
+    assert plan.current_sources == []
+    assert "force posture" in plan.missing_evidence_categories
+    assert "diplomatic signaling" in plan.missing_evidence_categories
+
+
+def test_recommend_ingestion_files_uses_run_scoped_plan_not_prior_domain_coverage(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="other-doc",
+        title="Foreign run note",
+        source_type="markdown",
+        path="/tmp/other-run.md",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis", "run_id": "other-run"},
+        chunks=[{"chunk_id": "1", "location": "heading:Overview", "content": "The United States warns Iran of retaliation while both sides mobilize."}],
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="A Japanese naval transit through the Taiwan Strait triggers Chinese intercept threats and emergency diplomacy.",
+            current_stage="trigger",
+            time_horizon="21d",
+        ),
+    )
+
+    docs_dir = tmp_path / "japan-run"
+    docs_dir.mkdir()
+    (docs_dir / "japan-transit.md").write_text(
+        "Japan defends the Taiwan Strait transit as lawful while China threatens an intercept and raises naval readiness.",
+        encoding="utf-8",
+    )
+    (docs_dir / "china-backchannel.md").write_text(
+        "Chinese and Japanese officials keep emergency backchannel talks open to avoid a wider clash in the strait.",
+        encoding="utf-8",
+    )
+
+    recommendations = service.recommend_ingestion_files("crisis-1", "r1", pack=pack, path=docs_dir)
+
+    assert {item.source_id for item in recommendations} == {"japan-transit", "china-backchannel"}
 
 
 def test_draft_evidence_packet_can_generate_query_variants_without_explicit_query_text(tmp_path: Path) -> None:
@@ -791,6 +964,118 @@ def test_recommend_ingestion_files_maps_local_files_to_source_roles(tmp_path: Pa
     assert "diplomatic signaling" in by_source_id["official-warning"].matched_evidence_categories
     assert by_source_id["deployment-notes"].source_role == "force and capability references"
     assert "force posture" in by_source_id["deployment-notes"].matched_evidence_categories
+
+
+def test_recommend_ingestion_files_matches_company_docs_with_natural_language_wording(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = CompanyActionPack()
+
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "apple-transition.md").write_text(
+        "Analysts focus on succession clarity, supplier reassurance, and investor concern after product delays.\n",
+        encoding="utf-8",
+    )
+
+    service.start_run(run_id="company-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "company-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess strategy after a CEO change",
+            focus_entities=["Apple"],
+            current_development="A sudden CEO transition follows product delays and investor concern",
+            current_stage="trigger",
+            time_horizon="180d",
+        ),
+    )
+
+    recommendations = service.recommend_ingestion_files(
+        "company-1",
+        "r1",
+        pack=pack,
+        path=source_dir,
+    )
+
+    assert recommendations
+    assert recommendations[0].source_role in {"management communications", "market reaction"}
+    assert set(recommendations[0].matched_evidence_categories) & {"leadership behavior", "operational resilience"}
+
+
+def test_recommend_ingestion_files_matches_election_docs_with_natural_language_wording(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = ElectionShockPack()
+
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "debate-collapse.md").write_text(
+        "Party leadership scrambles to stabilize messaging after the debate while donor confidence softens.\n",
+        encoding="utf-8",
+    )
+
+    service.start_run(run_id="election-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "election-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess election shock dynamics",
+            focus_entities=["Incumbent Party", "Opposition Party"],
+            current_development="A debate collapse forces both campaigns to reset strategy",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    recommendations = service.recommend_ingestion_files(
+        "election-1",
+        "r1",
+        pack=pack,
+        path=source_dir,
+    )
+
+    assert recommendations
+    assert set(recommendations[0].matched_evidence_categories) & {"message discipline", "campaign resources"}
+
+
+def test_recommend_ingestion_files_matches_regulatory_docs_with_pluralized_remedy_terms(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = RegulatoryEnforcementPack()
+
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "adtech-remedy.md").write_text(
+        "Regulators signal willingness to seek structural remedies while industry partners brace for disruption.\n",
+        encoding="utf-8",
+    )
+
+    service.start_run(run_id="reg-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "reg-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess enforcement response",
+            focus_entities=["AdTech Platform", "Competition Regulator"],
+            current_development="A regulator escalates an ad-tech case after new evidence appears",
+            current_stage="trigger",
+            time_horizon="120d",
+        ),
+    )
+
+    recommendations = service.recommend_ingestion_files(
+        "reg-1",
+        "r1",
+        pack=pack,
+        path=source_dir,
+    )
+
+    assert recommendations
+    assert set(recommendations[0].matched_evidence_categories) & {"remedy severity"}
 
 
 def test_batch_ingest_recommended_files_registers_prioritized_sources_with_role_tags(tmp_path: Path) -> None:

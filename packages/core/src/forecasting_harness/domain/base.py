@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from forecasting_harness.models import BeliefState, ObjectiveProfile
-    from forecasting_harness.workflow.models import IntakeDraft
+    from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacketItem, IntakeDraft
 
 
 class InteractionModel(StrEnum):
@@ -68,6 +68,14 @@ class DomainPack(ABC):
 
     def is_terminal(self, state: "BeliefState", depth: int) -> bool:
         return False
+
+    def infer_pack_fields(
+        self,
+        intake: "IntakeDraft",
+        assumptions: "AssumptionSummary",
+        approved_evidence_items: list["EvidencePacketItem"],
+    ) -> dict[str, Any]:
+        return {}
 
     def default_objective_profile(self) -> "ObjectiveProfile":
         from forecasting_harness.objectives import default_objective_profile as _default_objective_profile

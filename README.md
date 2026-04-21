@@ -56,7 +56,7 @@ Verified current progress:
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `166 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `186 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -115,6 +115,19 @@ Verified current progress:
 - The CLI now exposes `draft-retrieval-plan` and `draft-ingestion-plan` so adapters can ask the core what to search for and what the local corpus is still missing.
 - The CLI now exposes `recommend-ingestion-files` and `batch-ingest-recommended` so the core can map local files to domain/source roles and ingest the highest-priority candidates directly.
 - Batch ingestion now stores recommended tags such as `domain`, `source_role`, and top `evidence_category` on the ingested document rows.
+- A checked-in 10-scenario smoke campaign now verifies realistic runs across:
+  - `interstate-crisis`
+  - `company-action`
+  - `election-shock`
+  - `market-shock`
+  - `regulatory-enforcement`
+  - `supply-chain-disruption`
+- That campaign exposed and the current code now fixes:
+  - brittle natural-language ingestion matching
+  - source-id collisions when different files shared the same stem
+  - cross-run evidence contamination inside the same domain
+  - ingestion planning that treated old same-domain coverage as sufficient for a new scenario
+  - missing pack-field inference from approved evidence
 - A direct CLI smoke check now verifies:
   - `draft-retrieval-plan` returns deterministic `query_variants` for the current intake
   - `draft-ingestion-plan` reports covered and missing manifest evidence categories from the local corpus

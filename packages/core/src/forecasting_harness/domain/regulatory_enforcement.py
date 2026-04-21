@@ -3,7 +3,15 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, numeric_field, string_field, with_updates
+from forecasting_harness.domain.template_utils import (
+    any_term_matches,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    numeric_field,
+    string_field,
+    with_updates,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -44,6 +52,39 @@ class RegulatoryEnforcementPack(DomainPack):
 
     def extend_schema(self) -> dict[str, Any]:
         return {"enforcement_momentum": "float", "compliance_posture": "str", "public_attention": "float"}
+
+    def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+            assumptions.summary,
+            evidence_passages,
+        )
+
+        enforcement_momentum = 0.45 + 0.12 * count_term_matches(
+            text,
+            ["agency escalation", "structural remedy", "subpoena", "case expansion", "escalates"],
+        )
+        public_attention = 0.4 + 0.1 * count_term_matches(
+            text,
+            ["public scrutiny", "headline risk", "media scrutiny", "industry disruption", "political pressure"],
+        )
+
+        if any_term_matches(text, ["cooperate", "settlement", "remediation", "internal remediation"]):
+            compliance_posture = "cooperative"
+        elif any_term_matches(text, ["litigate", "contest findings", "adversarial"]):
+            compliance_posture = "adversarial"
+        else:
+            compliance_posture = "mixed"
+
+        return {
+            "enforcement_momentum": round(bounded(enforcement_momentum), 3),
+            "compliance_posture": compliance_posture,
+            "public_attention": round(bounded(public_attention), 3),
+        }
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"

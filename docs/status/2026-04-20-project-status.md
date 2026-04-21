@@ -1,6 +1,6 @@
 # Forecasting Harness Status
 
-Date: 2026-04-20
+Date: 2026-04-21
 
 ## Verified Progress
 
@@ -27,6 +27,9 @@ Date: 2026-04-20
 - The simulation engine now performs deterministic multi-step MCTS over `BeliefState` and preserves top-level `branches` for workflow compatibility.
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
+- The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
+- Corpus registration now disambiguates repeated `source_id` stems by file path instead of silently replacing earlier unrelated documents.
+- Evidence drafting and ingestion planning now scope same-domain corpus reuse to the current run and primary actors instead of borrowing stale material from other scenarios.
 - The generic `DomainPack` interface now exposes `search_config()` and `is_terminal()` hooks.
 - The domain registry now exposes reusable domain template packs for company action, election shock, market shock, supply-chain disruption, and regulatory enforcement in addition to the existing generic and interstate packs.
 - The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for six high-value domains.
@@ -38,9 +41,31 @@ Date: 2026-04-20
 - The workflow now exposes concrete ingest tasks for missing evidence categories.
 - The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
-- The test suite passed on 2026-04-20 with:
+- The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `166 passed`
+  - Result: `186 passed`
+- A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
+  - `us-iran-gulf`
+  - `japan-china-strait`
+  - `india-pakistan-crisis`
+  - `apple-ceo-transition`
+  - `boeing-post-reporting`
+  - `election-debate-collapse`
+  - `market-rate-shock`
+  - `regulator-adtech`
+  - `supply-rare-earth`
+  - `supplier-flooding`
+- The 2026-04-21 smoke campaign also verified for each scenario:
+  - non-empty MCTS output
+  - scenario-local evidence packet drafting
+  - ingest recommendations that map the local files to the current run instead of prior same-domain coverage
+  - inferred pack-specific state fields from approved evidence
+- The 2026-04-21 smoke campaign exposed and the current code now fixes:
+  - natural-language source-role and evidence-category matching that was too brittle for realistic wording
+  - source-id collisions when different directories contained the same filename stem
+  - cross-run evidence leakage between same-domain scenarios
+  - ingestion planning that treated earlier same-domain coverage as sufficient for later runs
+  - pack-field compilation that ignored approved evidence unless the user manually filled `pack_fields`
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`

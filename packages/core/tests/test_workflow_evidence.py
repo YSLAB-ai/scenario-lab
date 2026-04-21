@@ -4,10 +4,11 @@ from datetime import datetime, timezone
 
 import pytest
 
+from forecasting_harness.domain.company_action import CompanyActionPack
 from forecasting_harness.domain.base import DomainPack, InteractionModel
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.evidence import draft_evidence_packet
-from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
+from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacketItem, IntakeDraft
 
 
 class _FrozenDateTime:
@@ -205,6 +206,50 @@ def test_compile_belief_state_dedupes_actor_names_by_normalized_actor_id(monkeyp
 
     assert [actor.name for actor in state.actors] == ["North Korea", "US"]
     assert [actor.actor_id for actor in state.actors] == ["north-korea", "us"]
+
+
+def test_compile_belief_state_infers_company_pack_fields_from_intake_and_evidence(monkeypatch) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    intake = IntakeDraft(
+        event_framing="Assess strategy after a CEO transition",
+        focus_entities=["Apple"],
+        current_development="A sudden CEO transition follows product delays and investor concern",
+        current_stage="trigger",
+        time_horizon="180d",
+        known_constraints=["Premium positioning must hold", "China supply exposure remains material"],
+        known_unknowns=["Whether the board favors an internal successor"],
+    )
+    evidence_items = [
+        EvidencePacketItem(
+            evidence_id="ev-1",
+            source_id="src-1",
+            source_title="Succession note",
+            reason="Leadership signal",
+            raw_passages=[
+                "Analysts focus on succession clarity, supplier reassurance, and investor concern after product delays."
+            ],
+        )
+    ]
+
+    state = compile_belief_state(
+        run_id="company-1",
+        revision_id="r1",
+        pack=CompanyActionPack(),
+        intake=intake,
+        assumptions=AssumptionSummary(summary=["The board wants stability"]),
+        approved_evidence_ids=["ev-1"],
+        approved_evidence_items=evidence_items,
+    )
+
+    assert state.fields["cash_runway_months"].status == "inferred"
+    assert state.fields["brand_sentiment"].status == "inferred"
+    assert state.fields["regulatory_pressure"].status == "inferred"
+    assert state.fields["brand_sentiment"].supporting_evidence_ids == ["ev-1"]
+    assert int(state.fields["cash_runway_months"].normalized_value) <= 36
+    assert float(state.fields["brand_sentiment"].normalized_value) < 0.6
 
 
 def test_domain_pack_workflow_hooks_default_to_empty_collections() -> None:

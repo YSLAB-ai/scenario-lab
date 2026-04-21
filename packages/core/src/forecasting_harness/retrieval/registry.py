@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import re
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -72,6 +73,29 @@ class CorpusRegistry:
                 """
             )
 
+    def _disambiguated_source_id(self, source_id: str, path: str) -> str:
+        suffix = hashlib.sha1(path.encode("utf-8")).hexdigest()[:8]
+        return f"{source_id}-{suffix}"
+
+    def resolve_source_id(self, source_id: str, path: str) -> str:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT path FROM documents WHERE source_id = ?",
+                (source_id,),
+            ).fetchone()
+            if row is None or row["path"] == path:
+                return source_id
+
+            disambiguated = self._disambiguated_source_id(source_id, path)
+            while True:
+                collision = connection.execute(
+                    "SELECT path FROM documents WHERE source_id = ?",
+                    (disambiguated,),
+                ).fetchone()
+                if collision is None or collision["path"] == path:
+                    return disambiguated
+                disambiguated = self._disambiguated_source_id(disambiguated, path)
+
     def register_document(
         self,
         *,
@@ -83,9 +107,10 @@ class CorpusRegistry:
         path: str | None = None,
         content: str | None = None,
         chunks: list[dict[str, str]] | None = None,
-    ) -> None:
+    ) -> str:
         normalized_published_at = parse_published_at(published_at)
         normalized_path = path or f"/virtual/{source_id}"
+        resolved_source_id = self.resolve_source_id(source_id, normalized_path)
         if chunks is None:
             if content is None:
                 raise ValueError("either content or chunks must be provided")
@@ -100,16 +125,16 @@ class CorpusRegistry:
             normalized_chunks = chunks
 
         with self._connect() as connection:
-            connection.execute("DELETE FROM documents WHERE source_id = ?", (source_id,))
-            connection.execute("DELETE FROM chunks WHERE source_id = ?", (source_id,))
-            connection.execute("DELETE FROM chunk_vectors WHERE source_id = ?", (source_id,))
+            connection.execute("DELETE FROM documents WHERE source_id = ?", (resolved_source_id,))
+            connection.execute("DELETE FROM chunks WHERE source_id = ?", (resolved_source_id,))
+            connection.execute("DELETE FROM chunk_vectors WHERE source_id = ?", (resolved_source_id,))
             connection.execute(
                 """
                 INSERT INTO documents (source_id, title, source_type, path, published_at, tags, chunk_count, ingested_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    source_id,
+                    resolved_source_id,
                     title,
                     source_type,
                     normalized_path,
@@ -126,7 +151,7 @@ class CorpusRegistry:
                 """,
                 [
                     (
-                        source_id,
+                        resolved_source_id,
                         chunk["chunk_id"],
                         title,
                         normalized_published_at,
@@ -145,7 +170,7 @@ class CorpusRegistry:
                 """,
                 [
                     (
-                        source_id,
+                        resolved_source_id,
                         chunk["chunk_id"],
                         EMBEDDING_VERSION,
                         serialize_vector((encoded := encode_text(chunk["content"]))[0]),
@@ -154,6 +179,7 @@ class CorpusRegistry:
                     for chunk in normalized_chunks
                 ],
             )
+        return resolved_source_id
 
     def list_documents(self) -> list[dict[str, Any]]:
         with self._connect() as connection:

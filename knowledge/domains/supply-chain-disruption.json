@@ -4,9 +4,9 @@
   "actor_categories": ["manufacturer", "supplier", "logistics provider", "customer", "port or transport node", "alternate supplier"],
   "evidence_categories": ["inventory cover", "substitution flexibility", "transport reliability", "capacity recovery", "customer prioritization"],
   "evidence_category_terms": {
-    "inventory cover": ["inventory cover", "days of inventory", "stockout", "safety stock"],
-    "substitution flexibility": ["alternate supplier", "substitution flexibility", "dual sourcing", "material substitution"],
-    "transport reliability": ["transport reliability", "port congestion", "shipping delay", "route closure"],
+    "inventory cover": ["inventory cover", "days of inventory", "stockout", "safety stock", "thin inventory"],
+    "substitution flexibility": ["alternate supplier", "substitution flexibility", "dual sourcing", "material substitution", "alternate sources", "specialized"],
+    "transport reliability": ["transport reliability", "port congestion", "shipping delay", "route closure", "port delays", "export restrictions"],
     "capacity recovery": ["capacity recovery", "plant restart", "throughput", "output restoration"],
     "customer prioritization": ["customer prioritization", "allocation", "priority customer", "order rationing"]
   },

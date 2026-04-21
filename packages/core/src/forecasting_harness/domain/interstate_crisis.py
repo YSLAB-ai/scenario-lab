@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
+from forecasting_harness.domain.template_utils import any_term_matches, bounded, compose_signal_text, count_term_matches
 from forecasting_harness.workflow.models import IntakeDraft
 
 if TYPE_CHECKING:
@@ -95,7 +96,58 @@ class InterstateCrisisPack(DomainPack):
         ]
 
     def extend_schema(self) -> dict[str, Any]:
-        return {"military_posture": "str", "leader_style": "str"}
+        return {
+            "military_posture": "str",
+            "leader_style": "str",
+            "tension_index": "float",
+            "diplomatic_channel": "float",
+        }
+
+    def infer_pack_fields(self, intake: IntakeDraft, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        evidence_passages = [passage for item in approved_evidence_items for passage in item.raw_passages]
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+            assumptions.summary,
+            evidence_passages,
+        )
+
+        if any_term_matches(text, ["backchannel", "restraint", "talks", "ceasefire", "de-escalation"]):
+            leader_style = "cautious"
+        elif any_term_matches(text, ["retaliation", "mobilization", "threat", "intercept", "airstrike"]):
+            leader_style = "hawkish"
+        else:
+            leader_style = "cautious"
+
+        if any_term_matches(text, ["naval transit", "taiwan strait", "intercept", "contested"]):
+            military_posture = "contested"
+        elif any_term_matches(text, ["mobilization", "deployment", "high alert", "readiness"]):
+            military_posture = "high-alert"
+        elif any_term_matches(text, ["carrier", "forward", "naval deployments"]):
+            military_posture = "forward-deployed"
+        else:
+            military_posture = "reserve"
+
+        tension_index = 0.42 + 0.1 * count_term_matches(
+            text,
+            ["retaliation", "mobilization", "threat", "strike", "missile", "intercept", "high alert"],
+        )
+        tension_index -= 0.06 * count_term_matches(text, ["backchannel", "restraint", "talks", "ceasefire"])
+
+        diplomatic_channel = 0.32 + 0.1 * count_term_matches(
+            text,
+            ["backchannel", "restraint", "talks", "ceasefire", "diplomacy", "mediators"],
+        )
+        diplomatic_channel -= 0.05 * count_term_matches(text, ["threat", "retaliation", "intercept"])
+
+        return {
+            "leader_style": leader_style,
+            "military_posture": military_posture,
+            "tension_index": round(bounded(tension_index), 3),
+            "diplomatic_channel": round(bounded(diplomatic_channel), 3),
+        }
 
     def validate_phase(self, phase: str) -> list[str]:
         if phase not in self.PHASES:
@@ -108,7 +160,11 @@ class InterstateCrisisPack(DomainPack):
     def propose_actions(self, state: "BeliefState") -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
         leader_style = _string_field(state, "leader_style", "cautious") if state is not None else "cautious"
+        military_posture = _string_field(state, "military_posture", "reserve")
+        tension = _numeric_field(state, "tension_index", 0.4)
+        diplomacy = _numeric_field(state, "diplomatic_channel", 0.3)
         hawkish_adjustment = 0.1 if leader_style == "hawkish" else 0.0
+        posture_adjustment = 0.08 if military_posture in {"high-alert", "forward-deployed", "contested"} else 0.0
 
         if phase == "trigger":
             return [
@@ -116,22 +172,22 @@ class InterstateCrisisPack(DomainPack):
                     "action_id": "signal",
                     "branch_id": "signal",
                     "label": "Signal resolve",
-                    "prior": 0.5,
-                    "dependencies": {"fields": ["leader_style"]},
+                    "prior": bounded(0.35 + diplomacy * 0.3 - max(0.0, tension - 0.5) * 0.2),
+                    "dependencies": {"fields": ["leader_style", "diplomatic_channel", "tension_index"]},
                 },
                 {
                     "action_id": "limited-response",
                     "branch_id": "limited-response",
                     "label": "Limited response",
-                    "prior": 0.3 + hawkish_adjustment,
-                    "dependencies": {"fields": ["leader_style", "military_posture"]},
+                    "prior": bounded(0.22 + hawkish_adjustment + posture_adjustment + max(0.0, tension - 0.45) * 0.25),
+                    "dependencies": {"fields": ["leader_style", "military_posture", "tension_index"]},
                 },
                 {
                     "action_id": "open-negotiation",
                     "branch_id": "open-negotiation",
                     "label": "Open negotiation",
-                    "prior": 0.25,
-                    "dependencies": {"fields": ["leader_style"]},
+                    "prior": bounded(0.18 + diplomacy * 0.35 - hawkish_adjustment * 0.5),
+                    "dependencies": {"fields": ["leader_style", "diplomatic_channel"]},
                 },
             ]
         if phase == "signaling":
@@ -285,9 +341,9 @@ class InterstateCrisisPack(DomainPack):
             "settlement-stalemate": 0.25,
         }.get(phase, 0.4)
         return {
-            "escalation": max(0.0, min(1.0, tension)),
-            "negotiation": max(0.0, min(1.0, diplomacy)),
-            "economic_stress": max(0.0, min(1.0, phase_stress + tension * 0.15)),
+            "escalation": bounded(tension),
+            "negotiation": bounded(diplomacy),
+            "economic_stress": bounded(phase_stress + tension * 0.15),
         }
 
     def validate_state(self, state: "BeliefState") -> list[str]:

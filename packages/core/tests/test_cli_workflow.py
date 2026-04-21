@@ -412,7 +412,7 @@ def test_draft_ingestion_plan_command(tmp_path: Path) -> None:
         source_type="markdown",
         published_at="2026-04-20",
         tags={"domain": "interstate-crisis"},
-        content="Force posture hardens near the strait.",
+        content="Japan and China harden force posture near the Taiwan Strait after the naval transit.",
     )
 
     assert runner.invoke(
