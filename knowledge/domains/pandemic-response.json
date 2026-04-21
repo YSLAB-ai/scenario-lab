@@ -1,0 +1,36 @@
+{
+  "slug": "pandemic-response",
+  "description": "Template for fast-moving infectious-disease response, including containment policy, hospital strain, testing, compliance, and vaccine or booster rollout.",
+  "actor_categories": ["national government", "public health agencies", "hospitals", "regional governments", "schools", "pharmacies"],
+  "evidence_categories": ["transmission indicators", "hospital capacity", "testing and surveillance", "public compliance", "vaccine and booster logistics", "policy coordination"],
+  "evidence_category_terms": {
+    "transmission indicators": ["community transmission", "case growth", "outbreak", "variant wave", "spread"],
+    "hospital capacity": ["hospital strain", "admissions", "intensive care", "capacity", "staffing"],
+    "testing and surveillance": ["testing capacity", "testing shortages", "surveillance", "screening", "turnaround"],
+    "public compliance": ["public compliance", "distancing", "mask uptake", "fatigue", "behavior change"],
+    "vaccine and booster logistics": ["vaccine supply", "booster", "rollout", "cold-chain", "pharmacies"],
+    "policy coordination": ["policy coordination", "health agencies", "regional governments", "official guidance", "mixed messaging"]
+  },
+  "key_state_fields": ["transmission_pressure", "hospital_strain", "vaccine_readiness"],
+  "canonical_stages": ["trigger", "containment", "surge-response", "vaccination", "stabilization", "resolution"],
+  "recommended_source_types": ["public health bulletins", "hospital capacity reporting", "testing and surveillance data", "vaccination updates", "government policy releases"],
+  "starter_sources": [
+    {"kind": "public health reporting", "description": "case growth summaries, hospital occupancy reporting, official risk updates"},
+    {"kind": "health-system capacity signals", "description": "hospital staffing, ICU capacity, surge planning, emergency support decisions"},
+    {"kind": "vaccination logistics", "description": "vaccine supply, booster rollout, pharmacy participation, uptake reporting"}
+  ],
+  "ingestion_priorities": [
+    "fresh transmission and hospital-capacity reporting",
+    "testing and surveillance gaps or expansion plans",
+    "vaccination or booster rollout logistics and uptake"
+  ],
+  "freshness_notes": "Pandemic conditions change quickly. Transmission, hospital strain, compliance, and rollout evidence decays fast and should be refreshed frequently. Historical analogs remain useful for response-pattern comparison but should not dominate current conditions.",
+  "semantic_alias_groups": [
+    ["transmission indicators", "case growth", "community spread"],
+    ["hospital capacity", "hospital strain", "care capacity"],
+    ["testing and surveillance", "testing capacity", "surveillance"],
+    ["public compliance", "behavior change", "social adherence"],
+    ["vaccine and booster logistics", "vaccine rollout", "booster campaign"],
+    ["policy coordination", "policy alignment", "official guidance"]
+  ]
+}

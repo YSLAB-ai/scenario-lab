@@ -197,6 +197,62 @@ SCENARIOS = [
         },
     },
     {
+        "run_id": "pandemic-first-wave",
+        "domain": "pandemic-response",
+        "intake": {
+            "event_framing": "Assess national response choices as a novel respiratory virus spreads rapidly and hospitals begin to strain.",
+            "focus_entities": ["National Government", "Public Health System"],
+            "current_development": "Community transmission accelerates, hospital admissions rise, and officials debate school closures and travel limits.",
+            "current_stage": "trigger",
+            "time_horizon": "90d",
+            "known_constraints": ["Testing capacity is limited", "Business shutdowns carry large economic costs"],
+            "known_unknowns": ["How quickly households will comply with distancing guidance"],
+            "suggested_entities": ["Hospitals", "Regional Governments"],
+        },
+        "assumptions": ["Officials will accept near-term economic pain to avoid hospital overload"],
+        "docs": {
+            "first-wave-hospitals.md": "Hospital admissions rise quickly, intensive care capacity tightens, and testing shortages obscure the full spread of the virus.",
+            "first-wave-restrictions.md": "Officials debate school closures, travel limits, and distancing rules as community transmission accelerates.",
+        },
+        "expected_sources": {"first-wave-hospitals", "first-wave-restrictions"},
+        "expected_fields": {
+            "hospital_strain",
+            "policy_alignment",
+            "public_compliance",
+            "testing_capacity",
+            "transmission_pressure",
+            "vaccine_readiness",
+        },
+    },
+    {
+        "run_id": "pandemic-vaccine-wave",
+        "domain": "pandemic-response",
+        "intake": {
+            "event_framing": "Assess response choices during a renewed winter wave when vaccines exist but uptake and logistics lag.",
+            "focus_entities": ["National Government", "Public Health System"],
+            "current_development": "A winter wave lifts hospital pressure while vaccine supply exists, booster uptake lags, and officials debate targeted mandates.",
+            "current_stage": "trigger",
+            "time_horizon": "120d",
+            "known_constraints": ["Public fatigue reduces compliance with blanket restrictions", "Cold-chain logistics and staffing limit rapid rollout"],
+            "known_unknowns": ["Whether booster uptake can rise before hospital strain peaks"],
+            "suggested_entities": ["Hospitals", "Pharmacies"],
+        },
+        "assumptions": ["Officials prefer targeted public-health measures over another broad lockdown"],
+        "docs": {
+            "vaccine-rollout.md": "Vaccine supply is available but booster uptake lags, logistics are uneven, and health agencies push acceleration plans.",
+            "winter-wave.md": "A winter wave drives renewed hospital strain while public fatigue weakens compliance with broad restrictions.",
+        },
+        "expected_sources": {"vaccine-rollout", "winter-wave"},
+        "expected_fields": {
+            "hospital_strain",
+            "policy_alignment",
+            "public_compliance",
+            "testing_capacity",
+            "transmission_pressure",
+            "vaccine_readiness",
+        },
+    },
+    {
         "run_id": "regulator-adtech",
         "domain": "regulatory-enforcement",
         "intake": {
@@ -326,7 +382,7 @@ def test_interstate_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Pa
     service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
 
     top_root_labels: set[str] = set()
-    for scenario in SCENARIOS[:3]:
+    for scenario in [item for item in SCENARIOS if item["domain"] == "interstate-crisis"]:
         pack = registry.resolve(str(scenario["domain"]))
         run_id = str(scenario["run_id"])
         service.start_run(run_id, pack.slug())
@@ -357,7 +413,7 @@ def test_company_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path)
     service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
 
     top_root_labels: set[str] = set()
-    for scenario in SCENARIOS[3:5]:
+    for scenario in [item for item in SCENARIOS if item["domain"] == "company-action"]:
         pack = registry.resolve(str(scenario["domain"]))
         run_id = str(scenario["run_id"])
         service.start_run(run_id, pack.slug())
@@ -388,7 +444,38 @@ def test_supply_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) 
     service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
 
     top_root_labels: set[str] = set()
-    for scenario in SCENARIOS[8:10]:
+    for scenario in [item for item in SCENARIOS if item["domain"] == "supply-chain-disruption"]:
+        pack = registry.resolve(str(scenario["domain"]))
+        run_id = str(scenario["run_id"])
+        service.start_run(run_id, pack.slug())
+        intake = IntakeDraft.model_validate(scenario["intake"])
+        service.save_intake_draft(run_id, "r1", intake)
+
+        docs_dir = tmp_path / run_id
+        docs_dir.mkdir()
+        for filename, content in dict(scenario["docs"]).items():
+            (docs_dir / filename).write_text(str(content), encoding="utf-8")
+
+        service.batch_ingest_recommended_files(run_id, "r1", pack=pack, path=docs_dir, max_files=5)
+        service.draft_evidence_packet(run_id, "r1", pack=pack)
+        assumptions = AssumptionSummary(summary=list(scenario["assumptions"]), suggested_actors=intake.suggested_entities)
+        service.approve_revision(run_id, "r1", assumptions)
+        simulation = service.simulate_revision(run_id, "r1", pack=pack)
+
+        top_label = str(simulation["branches"][0]["label"])
+        top_root_labels.add(top_label.split(" (", 1)[0])
+
+    assert len(top_root_labels) >= 2
+
+
+def test_pandemic_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    registry = build_default_registry()
+    service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
+
+    top_root_labels: set[str] = set()
+    for scenario in [item for item in SCENARIOS if item["domain"] == "pandemic-response"]:
         pack = registry.resolve(str(scenario["domain"]))
         run_id = str(scenario["run_id"])
         service.start_run(run_id, pack.slug())

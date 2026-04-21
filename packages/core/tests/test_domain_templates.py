@@ -61,6 +61,13 @@ def _state(pack_slug: str, phase: str, fields: dict[str, BeliefField]) -> Belief
             {"liquidity_stress": 0.45, "rate_pressure": 0.6},
         ),
         (
+            "forecasting_harness.domain.pandemic_response",
+            "PandemicResponsePack",
+            "pandemic-response",
+            ["National Government", "Public Health System"],
+            {"transmission_pressure": 0.7, "hospital_strain": 0.6},
+        ),
+        (
             "forecasting_harness.domain.regulatory_enforcement",
             "RegulatoryEnforcementPack",
             "regulatory-enforcement",

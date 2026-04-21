@@ -49,15 +49,16 @@ The local CLI now supports the verified workflow commands:
 Verified current progress:
 
 - The reusable workflow core now supports registry-backed domain-pack discovery, local corpus ingestion, revisioned runs, direct structured intake/approval inputs, draft/approved artifacts, retrieval-backed evidence drafting, deterministic intake/approval guidance, conversation-stage turn drafting, in-place evidence curation, revision updates from approved parents, belief-state compilation, revisioned simulation outputs, and report generation.
-- The repository now includes seven built-in domain packs:
+- The repository now includes eight built-in domain packs:
   - `company-action`
   - `election-shock`
   - `generic-event`
   - `interstate-crisis`
   - `market-shock`
+  - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `193 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `201 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -68,6 +69,7 @@ Verified current progress:
   - `election-shock`
   - `interstate-crisis`
   - `market-shock`
+  - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
 - The repo-owned domain manifests now affect retrieval directly by supplying:
@@ -116,6 +118,7 @@ Verified current progress:
   - `supplier_concentration`
   - `customer_penalty_pressure`
 - The checked-in 10-scenario smoke campaign now verifies differentiated first-move outcomes across the interstate, company, and supply templates instead of collapsing those scenarios into one repeated root strategy.
+- The checked-in smoke and replay coverage now also includes a from-zero `pandemic-response` benchmark pack built inside the repo from the generic harness interfaces rather than extending an existing template.
 - The latest verified smoke campaign on 2026-04-21 produced these top branches:
   - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
   - `Japan-China Strait` -> `Signal resolve (managed signal)`
@@ -128,7 +131,7 @@ Verified current progress:
   - `Supply rare-earth` -> `Expedite alternatives`
   - `Supplier flooding` -> `Reserve logistics`
 - The replay suite now measures both exact top-branch matches and root-strategy matches per domain.
-- The repo now includes a built-in 10-case replay library under `knowledge/replays/` so replay and calibration checks can run without ad hoc JSON input.
+- The repo now includes a built-in 12-case replay library under `knowledge/replays/` so replay and calibration checks can run without ad hoc JSON input.
 - The built-in replay library is now split into domain-scoped files under `knowledge/replays/` instead of one monolithic JSON blob.
 - The CLI now exposes:
   - `forecast-harness run-builtin-replay-suite`
@@ -139,6 +142,14 @@ Verified current progress:
   - overall root-strategy accuracy
   - per-domain breakdown metrics
   - domains needing attention when accuracy or inferred-field coverage drops below threshold
+- The from-zero `pandemic-response` benchmark now verifies two retrospective cases through that same replay path:
+  - `pandemic-first-wave` -> `Containment push (coordination holds)`
+  - `pandemic-vaccine-wave` -> `Vaccine acceleration (uptake improves)`
+- A direct CLI verification on 2026-04-21 now confirms:
+  - `forecast-harness summarize-builtin-replay-corpus` -> `case_count = 12`
+  - `forecast-harness summarize-builtin-replay-corpus` includes domain `pandemic-response`
+  - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `top_branch_accuracy = 1.0`
+  - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `root_strategy_accuracy = 1.0`
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
