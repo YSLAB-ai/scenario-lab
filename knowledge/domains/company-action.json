@@ -1,0 +1,20 @@
+{
+  "slug": "company-action",
+  "description": "Template for analyzing company strategic responses to crises, product issues, financing stress, or reputation shocks.",
+  "actor_categories": ["company", "board", "regulator", "creditors", "customers", "competitors"],
+  "evidence_categories": ["financial resilience", "leadership behavior", "customer reaction", "regulatory pressure", "operational resilience"],
+  "key_state_fields": ["cash_runway_months", "brand_sentiment", "regulatory_pressure"],
+  "canonical_stages": ["trigger", "board-response", "market-response", "restructuring", "resolution"],
+  "recommended_source_types": ["company filings", "earnings transcripts", "press releases", "enforcement notices", "industry analysis"],
+  "starter_sources": [
+    {"kind": "company filings", "description": "10-K, 10-Q, 8-K, annual report, investor presentation"},
+    {"kind": "management communications", "description": "earnings calls, investor day remarks, public executive statements"},
+    {"kind": "market reaction", "description": "sell-side notes, major press coverage, customer or supplier disclosures"}
+  ],
+  "ingestion_priorities": [
+    "current company disclosures",
+    "recent liquidity and leverage indicators",
+    "leadership response analogs from prior company crises"
+  ],
+  "freshness_notes": "Current filings and management statements generally dominate older materials. Historical crisis analogs remain useful for executive style and board behavior."
+}

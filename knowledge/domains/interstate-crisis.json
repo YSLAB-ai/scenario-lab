@@ -1,0 +1,20 @@
+{
+  "slug": "interstate-crisis",
+  "description": "Template for interstate crisis escalation, signaling, limited force, deterrence, and negotiated de-escalation.",
+  "actor_categories": ["state", "ally", "external power", "military command", "regional bloc"],
+  "evidence_categories": ["force posture", "diplomatic signaling", "alliance commitments", "leader behavior", "economic constraints"],
+  "key_state_fields": ["military_posture", "leader_style", "tension_index", "diplomatic_channel"],
+  "canonical_stages": ["trigger", "signaling", "limited-response", "escalation", "negotiation-deescalation", "settlement-stalemate"],
+  "recommended_source_types": ["government statements", "defense white papers", "treaties and alliance texts", "sanctions notices", "historical crisis timelines"],
+  "starter_sources": [
+    {"kind": "official communications", "description": "foreign ministry, defense ministry, head-of-state, and alliance statements"},
+    {"kind": "force and capability references", "description": "order-of-battle summaries, deployment statements, range and readiness references"},
+    {"kind": "historical analogs", "description": "documented prior crises involving the same actors or theater"}
+  ],
+  "ingestion_priorities": [
+    "fresh official statements and force-posture signals",
+    "binding alliance and legal commitments",
+    "historical analogs for leader and institutional response style"
+  ],
+  "freshness_notes": "Posture and signaling information is highly time-sensitive. Structural treaty and doctrine materials decay more slowly. Historical analogs should inform behavior profiles rather than override current evidence."
+}

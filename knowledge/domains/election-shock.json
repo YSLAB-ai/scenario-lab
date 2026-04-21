@@ -1,0 +1,20 @@
+{
+  "slug": "election-shock",
+  "description": "Template for campaign shocks, late-breaking events, narrative changes, and turnout or coalition responses during an election.",
+  "actor_categories": ["candidate", "party", "media", "donors", "voter blocs", "endorsers"],
+  "evidence_categories": ["polling", "turnout signals", "message discipline", "coalition dynamics", "campaign resources"],
+  "key_state_fields": ["poll_margin", "turnout_energy", "message_discipline"],
+  "canonical_stages": ["trigger", "narrative-fight", "turnout-drive", "coalition-shaping", "resolution"],
+  "recommended_source_types": ["poll aggregations", "election rules", "campaign finance records", "debate/transcript archives", "turnout datasets"],
+  "starter_sources": [
+    {"kind": "polling", "description": "reputable state or district polling and aggregate polling trend data"},
+    {"kind": "election administration", "description": "calendar, ballot-access rules, early voting and turnout rules"},
+    {"kind": "campaign operations", "description": "fundraising filings, ad buys, endorsement timelines, field-operation indicators"}
+  ],
+  "ingestion_priorities": [
+    "fresh polling and turnout indicators",
+    "electoral rules and deadlines",
+    "historical analogs for similar campaign shocks"
+  ],
+  "freshness_notes": "Polling and turnout indicators decay quickly. Structural election rules stay relevant for the full cycle. Historical analogs are useful for pattern matching, not direct probability claims."
+}

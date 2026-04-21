@@ -1,0 +1,20 @@
+{
+  "slug": "regulatory-enforcement",
+  "description": "Template for agency investigations, settlement negotiations, remedies, and enforcement escalation affecting a target entity.",
+  "actor_categories": ["agency", "target entity", "external counsel", "monitor", "industry peers", "state enforcers"],
+  "evidence_categories": ["enforcement momentum", "compliance posture", "public attention", "settlement precedent", "remedy severity"],
+  "key_state_fields": ["enforcement_momentum", "compliance_posture", "public_attention"],
+  "canonical_stages": ["trigger", "inquiry", "negotiation", "remedy", "resolution"],
+  "recommended_source_types": ["agency complaints", "consent orders", "settlement announcements", "compliance reports", "industry enforcement histories"],
+  "starter_sources": [
+    {"kind": "official enforcement materials", "description": "complaints, press releases, consent orders, rulemaking context"},
+    {"kind": "compliance materials", "description": "internal control reports, remediation programs, monitor reports where available"},
+    {"kind": "precedent sets", "description": "recent enforcement actions against comparable entities or conduct"}
+  ],
+  "ingestion_priorities": [
+    "fresh official notices and case documents",
+    "recent precedent against similar conduct",
+    "target-specific compliance and remediation signals"
+  ],
+  "freshness_notes": "Official case materials and comparable precedent should drive the near-term state. Older enforcement history is most useful for pattern and remedy analogs."
+}

@@ -1,0 +1,20 @@
+{
+  "slug": "market-shock",
+  "description": "Template for rates, liquidity, credibility, and cross-market stress events with central-bank or policy responses.",
+  "actor_categories": ["central bank", "treasury", "financial institutions", "investors", "dealers", "foreign authorities"],
+  "evidence_categories": ["liquidity conditions", "rates pressure", "policy credibility", "market functioning", "cross-asset contagion"],
+  "key_state_fields": ["liquidity_stress", "rate_pressure", "policy_credibility"],
+  "canonical_stages": ["trigger", "repricing", "policy-response", "liquidity-stabilization", "resolution"],
+  "recommended_source_types": ["central bank releases", "treasury statements", "market functioning reports", "yield/volatility datasets", "bank or dealer commentary"],
+  "starter_sources": [
+    {"kind": "official policy communications", "description": "meeting statements, speeches, emergency facility announcements"},
+    {"kind": "market data", "description": "yield curves, spreads, volatility, funding market and liquidity measures"},
+    {"kind": "stability reporting", "description": "financial stability reports, dealer commentary, market-functioning diagnostics"}
+  ],
+  "ingestion_priorities": [
+    "fresh market data and policy announcements",
+    "liquidity and funding indicators",
+    "historical episodes of repricing and policy stabilization"
+  ],
+  "freshness_notes": "Market data and policy communication decay very quickly. Historical shock analogs remain useful for identifying stabilization patterns but should not dominate current market conditions."
+}

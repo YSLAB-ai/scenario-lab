@@ -1,0 +1,20 @@
+{
+  "slug": "supply-chain-disruption",
+  "description": "Template for material disruptions in supply, transport, or production capacity and the resulting recovery or rerouting decisions.",
+  "actor_categories": ["manufacturer", "supplier", "logistics provider", "customer", "port or transport node", "alternate supplier"],
+  "evidence_categories": ["inventory cover", "substitution flexibility", "transport reliability", "capacity recovery", "customer prioritization"],
+  "key_state_fields": ["inventory_cover_days", "substitution_flexibility", "transport_reliability"],
+  "canonical_stages": ["trigger", "triage", "rerouting", "capacity-rebuild", "resolution"],
+  "recommended_source_types": ["company disclosures", "shipping and transport data", "supplier notices", "inventory reports", "industry operations analysis"],
+  "starter_sources": [
+    {"kind": "operational disclosures", "description": "company updates on production, delays, inventories, and plant status"},
+    {"kind": "logistics indicators", "description": "port congestion, freight reliability, route closures, customs or transit advisories"},
+    {"kind": "supplier and customer signals", "description": "major supplier notices, customer allocation statements, alternate sourcing announcements"}
+  ],
+  "ingestion_priorities": [
+    "fresh operational and logistics updates",
+    "inventory and allocation indicators",
+    "historical analogs for comparable disruption and rerouting patterns"
+  ],
+  "freshness_notes": "Operational and transport signals are highly time-sensitive. Historical cases are useful for rerouting and recovery timelines but should not override current node-specific evidence."
+}
