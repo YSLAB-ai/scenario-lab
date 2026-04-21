@@ -197,3 +197,82 @@ def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
     assert (run_dir / "simulation" / "r1.approved.json").exists()
     assert (run_dir / "reports" / "r1.report.md").exists()
     assert "- Unsupported assumptions: 1" in (run_dir / "reports" / "r1.report.md").read_text(encoding="utf-8")
+
+
+def test_draft_evidence_packet_command(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    intake_path = tmp_path / "intake.json"
+
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    from forecasting_harness.retrieval import CorpusRegistry
+
+    corpus = CorpusRegistry(corpus_db)
+    corpus.register_document(
+        source_id="doc-1",
+        title="Taiwan Strait Signals",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Japan and China exchange warnings in the Taiwan Strait.",
+    )
+
+    assert runner.invoke(
+        app,
+        [
+            "start-run",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--domain-pack",
+            "interstate-crisis",
+        ],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "save-intake-draft",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--input",
+            str(intake_path),
+        ],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "draft-evidence-packet",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--query-text",
+            "Taiwan Strait warnings",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]

@@ -9,6 +9,7 @@ import pytest
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.models import BeliefState
+from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.workflow.models import (
     AssumptionSummary,
     EvidencePacket,
@@ -309,6 +310,54 @@ def test_generate_report_writes_revision_specific_reports_and_credibility_note(t
     assert first_report != second_report
     assert "low-credibility exploratory run" in first_report
     assert "low-credibility exploratory run" not in second_report
+
+
+def test_draft_evidence_packet_from_corpus_persists_a_revision_draft(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    corpus = CorpusRegistry(tmp_path / "corpus.db")
+    service = WorkflowService(repository, corpus_registry=corpus)
+    pack = InterstateCrisisPack()
+
+    corpus.register_document(
+        source_id="doc-1",
+        title="Taiwan Strait Signals",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Japan and China exchange warnings in the Taiwan Strait.",
+    )
+    corpus.register_document(
+        source_id="doc-2",
+        title="Unrelated Market Note",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "market-shock"},
+        content="Oil futures rise after unrelated macro news.",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft(
+        "crisis-1",
+        "r1",
+        IntakeDraft(
+            event_framing="Assess escalation",
+            focus_entities=["Japan", "China"],
+            current_development="Naval transit through the Taiwan Strait",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+    )
+
+    packet = service.draft_evidence_packet(
+        "crisis-1",
+        "r1",
+        pack=pack,
+        query_text="Taiwan Strait warnings",
+    )
+
+    assert [item.source_id for item in packet.items] == ["doc-1"]
+    stored_packet = repository.load_revision_model("crisis-1", "evidence", "r1", EvidencePacket, approved=False)
+    assert [item.source_id for item in stored_packet.items] == ["doc-1"]
 
 
 def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None:

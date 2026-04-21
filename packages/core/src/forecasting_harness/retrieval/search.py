@@ -22,7 +22,13 @@ class SearchEngine:
         age_days = (date.today() - published_date).days
         return min(1.0, max(0.2, 1 - (age_days / 365)))
 
-    def search(self, query: RetrievalQuery) -> list[dict[str, Any]]:
+    def search(
+        self,
+        query: RetrievalQuery,
+        *,
+        freshness_policy: dict[str, float] | None = None,
+    ) -> list[dict[str, Any]]:
+        freshness_policy = freshness_policy or {}
         hits: list[dict[str, Any]] = []
         for row in self.registry.search_chunks(query.text):
             tags = row.get("tags") or {}
@@ -30,7 +36,11 @@ class SearchEngine:
                 continue
 
             result = dict(row)
-            result["score"] = self.freshness_multiplier(result["published_at"])
+            domain_weight = 1.0
+            domain_name = tags.get("domain")
+            if isinstance(domain_name, str):
+                domain_weight = freshness_policy.get(domain_name, 1.0)
+            result["score"] = self.freshness_multiplier(result["published_at"]) * domain_weight
             hits.append(result)
 
         hits.sort(key=lambda item: (-item["score"], item["source_id"]))

@@ -12,6 +12,7 @@ from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
+from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
 from forecasting_harness.workflow.service import WorkflowService
@@ -184,6 +185,21 @@ def save_evidence_draft(
     payload = EvidencePacket.model_validate_json(input.read_text(encoding="utf-8"))
     _service(root).save_evidence_draft(run_id=run_id, revision_id=revision_id, packet=payload)
     print(f"saved evidence {revision_id}")
+
+
+@app.command("draft-evidence-packet")
+def draft_evidence_packet_command(
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path = typer.Option(...),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+    query_text: str = typer.Option(...),
+) -> None:
+    repo = RunRepository(root)
+    pack = _load_pack_for_run(repo, run_id)
+    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    packet = service.draft_evidence_packet(run_id, revision_id, pack=pack, query_text=query_text)
+    print(packet.model_dump_json())
 
 
 @app.command("approve-revision")
