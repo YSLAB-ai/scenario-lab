@@ -583,5 +583,30 @@ class InterstateCrisisPack(DomainPack):
             "economic_stress": bounded(phase_stress + tension * 0.15 + flashpoint * 0.08),
         }
 
+    def score_actor_impacts(self, state: "BeliefState") -> dict[str, dict[str, float]]:
+        tension = _numeric_field(state, "tension_index", 0.5)
+        diplomacy = _numeric_field(state, "diplomatic_channel", 0.3)
+        alliance = _numeric_field(state, "alliance_pressure", 0.25)
+        mediation = _numeric_field(state, "mediation_window", 0.25)
+        actor_impacts: dict[str, dict[str, float]] = {}
+
+        for actor in getattr(state, "actors", []):
+            profile = getattr(actor, "behavior_profile", None)
+            if profile is None:
+                continue
+
+            actor_impacts[actor.actor_id] = {
+                "domestic_sensitivity": bounded(profile.domestic_sensitivity or 0.0),
+                "economic_pain_tolerance": bounded((profile.economic_pain_tolerance or 0.0) * (1.0 - tension * 0.3)),
+                "negotiation_openness": bounded(
+                    (profile.negotiation_openness or 0.0) * (0.6 + diplomacy * 0.5 + mediation * 0.2)
+                ),
+                "reputational_sensitivity": bounded(profile.reputational_sensitivity or 0.0),
+                "alliance_dependence": bounded((profile.alliance_dependence or 0.0) * max(alliance, 0.2)),
+                "coercive_bias": bounded((profile.coercive_bias or 0.0) * (0.5 + tension * 0.4 - diplomacy * 0.1)),
+            }
+
+        return actor_impacts
+
     def validate_state(self, state: "BeliefState") -> list[str]:
         return self.validate_phase(state.phase or "")

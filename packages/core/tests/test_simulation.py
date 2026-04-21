@@ -23,6 +23,35 @@ def test_scalarize_node_value_uses_objective_profile_weights() -> None:
     assert scalarize_node_value({"escalation": 0.6, "negotiation": 0.2}, profile) == -0.5
 
 
+def test_objective_profile_can_aggregate_system_and_actor_metrics() -> None:
+    profile = ObjectiveProfile(
+        name="balanced-system",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+        actor_metric_weights={"domestic_sensitivity": 0.5, "coercive_bias": -0.25},
+        actor_weights={"alpha": 2.0},
+        aggregation_mode="balanced-system",
+        destabilization_penalty=0.2,
+    )
+
+    aggregate_score, breakdown = profile.aggregate(
+        system_metrics={"escalation": 0.3, "negotiation": 0.8},
+        actor_metrics={
+            "alpha": {"domestic_sensitivity": 0.6, "coercive_bias": 0.2},
+            "beta": {"domestic_sensitivity": 0.2, "coercive_bias": 0.4},
+        },
+    )
+
+    assert aggregate_score == pytest.approx(1 / 6)
+    assert breakdown == {
+        "system": pytest.approx(0.12),
+        "actors": pytest.approx(1 / 6),
+        "destabilization_penalty": pytest.approx(-0.12),
+    }
+
+
 def test_should_reuse_node_rejects_unsupported_dependency_keys() -> None:
     node = {"node_id": "n1", "dependencies": {"fields": ["fuel_days"], "metrics": ["economic_stress"]}}
     compatibility = {"changed_fields": ["morale"], "compatible": True}
@@ -162,6 +191,124 @@ def test_simulation_engine_returns_mcts_metadata_and_multi_step_backed_up_scores
     assert result["branches"][0]["prior"] == pytest.approx(0.4)
     assert result["branches"][0]["metrics"]["negotiation"] == pytest.approx(0.9)
     assert result["branches"][0]["score"] > result["branches"][1]["score"]
+
+
+def test_simulation_engine_reports_actor_metrics_and_aggregate_breakdown() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def search_config(self) -> dict[str, float]:
+            return {"iterations": 8, "max_depth": 2, "rollout_depth": 1, "c_puct": 1.0}
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return depth > 0
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            return [{"branch_id": "pressure-test", "label": "Pressure test", "prior": 1.0}]
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            return [
+                SimpleNamespace(
+                    interaction_model=InteractionModel.EVENT_DRIVEN,
+                    score_metrics={"escalation": 0.2, "negotiation": 0.7},
+                    actor_impact_metrics={
+                        "alpha": {"domestic_sensitivity": 0.9, "coercive_bias": 0.1},
+                        "beta": {"domestic_sensitivity": 0.2, "coercive_bias": 0.8},
+                    },
+                )
+            ]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+        def score_actor_impacts(self, state: object) -> dict[str, dict[str, float]]:
+            return state.actor_impact_metrics
+
+    profile = ObjectiveProfile(
+        name="balanced-system",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+        actor_metric_weights={"domestic_sensitivity": 0.5, "coercive_bias": -0.25},
+        actor_weights={"alpha": 2.0},
+        aggregation_mode="balanced-system",
+        destabilization_penalty=0.2,
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+
+    result = engine.run(SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN))
+
+    branch = result["branches"][0]
+    assert branch["actor_metrics"] == {
+        "alpha": {"domestic_sensitivity": pytest.approx(0.9), "coercive_bias": pytest.approx(0.1)},
+        "beta": {"domestic_sensitivity": pytest.approx(0.2), "coercive_bias": pytest.approx(0.8)},
+    }
+    assert branch["aggregate_score_breakdown"] == {
+        "system": pytest.approx(0.13),
+        "actors": pytest.approx(0.25),
+        "destabilization_penalty": pytest.approx(-0.18),
+    }
+    assert branch["score"] == pytest.approx(0.2)
+
+
+def test_simulation_engine_allows_system_only_profile_when_actor_metrics_exist() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def search_config(self) -> dict[str, float]:
+            return {"iterations": 4, "max_depth": 1, "rollout_depth": 1, "c_puct": 1.0}
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return depth > 0
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            return [{"branch_id": "system-only", "label": "System only", "prior": 1.0}]
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            return [
+                SimpleNamespace(
+                    interaction_model=InteractionModel.EVENT_DRIVEN,
+                    score_metrics={"escalation": 0.2, "negotiation": 0.7},
+                    actor_impact_metrics={"alpha": {"domestic_sensitivity": 0.9, "coercive_bias": 0.1}},
+                )
+            ]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+        def score_actor_impacts(self, state: object) -> dict[str, dict[str, float]]:
+            return state.actor_impact_metrics
+
+    profile = ObjectiveProfile(
+        name="system-only",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+
+    result = engine.run(SimpleNamespace(interaction_model=InteractionModel.EVENT_DRIVEN))
+
+    branch = result["branches"][0]
+    assert branch["actor_metrics"] == {
+        "alpha": {"domestic_sensitivity": pytest.approx(0.9), "coercive_bias": pytest.approx(0.1)}
+    }
+    assert branch["aggregate_score_breakdown"] == {
+        "system": pytest.approx(0.13),
+        "actors": pytest.approx(0.0),
+        "destabilization_penalty": pytest.approx(0.0),
+    }
+    assert branch["score"] == pytest.approx(0.13)
 
 
 def test_simulation_engine_rejects_interaction_model_mismatch() -> None:
@@ -478,6 +625,90 @@ def test_simulation_engine_reuses_compatible_cached_nodes_from_prior_tree() -> N
     assert second["reuse_summary"]["reused_nodes"] > 0
     assert second["reuse_summary"]["skipped_nodes"] > 0
     assert second["tree_nodes"]
+
+
+def test_simulation_engine_rehydrates_task3_accumulators_when_reusing_nodes() -> None:
+    class DomainPackStub:
+        def interaction_model(self) -> InteractionModel:
+            return InteractionModel.EVENT_DRIVEN
+
+        def validate_state(self, state: object) -> list[str]:
+            return []
+
+        def search_config(self) -> dict[str, float]:
+            return {"iterations": 1, "max_depth": 2, "rollout_depth": 1, "c_puct": 1.0}
+
+        def is_terminal(self, state: object, depth: int) -> bool:
+            return getattr(state, "name", "").startswith("terminal")
+
+        def propose_actions(self, state: object) -> list[dict[str, object]]:
+            if state.name == "root":
+                return [
+                    {"branch_id": "stable-path", "label": "Stable path", "prior": 1.0, "dependencies": {"fields": ["fuel_days"]}}
+                ]
+            if state.name == "stable-1":
+                return [{"action_id": "close", "label": "Close", "prior": 1.0}]
+            return []
+
+        def sample_transition(self, state: object, action_context: dict[str, object]) -> list[object]:
+            if state.name == "root":
+                return [
+                    SimpleNamespace(
+                        name="stable-1",
+                        score_metrics={"escalation": 0.2, "negotiation": 0.5},
+                        interaction_model=InteractionModel.EVENT_DRIVEN,
+                    )
+                ]
+            return [
+                SimpleNamespace(
+                    name="terminal-stable",
+                    score_metrics={"escalation": 0.1, "negotiation": 0.8},
+                    actor_impact_metrics={"alpha": {"domestic_sensitivity": 0.9, "coercive_bias": 0.1}},
+                    interaction_model=InteractionModel.EVENT_DRIVEN,
+                )
+            ]
+
+        def score_state(self, state: object) -> dict[str, float]:
+            return state.score_metrics
+
+        def score_actor_impacts(self, state: object) -> dict[str, dict[str, float]]:
+            return getattr(state, "actor_impact_metrics", {})
+
+    profile = ObjectiveProfile(
+        name="balanced-system",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+        actor_metric_weights={"domestic_sensitivity": 0.5, "coercive_bias": -0.25},
+        actor_weights={},
+        aggregation_mode="balanced-system",
+        destabilization_penalty=0.2,
+    )
+    engine = SimulationEngine(DomainPackStub(), profile)
+    root = SimpleNamespace(name="root", interaction_model=InteractionModel.EVENT_DRIVEN)
+    first = engine.run(root)
+    second = engine.run(
+        root,
+        reuse_context={
+            "source_revision_id": "r1",
+            "compatibility": {"compatible": True, "changed_fields": []},
+            "simulation": first,
+        },
+    )
+
+    reused_node = next(node for node in second["tree_nodes"] if node["node_id"] == "root/stable-path")
+
+    assert reused_node["visits"] == 1
+    assert reused_node["value_sum"] == pytest.approx(0.445)
+    assert reused_node["actor_metric_sums"] == {
+        "alpha": {"domestic_sensitivity": pytest.approx(0.9), "coercive_bias": pytest.approx(0.1)}
+    }
+    assert reused_node["aggregate_score_breakdown_sums"] == {
+        "system": pytest.approx(0.2),
+        "actors": pytest.approx(0.425),
+        "destabilization_penalty": pytest.approx(-0.18),
+    }
 
 
 def test_interstate_crisis_pack_transitions_change_follow_on_actions() -> None:

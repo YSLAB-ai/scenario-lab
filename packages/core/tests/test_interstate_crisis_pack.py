@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import get_type_hints
 
+import pytest
+
 from forecasting_harness.domain import (
     DomainPack,
     GenericEventPack,
@@ -205,3 +207,66 @@ def test_interstate_pack_can_recommend_domestic_politics_first_profile() -> None
     assert profile.name == "domestic-politics-first"
     assert profile.aggregation_mode == "focal-actor"
     assert profile.focal_actor_id == "china"
+
+
+def test_interstate_pack_scores_actor_impacts_from_behavior_profiles_and_state_fields() -> None:
+    pack = InterstateCrisisPack()
+    state = type(
+        "State",
+        (),
+        {
+            "actors": [
+                Actor(
+                    actor_id="china",
+                    name="China",
+                    behavior_profile=BehaviorProfile(
+                        domestic_sensitivity=0.8,
+                        economic_pain_tolerance=0.6,
+                        negotiation_openness=0.3,
+                        reputational_sensitivity=0.7,
+                        alliance_dependence=0.2,
+                        coercive_bias=0.9,
+                    ),
+                ),
+                Actor(
+                    actor_id="taiwan",
+                    name="Taiwan",
+                    behavior_profile=BehaviorProfile(
+                        domestic_sensitivity=0.6,
+                        economic_pain_tolerance=0.4,
+                        negotiation_openness=0.8,
+                        reputational_sensitivity=0.5,
+                        alliance_dependence=0.9,
+                        coercive_bias=0.2,
+                    ),
+                ),
+            ],
+            "fields": {
+                "tension_index": type("Field", (), {"normalized_value": 0.7})(),
+                "diplomatic_channel": type("Field", (), {"normalized_value": 0.4})(),
+                "alliance_pressure": type("Field", (), {"normalized_value": 0.8})(),
+                "mediation_window": type("Field", (), {"normalized_value": 0.3})(),
+            },
+        },
+    )()
+
+    actor_impacts = pack.score_actor_impacts(state)
+
+    assert actor_impacts == {
+        "china": {
+            "domestic_sensitivity": pytest.approx(0.8),
+            "economic_pain_tolerance": pytest.approx(0.474),
+            "negotiation_openness": pytest.approx(0.258),
+            "reputational_sensitivity": pytest.approx(0.7),
+            "alliance_dependence": pytest.approx(0.16),
+            "coercive_bias": pytest.approx(0.666),
+        },
+        "taiwan": {
+            "domestic_sensitivity": pytest.approx(0.6),
+            "economic_pain_tolerance": pytest.approx(0.316),
+            "negotiation_openness": pytest.approx(0.688),
+            "reputational_sensitivity": pytest.approx(0.5),
+            "alliance_dependence": pytest.approx(0.72),
+            "coercive_bias": pytest.approx(0.148),
+        },
+    }

@@ -59,6 +59,9 @@ class DomainPack(ABC):
     def score_state(self, state: "BeliefState") -> dict[str, float]:
         raise NotImplementedError
 
+    def score_actor_impacts(self, state: "BeliefState") -> dict[str, dict[str, float]]:
+        return {}
+
     @abstractmethod
     def validate_state(self, state: "BeliefState") -> list[str]:
         raise NotImplementedError
