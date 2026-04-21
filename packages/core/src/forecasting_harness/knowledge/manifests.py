@@ -15,6 +15,17 @@ class StarterSource(BaseModel):
     description: str
 
 
+class AdaptiveTermDelta(BaseModel):
+    terms: list[str] = Field(default_factory=list)
+    delta: float = 0.0
+
+
+class AdaptiveActionBias(BaseModel):
+    target: str
+    terms: list[str] = Field(default_factory=list)
+    delta: float = 0.0
+
+
 class DomainManifest(BaseModel):
     slug: str
     description: str
@@ -28,6 +39,8 @@ class DomainManifest(BaseModel):
     ingestion_priorities: list[str] = Field(default_factory=list)
     freshness_notes: str = ""
     semantic_alias_groups: list[list[str]] = Field(default_factory=list)
+    adaptive_state_terms: dict[str, list[AdaptiveTermDelta]] = Field(default_factory=dict)
+    adaptive_action_biases: list[AdaptiveActionBias] = Field(default_factory=list)
 
     def alias_groups(self) -> list[tuple[str, ...]]:
         return [tuple(group) for group in self.semantic_alias_groups if group]
@@ -45,8 +58,8 @@ class DomainManifest(BaseModel):
         return merged
 
 
-def load_domain_manifest(slug: str) -> DomainManifest:
-    manifest_path = _knowledge_root() / f"{slug}.json"
+def load_domain_manifest(slug: str, *, root_override: Path | None = None) -> DomainManifest:
+    manifest_path = (root_override or _knowledge_root()) / f"{slug}.json"
     if not manifest_path.exists():
         raise FileNotFoundError(manifest_path)
     return DomainManifest.model_validate(json.loads(manifest_path.read_text(encoding="utf-8")))

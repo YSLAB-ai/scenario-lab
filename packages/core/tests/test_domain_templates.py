@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 import pytest
 
+from forecasting_harness.knowledge.manifests import AdaptiveActionBias, DomainManifest
 from forecasting_harness.models import BeliefField, BeliefState
 from forecasting_harness.workflow.models import IntakeDraft
 
@@ -118,3 +119,45 @@ def test_domain_template_pack_exposes_stages_actions_and_transitions(
     next_state = transition["next_state"] if isinstance(transition, dict) else transition
     assert next_state.phase != state.phase
     assert pack.score_state(next_state)
+
+
+def test_company_action_pack_uses_manifest_action_bias(monkeypatch: pytest.MonkeyPatch) -> None:
+    from forecasting_harness.domain.company_action import CompanyActionPack
+    import forecasting_harness.domain.template_utils as template_utils
+
+    monkeypatch.setattr(
+        template_utils,
+        "load_domain_manifest",
+        lambda slug: DomainManifest(
+            slug=slug,
+            description="test",
+            adaptive_action_biases=[
+                AdaptiveActionBias(target="contain-message", terms=["board reassurance"], delta=0.2)
+            ],
+        ),
+    )
+
+    pack = CompanyActionPack()
+    state = _state(
+        "company-action",
+        "trigger",
+        {
+            "event_framing": _field("board reassurance needed"),
+            "board_cohesion": _field(0.4),
+            "cash_runway_months": _field(9),
+            "brand_sentiment": _field(0.5),
+            "operational_stability": _field(0.5),
+            "regulatory_pressure": _field(0.2),
+        },
+    )
+
+    contain_before = next(action for action in pack.propose_actions(state) if action["action_id"] == "contain-message")
+
+    monkeypatch.setattr(
+        template_utils,
+        "load_domain_manifest",
+        lambda slug: DomainManifest(slug=slug, description="test"),
+    )
+    contain_after = next(action for action in pack.propose_actions(state) if action["action_id"] == "contain-message")
+
+    assert contain_before["prior"] > contain_after["prior"]

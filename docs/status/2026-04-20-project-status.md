@@ -5,7 +5,7 @@ Date: 2026-04-21
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
-- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, and a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`.
+- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution package under `packages/core/src/forecasting_harness/evolution/`.
 - Domain packs are now discovered through a registry instead of hardcoded CLI branching.
 - The workflow now supports generic intake fields with compatibility aliases:
   - `focus_entities`
@@ -21,6 +21,11 @@ Date: 2026-04-21
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
+- The repo now also supports domain-scoped self-improvement through:
+  - `forecast-harness record-domain-suggestion`
+  - `forecast-harness analyze-domain-weakness`
+  - `forecast-harness run-domain-evolution`
+  - `forecast-harness summarize-domain-evolution`
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
 - The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
@@ -47,6 +52,9 @@ Date: 2026-04-21
 - The repo now also includes a repo-owned replay library under `knowledge/replays/`.
 - The replay library is now split into domain-scoped files under `knowledge/replays/`, and the core can summarize that corpus directly.
 - The repo-owned manifests now load through a typed `forecasting_harness.knowledge` module instead of remaining documentation-only files.
+- Domain manifests now also support adaptive overlays for:
+  - state inference term boosts
+  - action-prior bias rules
 - The retrieval layer now accepts manifest-specific semantic alias groups during search.
 - Evidence packet drafting now uses manifest evidence-category terms to diversify packet coverage and emit category-aware reasons.
 - The workflow now exposes typed manifest-aware retrieval planning and ingestion planning payloads.
@@ -56,7 +64,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The test suite passed on 2026-04-21 with:
   - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `201 passed`
+  - Result: `210 passed`
 - A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -98,6 +106,14 @@ Date: 2026-04-21
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `top_branch_accuracy = 1.0`
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `root_strategy_accuracy = 1.0`
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `average_inferred_field_coverage = 1.0`
+- The domain evolution pass on 2026-04-21 also verified:
+  - a no-branch CLI smoke flow in a temporary workspace:
+    - `record-domain-suggestion`
+    - `run-domain-evolution --no-branch`
+    - `summarize-domain-evolution`
+  - a branch-promotion smoke flow in a temporary git repo:
+    - branch created: `codex/domain-evolution-company-action-20260421`
+    - head commit message: `feat: evolve company-action domain knowledge`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
@@ -275,6 +291,7 @@ Date: 2026-04-21
 - `59fbbb8` `feat: add revisioned simulation and reporting flow`
 - `b1189b1` `fix: repair partial demo run state`
 - `1e47fc1` `feat: add domain pack registry`
+- `6a37c4c` `Merge branch 'codex/pandemic-domain-v1'`
 - `b3f8ac4` `feat: generalize intake schema`
 - `f7b9af7` `feat: draft evidence packets from retrieval`
 - `13ffa88` `feat: persist revision lineage`

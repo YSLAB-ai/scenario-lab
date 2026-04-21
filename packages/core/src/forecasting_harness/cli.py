@@ -7,6 +7,8 @@ from typer import Typer
 
 from forecasting_harness import __version__
 from forecasting_harness.artifacts import RunRepository
+from forecasting_harness.evolution.service import DomainEvolutionService
+from forecasting_harness.evolution.storage import EvolutionStorage
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
@@ -65,6 +67,13 @@ def _pack_for_slug(domain_pack: str) -> GenericEventPack | InterstateCrisisPack:
 def _service(root: Path, *, corpus_db: Path | None = None) -> WorkflowService:
     corpus_registry = CorpusRegistry(corpus_db) if corpus_db is not None else None
     return WorkflowService(RunRepository(root), corpus_registry=corpus_registry)
+
+
+def _evolution_service(workspace_root: Path) -> DomainEvolutionService:
+    return DomainEvolutionService(
+        evolution_storage=EvolutionStorage(workspace_root / "knowledge" / "evolution"),
+        manifest_root=workspace_root / "knowledge" / "domains",
+    )
 
 
 def _repair_run_record(repo: RunRepository, run_id: str, domain_pack: str) -> None:
@@ -252,6 +261,57 @@ def _register_ingested_document(registry: CorpusRegistry, path: Path, *, source_
 @app.command("list-domain-packs")
 def list_domain_packs() -> None:
     print(json.dumps(_registry().list_slugs()))
+
+
+@app.command("record-domain-suggestion")
+def record_domain_suggestion_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: str = typer.Option(...),
+    text: str = typer.Option(...),
+    category: str | None = typer.Option(None),
+    target: str | None = typer.Option(None),
+    term: list[str] | None = typer.Option(None),
+) -> None:
+    suggestion = _evolution_service(workspace_root).record_suggestion(
+        domain_pack,
+        text=text,
+        category=category,
+        target=target,
+        terms=term,
+    )
+    print(suggestion.model_dump_json())
+
+
+@app.command("analyze-domain-weakness")
+def analyze_domain_weakness_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: str = typer.Option(...),
+) -> None:
+    service = _evolution_service(workspace_root)
+    cases = service._load_replay_cases(domain_pack)
+    if cases:
+        replay_result = run_replay_suite(cases)
+    else:
+        replay_result = run_replay_suite([])
+    print(service.analyze_domain_weakness(domain_pack, replay_result=replay_result).model_dump_json())
+
+
+@app.command("run-domain-evolution")
+def run_domain_evolution_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: str = typer.Option(...),
+    no_branch: bool = typer.Option(False),
+) -> None:
+    summary = _evolution_service(workspace_root).run_domain_evolution(domain_pack, create_branch=not no_branch)
+    print(json.dumps(summary))
+
+
+@app.command("summarize-domain-evolution")
+def summarize_domain_evolution_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: str = typer.Option(...),
+) -> None:
+    print(json.dumps(_evolution_service(workspace_root).summarize_domain_evolution(domain_pack)))
 
 
 @app.command("ingest-file")

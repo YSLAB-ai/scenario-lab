@@ -4,12 +4,15 @@ from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
 from forecasting_harness.domain.template_utils import (
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
     any_term_matches,
     bounded,
     compose_signal_text,
     count_term_matches,
     integer_field,
     numeric_field,
+    state_signal_text,
     string_field,
     with_updates,
 )
@@ -114,13 +117,17 @@ class CompanyActionPack(DomainPack):
         operational_stability += 0.06 * count_term_matches(text, ["roadmap credibility", "stabilize production", "supplier reassurance"])
         operational_stability = bounded(operational_stability)
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "board_cohesion": round(board_cohesion, 3),
             "cash_runway_months": int(cash_runway),
             "brand_sentiment": round(brand_sentiment, 3),
             "operational_stability": round(operational_stability, 3),
             "regulatory_pressure": round(regulatory_pressure, 3),
-        }
+            },
+        )
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
@@ -133,7 +140,7 @@ class CompanyActionPack(DomainPack):
         operational_stability = numeric_field(state, "operational_stability", 0.5)
         pressure = numeric_field(state, "regulatory_pressure", 0.35)
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "contain-message",
                     "label": "Contain message",
@@ -164,21 +171,25 @@ class CompanyActionPack(DomainPack):
                     "dependencies": {"fields": ["board_cohesion", "brand_sentiment", "regulatory_pressure"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "board-response":
-            return [
+            actions = [
                 {"action_id": "cost-program", "label": "Cost program", "prior": bounded(0.18 + max(0, 8 - runway) * 0.03 + pressure * 0.08)},
                 {"action_id": "leadership-reset", "label": "Leadership reset", "prior": bounded(0.12 + max(0.0, 0.5 - board_cohesion) * 0.22 + max(0.0, 0.55 - sentiment) * 0.16)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "market-response":
-            return [
+            actions = [
                 {"action_id": "capital-raise", "label": "Capital raise", "prior": bounded(0.12 + max(0, 8 - runway) * 0.04 + pressure * 0.12)},
                 {"action_id": "customer-guarantees", "label": "Customer guarantees", "prior": bounded(0.14 + sentiment * 0.14 + operational_stability * 0.2)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "restructuring":
-            return [
+            actions = [
                 {"action_id": "asset-sales", "label": "Asset sales", "prior": bounded(0.22 + max(0, 8 - runway) * 0.03 + pressure * 0.12)},
                 {"action_id": "stabilize-operations", "label": "Stabilize operations", "prior": bounded(0.18 + max(0.0, 0.5 - operational_stability) * 0.32 + pressure * 0.08)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:

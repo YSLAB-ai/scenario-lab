@@ -3,7 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import (
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    numeric_field,
+    state_signal_text,
+    with_updates,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -117,14 +126,18 @@ class PandemicResponsePack(DomainPack):
         )
         vaccine_readiness -= 0.08 * count_term_matches(text, ["no vaccine", "early outbreak", "novel virus"])
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "hospital_strain": round(bounded(hospital_strain), 3),
             "policy_alignment": round(bounded(policy_alignment), 3),
             "public_compliance": round(bounded(public_compliance), 3),
             "testing_capacity": round(bounded(testing_capacity), 3),
             "transmission_pressure": round(bounded(transmission_pressure), 3),
             "vaccine_readiness": round(bounded(vaccine_readiness), 3),
-        }
+            },
+        )
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
@@ -139,7 +152,7 @@ class PandemicResponsePack(DomainPack):
         vaccine = numeric_field(state, "vaccine_readiness", 0.1)
 
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "containment-push",
                     "label": "Containment push",
@@ -165,26 +178,31 @@ class PandemicResponsePack(DomainPack):
                     "dependencies": {"fields": ["policy_alignment", "public_compliance", "transmission_pressure"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "containment":
-            return [
+            actions = [
                 {"action_id": "testing-expansion", "label": "Testing expansion", "prior": bounded(0.16 + max(0.0, 0.55 - testing) * 0.26)},
                 {"action_id": "community-support", "label": "Community support", "prior": bounded(0.14 + max(0.0, 0.55 - compliance) * 0.22 + alignment * 0.08)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "surge-response":
-            return [
+            actions = [
                 {"action_id": "care-capacity", "label": "Care capacity", "prior": bounded(0.18 + hospital * 0.22 + max(0.0, 0.55 - testing) * 0.08)},
                 {"action_id": "emergency-support", "label": "Emergency support", "prior": bounded(0.14 + alignment * 0.12 + hospital * 0.12)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "vaccination":
-            return [
+            actions = [
                 {"action_id": "booster-campaign", "label": "Booster campaign", "prior": bounded(0.18 + vaccine * 0.24 + max(0.0, 0.55 - compliance) * 0.08)},
                 {"action_id": "targeted-mandates", "label": "Targeted mandates", "prior": bounded(0.12 + alignment * 0.16 + max(0.0, 0.5 - compliance) * 0.16)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "stabilization":
-            return [
+            actions = [
                 {"action_id": "phased-reopening", "label": "Phased reopening", "prior": bounded(0.16 + compliance * 0.12 + max(0.0, 0.55 - transmission) * 0.16)},
                 {"action_id": "surveillance-pivot", "label": "Surveillance pivot", "prior": bounded(0.14 + testing * 0.18 + vaccine * 0.1)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:

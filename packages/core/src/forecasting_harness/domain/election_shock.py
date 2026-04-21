@@ -3,7 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import (
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    numeric_field,
+    state_signal_text,
+    with_updates,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -99,13 +108,17 @@ class ElectionShockPack(DomainPack):
         coalition_fragility += 0.08 * count_term_matches(text, ["undecided voters", "swing voters"])
         coalition_fragility = bounded(coalition_fragility)
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "coalition_fragility": round(coalition_fragility, 3),
             "donor_confidence": round(donor_confidence, 3),
             "poll_margin": round(poll_margin, 3),
             "turnout_energy": round(turnout_energy, 3),
             "message_discipline": round(message_discipline, 3),
-        }
+            },
+        )
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
@@ -118,7 +131,7 @@ class ElectionShockPack(DomainPack):
         turnout = numeric_field(state, "turnout_energy", 0.5)
         discipline = numeric_field(state, "message_discipline", 0.5)
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "message-reset",
                     "label": "Message reset",
@@ -144,21 +157,25 @@ class ElectionShockPack(DomainPack):
                     "dependencies": {"fields": ["coalition_fragility", "donor_confidence", "message_discipline"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "narrative-fight":
-            return [
+            actions = [
                 {"action_id": "endorsement-push", "label": "Endorsement push", "prior": bounded(0.16 + max(0.0, 0.45 - donors) * 0.16 + coalition * 0.12)},
                 {"action_id": "contrast-campaign", "label": "Contrast campaign", "prior": bounded(0.14 + max(0.0, -margin) * 0.03)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "turnout-drive":
-            return [
+            actions = [
                 {"action_id": "ballot-chase", "label": "Ballot chase", "prior": bounded(0.18 + turnout * 0.16)},
                 {"action_id": "base-consolidation", "label": "Base consolidation", "prior": bounded(0.16 + coalition * 0.12 + max(0.0, 0.45 - donors) * 0.08)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "coalition-shaping":
-            return [
+            actions = [
                 {"action_id": "targeted-deal", "label": "Targeted deal", "prior": bounded(0.16 + coalition * 0.18 + max(0.0, 0.45 - donors) * 0.1)},
                 {"action_id": "discipline-message", "label": "Discipline message", "prior": bounded(0.16 + discipline * 0.12)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:

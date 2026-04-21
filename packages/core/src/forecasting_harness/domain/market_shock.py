@@ -3,7 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, numeric_field, with_updates
+from forecasting_harness.domain.template_utils import (
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    numeric_field,
+    state_signal_text,
+    with_updates,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -90,13 +99,17 @@ class MarketShockPack(DomainPack):
         )
         policy_optionality -= 0.08 * count_term_matches(text, ["credibility at stake", "emergency rate hike", "surprise decision"])
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "contagion_risk": round(bounded(contagion_risk), 3),
             "liquidity_stress": round(bounded(liquidity_stress), 3),
             "rate_pressure": round(bounded(rate_pressure), 3),
             "policy_credibility": round(bounded(policy_credibility), 3),
             "policy_optionality": round(bounded(policy_optionality), 3),
-        }
+            },
+        )
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
@@ -109,7 +122,7 @@ class MarketShockPack(DomainPack):
         credibility = numeric_field(state, "policy_credibility", 0.5)
         optionality = numeric_field(state, "policy_optionality", 0.3)
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "hawkish-guidance",
                     "label": "Hawkish guidance",
@@ -135,21 +148,25 @@ class MarketShockPack(DomainPack):
                     "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_credibility", "policy_optionality"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "repricing":
-            return [
+            actions = [
                 {"action_id": "verbal-backstop", "label": "Verbal backstop", "prior": bounded(0.15 + credibility * 0.18 + optionality * 0.16)},
                 {"action_id": "forced-deleveraging", "label": "Forced deleveraging", "prior": bounded(0.12 + liquidity * 0.14 + contagion * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "policy-response":
-            return [
+            actions = [
                 {"action_id": "swap-lines", "label": "Swap lines", "prior": bounded(0.16 + optionality * 0.22 + contagion * 0.14)},
                 {"action_id": "rate-cut-path", "label": "Rate cut path", "prior": bounded(0.14 + optionality * 0.16 + max(0.0, rates - 0.55) * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "liquidity-stabilization":
-            return [
+            actions = [
                 {"action_id": "restore-function", "label": "Restore function", "prior": bounded(0.18 + liquidity * 0.08 + optionality * 0.18)},
                 {"action_id": "moral-hazard-pushback", "label": "Moral hazard pushback", "prior": bounded(0.1 + credibility * 0.12 + max(0.0, 0.5 - optionality) * 0.14)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:

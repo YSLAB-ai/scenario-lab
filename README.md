@@ -44,6 +44,10 @@ The local CLI now supports the verified workflow commands:
 - `forecast-harness begin-revision-update`
 - `forecast-harness simulate`
 - `forecast-harness run-replay-suite`
+- `forecast-harness record-domain-suggestion`
+- `forecast-harness analyze-domain-weakness`
+- `forecast-harness run-domain-evolution`
+- `forecast-harness summarize-domain-evolution`
 - `forecast-harness generate-report`
 
 Verified current progress:
@@ -58,7 +62,7 @@ Verified current progress:
   - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The current workflow slice test suite passes with `201 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
+- The current workflow slice test suite passes with `210 passed` under `packages/core/.venv/bin/python -m pytest packages/core -q`.
 - The workflow slice persists artifacts locally under `.forecast/runs/<run-id>/`, including revision-specific files such as `belief-state/<revision>.approved.json`, `simulation/<revision>.approved.json`, `reports/<revision>.report.md`, and `revisions/<revision>.json`, while the summary and curation commands let adapters inspect and revise runs without loading or rewriting those full artifacts by default.
 - The adapter-facing path can now call `forecast-harness draft-conversation-turn` after each workflow mutation to retrieve the verified current stage, next-step message, recommended command, and narrow context payload.
 - The intake schema now accepts generic fields such as `focus_entities`, `current_development`, `current_stage`, and `pack_fields`, while still accepting the older interstate-oriented aliases.
@@ -131,6 +135,16 @@ Verified current progress:
   - `Supply rare-earth` -> `Expedite alternatives`
   - `Supplier flooding` -> `Reserve logistics`
 - The replay suite now measures both exact top-branch matches and root-strategy matches per domain.
+- The repo now also includes a protected-surface domain evolution pipeline that can:
+  - record explicit user suggestions per domain
+  - derive self-detected suggestions from replay misses
+  - compile manifest-driven adaptive state/action overlays
+  - verify before/after replay metrics
+  - promote verified domain-only changes onto a standalone review branch
+- The domain evolution pipeline is limited to domain-owned assets and does not edit the shared MCTS/workflow/retrieval core.
+- Built-in packs now read manifest-driven adaptive overlays for:
+  - state-field inference boosts
+  - action-prior biases
 - The repo now includes a built-in 12-case replay library under `knowledge/replays/` so replay and calibration checks can run without ad hoc JSON input.
 - The built-in replay library is now split into domain-scoped files under `knowledge/replays/` instead of one monolithic JSON blob.
 - The CLI now exposes:
@@ -150,6 +164,13 @@ Verified current progress:
   - `forecast-harness summarize-builtin-replay-corpus` includes domain `pandemic-response`
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `top_branch_accuracy = 1.0`
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `root_strategy_accuracy = 1.0`
+- A direct CLI verification on 2026-04-21 now also confirms the domain evolution no-branch path:
+  - `record-domain-suggestion` stored a pending `company-action` suggestion
+  - `run-domain-evolution --no-branch` returned `promotion_decision = promoted`
+  - `summarize-domain-evolution` reported `pending_suggestions = 0` and the latest evolution report
+- A temporary git-repo smoke check on 2026-04-21 also confirmed the branch-promotion path:
+  - `run-domain-evolution` created branch `codex/domain-evolution-company-action-20260421`
+  - the branch head commit message was `feat: evolve company-action domain knowledge`
 - Compatible child revisions can now warm-start from an approved parent simulation. The deterministic simulation payload persists enough node metadata for dependency-aware subtree reuse on rerun.
 - The reference domain packs now perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A fresh Python 3.13 install now verifies the deterministic stage progression used by the adapter path:
@@ -215,3 +236,4 @@ Verified current progress:
 - Corpus ingestion does not yet support OCR PDFs, spreadsheets, or web archives.
 - The replay suite infrastructure now exists, but the repo still does not contain a large curated historical replay library or calibration loop that tunes model behavior against real outcomes.
 - The repo now has a small curated replay library and a deterministic calibration summary, but it still does not contain a large historical replay corpus or a tuning loop against real outcomes.
+- Domain evolution currently compiles improvements into manifest-owned overlays only. It does not yet synthesize direct edits to domain pack Python files or replay files.

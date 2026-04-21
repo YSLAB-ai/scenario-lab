@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import re
 from typing import Any
 
+from forecasting_harness.knowledge.manifests import DomainManifest, load_domain_manifest
+
 
 def anchor_timestamp(state: Any) -> datetime:
     fields = getattr(state, "fields", {})
@@ -147,3 +149,89 @@ def compose_signal_text(*parts: Any) -> str:
             values.extend(str(item).strip() for item in part if str(item).strip())
             continue
     return " ".join(values)
+
+
+def state_signal_text(state: Any) -> str:
+    field_parts: list[str] = []
+    for field in getattr(state, "fields", {}).values():
+        value = getattr(field, "value", None)
+        normalized = getattr(field, "normalized_value", None)
+        if value not in (None, ""):
+            field_parts.append(str(value))
+        if normalized not in (None, "", value):
+            field_parts.append(str(normalized))
+    return compose_signal_text(field_parts)
+
+
+def manifest_state_delta(text: str, field_name: str, *, manifest: DomainManifest | None = None, slug: str | None = None) -> float:
+    active_manifest = manifest
+    if active_manifest is None and slug is not None:
+        active_manifest = load_domain_manifest(slug)
+    if active_manifest is None:
+        return 0.0
+
+    total = 0.0
+    for rule in active_manifest.adaptive_state_terms.get(field_name, []):
+        if any_term_matches(text, rule.terms):
+            total += rule.delta
+    return total
+
+
+def apply_manifest_state_overlays(
+    *,
+    text: str,
+    field_values: dict[str, Any],
+    manifest: DomainManifest | None = None,
+    slug: str | None = None,
+) -> dict[str, Any]:
+    active_manifest = manifest
+    if active_manifest is None and slug is not None:
+        active_manifest = load_domain_manifest(slug)
+    if active_manifest is None:
+        return field_values
+
+    updated = dict(field_values)
+    for field_name, value in field_values.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        delta = manifest_state_delta(text, field_name, manifest=active_manifest)
+        if delta == 0.0:
+            continue
+        next_value = float(value) + delta
+        if isinstance(value, int):
+            updated[field_name] = int(round(next_value))
+        elif 0.0 <= float(value) <= 1.0:
+            updated[field_name] = round(bounded(next_value), 3)
+        else:
+            updated[field_name] = round(next_value, 3)
+    return updated
+
+
+def apply_manifest_action_biases(
+    *,
+    text: str,
+    actions: list[dict[str, Any]],
+    manifest: DomainManifest | None = None,
+    slug: str | None = None,
+) -> list[dict[str, Any]]:
+    active_manifest = manifest
+    if active_manifest is None and slug is not None:
+        active_manifest = load_domain_manifest(slug)
+    if active_manifest is None:
+        return actions
+
+    biased_actions: list[dict[str, Any]] = []
+    for action in actions:
+        updated = dict(action)
+        prior = float(updated.get("prior", 0.0))
+        action_id = str(updated.get("action_id", ""))
+        label = normalize_text(str(updated.get("label", "")))
+        for rule in active_manifest.adaptive_action_biases:
+            target = normalize_text(rule.target)
+            if target not in {normalize_text(action_id), label}:
+                continue
+            if any_term_matches(text, rule.terms):
+                prior += rule.delta
+        updated["prior"] = bounded(prior)
+        biased_actions.append(updated)
+    return biased_actions

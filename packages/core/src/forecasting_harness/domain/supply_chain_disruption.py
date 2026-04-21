@@ -3,7 +3,18 @@ from __future__ import annotations
 from typing import Any
 
 from forecasting_harness.domain.base import DomainPack, InteractionModel
-from forecasting_harness.domain.template_utils import bounded, compose_signal_text, count_term_matches, integer_field, numeric_field, string_field, with_updates
+from forecasting_harness.domain.template_utils import (
+    apply_manifest_action_biases,
+    apply_manifest_state_overlays,
+    bounded,
+    compose_signal_text,
+    count_term_matches,
+    integer_field,
+    numeric_field,
+    state_signal_text,
+    string_field,
+    with_updates,
+)
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -108,14 +119,18 @@ class SupplyChainDisruptionPack(DomainPack):
         else:
             disruption_mode = "mixed"
 
-        return {
+        return apply_manifest_state_overlays(
+            text=text,
+            slug=self.slug(),
+            field_values={
             "customer_penalty_pressure": round(bounded(customer_penalty_pressure), 3),
             "disruption_mode": disruption_mode,
             "inventory_cover_days": int(inventory_cover_days),
             "substitution_flexibility": round(bounded(substitution_flexibility), 3),
             "supplier_concentration": round(bounded(supplier_concentration), 3),
             "transport_reliability": round(bounded(transport_reliability), 3),
-        }
+            },
+        )
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
@@ -131,7 +146,7 @@ class SupplyChainDisruptionPack(DomainPack):
         transport_bias = 0.24 if disruption_mode == "transport" else 0.0
         source_bias = 0.24 if disruption_mode == "source" else 0.0
         if phase == "trigger":
-            return [
+            actions = [
                 {
                     "action_id": "allocate-inventory",
                     "label": "Allocate inventory",
@@ -157,21 +172,25 @@ class SupplyChainDisruptionPack(DomainPack):
                     "dependencies": {"fields": ["disruption_mode", "supplier_concentration", "transport_reliability"]},
                 },
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "triage":
-            return [
+            actions = [
                 {"action_id": "reroute-logistics", "label": "Reroute logistics", "prior": bounded(0.14 + max(0.0, 0.55 - transport) * 0.2)},
                 {"action_id": "demand-shaping", "label": "Demand shaping", "prior": bounded(0.12 + customer_pressure * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "rerouting":
-            return [
+            actions = [
                 {"action_id": "buffer-build", "label": "Buffer build", "prior": bounded(0.12 + max(0, 12 - inventory) * 0.025)},
                 {"action_id": "supplier-onboard", "label": "Supplier onboard", "prior": bounded(0.12 + concentration * 0.2 + max(0.0, 0.65 - substitution) * 0.12)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "capacity-rebuild":
-            return [
+            actions = [
                 {"action_id": "stabilize-network", "label": "Stabilize network", "prior": bounded(0.16 + max(0.0, 0.55 - transport) * 0.14 + customer_pressure * 0.08)},
                 {"action_id": "localize-node", "label": "Localize node", "prior": bounded(0.1 + concentration * 0.18)},
             ]
+            return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
