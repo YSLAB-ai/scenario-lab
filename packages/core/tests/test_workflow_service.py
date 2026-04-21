@@ -31,11 +31,13 @@ class _FrozenDateTime:
 class _FakeRepository:
     initialized_runs: list[RunRecord] = field(default_factory=list)
     saved_runs: list[RunRecord] = field(default_factory=list)
+    saved_revision_records: list[object] = field(default_factory=list)
     written_revision_json: list[tuple[str, str, str, object, bool]] = field(default_factory=list)
     loaded_revision_models: list[tuple[str, str, str, type, bool]] = field(default_factory=list)
     appended_events: list[tuple[str, str, dict[str, object]]] = field(default_factory=list)
     run_record: RunRecord | None = None
     revision_payloads: dict[tuple[str, str, str, bool], object] = field(default_factory=dict)
+    revision_records: dict[tuple[str, str], object] = field(default_factory=dict)
 
     def init_run(self, run: RunRecord) -> None:
         self.initialized_runs.append(run)
@@ -48,6 +50,16 @@ class _FakeRepository:
         assert self.run_record is not None
         assert self.run_record.run_id == run_id
         return self.run_record
+
+    def save_revision_record(self, run_id: str, record: object) -> None:
+        self.saved_revision_records.append(record)
+        self.revision_records[(run_id, record.revision_id)] = record
+
+    def load_revision_record(self, run_id: str, revision_id: str):
+        try:
+            return self.revision_records[(run_id, revision_id)]
+        except KeyError as exc:
+            raise FileNotFoundError(revision_id) from exc
 
     def write_revision_json(
         self,
@@ -382,6 +394,39 @@ def test_revision_preserving_rerun_keeps_previous_report(tmp_path: Path) -> None
     assert report_dir.joinpath("r1.report.md").exists()
     assert report_dir.joinpath("r2.report.md").exists()
     assert repository.load_run_record("crisis-1").current_revision_id == "r2"
+
+
+def test_revision_record_tracks_lifecycle_timestamps(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    revision = repository.load_revision_record("crisis-1", "r1")
+
+    assert revision.status == "simulated"
+    assert revision.created_at is not None
+    assert revision.approved_at is not None
+    assert revision.simulated_at is not None
+
+
+def test_revision_record_preserves_parent_revision_id(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", _make_intake())
+    service.save_intake_draft("crisis-1", "r2", _make_intake(), parent_revision_id="r1")
+
+    revision = repository.load_revision_record("crisis-1", "r2")
+    assert revision.parent_revision_id == "r1"
 
 
 def test_simulate_revision_uses_approved_snapshots_after_draft_changes(tmp_path: Path) -> None:

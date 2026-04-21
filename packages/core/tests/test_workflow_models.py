@@ -31,10 +31,15 @@ def test_run_record_preserves_current_revision_id() -> None:
 
 
 def test_revision_record_defaults_to_draft() -> None:
-    record = RevisionRecord(revision_id="rev-1")
+    record = RevisionRecord(
+        revision_id="rev-1",
+        created_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+    )
 
     assert record.status == "draft"
     assert record.parent_revision_id is None
+    assert record.approved_at is None
+    assert record.simulated_at is None
 
 
 def test_intake_draft_requires_at_least_one_focus_entity() -> None:

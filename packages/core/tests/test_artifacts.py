@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.base import InteractionModel
 from forecasting_harness.models import BeliefState
-from forecasting_harness.workflow.models import RunRecord
+from forecasting_harness.workflow.models import RevisionRecord, RunRecord
 
 
 class RevisionPayload(BaseModel):
@@ -146,6 +146,30 @@ def test_run_repository_writes_revision_markdown_and_appends_events(tmp_path: Pa
     assert report_path.name == "r1.report.md"
     assert [event["event_type"] for event in events] == ["run-started", "run-updated"]
     assert [event["payload"]["revision_id"] for event in events] == ["r1", "r2"]
+
+
+def test_run_repository_persists_revision_records(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    repository.init_run(
+        RunRecord(
+            run_id="run-1",
+            domain_pack="interstate-crisis",
+            created_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+        )
+    )
+
+    record = RevisionRecord(
+        revision_id="r1",
+        status="approved",
+        parent_revision_id=None,
+        created_at=datetime(2026, 4, 20, 10, 0, tzinfo=timezone.utc),
+        approved_at=datetime(2026, 4, 20, 10, 5, tzinfo=timezone.utc),
+    )
+
+    repository.save_revision_record("run-1", record)
+
+    assert repository.load_revision_record("run-1", "r1") == record
+    assert repository.list_revision_records("run-1") == [record]
 
 
 @pytest.mark.parametrize(

@@ -19,6 +19,9 @@ class RevisionRecord(BaseModel):
     revision_id: str
     status: RevisionStatus = "draft"
     parent_revision_id: str | None = None
+    created_at: datetime
+    approved_at: datetime | None = None
+    simulated_at: datetime | None = None
 
 
 class IntakeDraft(BaseModel):

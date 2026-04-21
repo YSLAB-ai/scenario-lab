@@ -10,7 +10,7 @@ from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
-from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
+from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RevisionRecord, RunRecord
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.reporting import render_report
 
@@ -47,24 +47,63 @@ class WorkflowService:
         run = self.repository.load_run_record(run_id)
         return self.domain_registry.resolve(run.domain_pack)
 
+    def _ensure_revision_record(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        parent_revision_id: str | None = None,
+    ) -> RevisionRecord:
+        try:
+            record = self.repository.load_revision_record(run_id, revision_id)
+        except FileNotFoundError:
+            record = RevisionRecord(
+                revision_id=revision_id,
+                parent_revision_id=parent_revision_id,
+                created_at=datetime.now(timezone.utc),
+            )
+            self.repository.save_revision_record(run_id, record)
+            return record
+
+        if parent_revision_id is not None and record.parent_revision_id is None:
+            record = record.model_copy(update={"parent_revision_id": parent_revision_id})
+            self.repository.save_revision_record(run_id, record)
+        return record
+
     def start_run(self, run_id: str, domain_pack: str) -> RunRecord:
         run = RunRecord(run_id=run_id, domain_pack=domain_pack, created_at=datetime.now(timezone.utc))
         self.repository.init_run(run)
         self.repository.append_event(run_id, "run-started", {"run_id": run_id})
         return run
 
-    def save_intake_draft(self, run_id: str, revision_id: str, intake: IntakeDraft) -> None:
+    def save_intake_draft(
+        self,
+        run_id: str,
+        revision_id: str,
+        intake: IntakeDraft,
+        *,
+        parent_revision_id: str | None = None,
+    ) -> None:
         pack = self._pack_for_run(run_id)
         _validate_pack_fields(pack, intake)
         validation_errors = pack.validate_intake(intake)
         if validation_errors:
             raise ValueError("; ".join(validation_errors))
+        self._ensure_revision_record(run_id, revision_id, parent_revision_id=parent_revision_id)
         self.repository.write_revision_json(run_id, "intake", revision_id, intake.model_dump(mode="json"), approved=False)
         self.repository.append_event(run_id, "intake-drafted", {"revision_id": revision_id})
 
-    def save_evidence_draft(self, run_id: str, revision_id: str, packet: EvidencePacket) -> None:
+    def save_evidence_draft(
+        self,
+        run_id: str,
+        revision_id: str,
+        packet: EvidencePacket,
+        *,
+        parent_revision_id: str | None = None,
+    ) -> None:
         if packet.revision_id != revision_id:
             raise ValueError(f"revision_id mismatch: expected {revision_id!r}, got {packet.revision_id!r}")
+        self._ensure_revision_record(run_id, revision_id, parent_revision_id=parent_revision_id)
         self.repository.write_revision_json(
             run_id,
             "evidence",
@@ -125,6 +164,10 @@ class WorkflowService:
         run = self.repository.load_run_record(run_id)
         run.current_revision_id = revision_id
         self.repository.save_run_record(run)
+        record = self._ensure_revision_record(run_id, revision_id).model_copy(
+            update={"status": "approved", "approved_at": datetime.now(timezone.utc)}
+        )
+        self.repository.save_revision_record(run_id, record)
         self.repository.append_event(run_id, "revision-approved", {"revision_id": revision_id})
         return run
 
@@ -154,6 +197,10 @@ class WorkflowService:
             evidence_count=len(evidence.items),
             unsupported_count=len(assumptions.summary),
         )
+        record = self._ensure_revision_record(run_id, revision_id).model_copy(
+            update={"status": "simulated", "simulated_at": datetime.now(timezone.utc)}
+        )
+        self.repository.save_revision_record(run_id, record)
         self.repository.append_event(run_id, "simulation-complete", {"revision_id": revision_id})
         return result
 
