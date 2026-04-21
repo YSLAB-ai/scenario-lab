@@ -1,0 +1,53 @@
+[
+  {
+    "run_id": "election-debate-collapse",
+    "domain_pack": "election-shock",
+    "intake": {
+      "event_framing": "Assess how a major debate collapse changes the final month of a national election.",
+      "focus_entities": [
+        "Incumbent Party",
+        "Opposition Party"
+      ],
+      "current_development": "A debate collapse forces both campaigns to reset strategy as party leadership scrambles to stabilize messaging.",
+      "current_stage": "trigger",
+      "time_horizon": "30d",
+      "known_constraints": [
+        "Early voting is already underway",
+        "Donor confidence is volatile"
+      ],
+      "known_unknowns": [
+        "Whether swing voters interpret the event as a competency issue"
+      ],
+      "suggested_entities": [
+        "Media",
+        "Party Leadership"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Turnout effects may matter more than persuasion"
+      ],
+      "suggested_actors": [
+        "Media",
+        "Party Leadership"
+      ]
+    },
+    "documents": {
+      "debate-fallout.md": "Party leadership scrambles to stabilize messaging after the debate while donor confidence softens.",
+      "turnout-rescue.md": "Campaign organizers launch a turnout rescue plan to keep early vote mobilization from collapsing."
+    },
+    "expected_top_branch": "Message reset (reset holds)",
+    "expected_root_strategy": "Message reset",
+    "expected_evidence_sources": [
+      "debate-fallout",
+      "turnout-rescue"
+    ],
+    "expected_inferred_fields": [
+      "coalition_fragility",
+      "donor_confidence",
+      "message_discipline",
+      "poll_margin",
+      "turnout_energy"
+    ]
+  }
+]

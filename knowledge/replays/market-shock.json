@@ -1,0 +1,53 @@
+[
+  {
+    "run_id": "market-rate-shock",
+    "domain_pack": "market-shock",
+    "intake": {
+      "event_framing": "Assess market scenarios after an unexpected emergency rate hike.",
+      "focus_entities": [
+        "Central Bank",
+        "Global Equity Market"
+      ],
+      "current_development": "An emergency rate hike shocks funding markets, credit spreads, and rate expectations.",
+      "current_stage": "trigger",
+      "time_horizon": "14d",
+      "known_constraints": [
+        "Liquidity must be preserved",
+        "Inflation credibility is at stake"
+      ],
+      "known_unknowns": [
+        "Whether dealers can absorb the repositioning cleanly"
+      ],
+      "suggested_entities": [
+        "Banks",
+        "Treasury Market"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Authorities will prioritize market functioning if stress worsens"
+      ],
+      "suggested_actors": [
+        "Banks",
+        "Treasury Market"
+      ]
+    },
+    "documents": {
+      "rate-shock.md": "The emergency rate hike triggers repricing across bonds and equities while liquidity stress rises.",
+      "funding-stress.md": "Funding markets widen immediately and investors debate whether policy credibility has improved or deteriorated."
+    },
+    "expected_top_branch": "Emergency liquidity",
+    "expected_root_strategy": "Emergency liquidity",
+    "expected_evidence_sources": [
+      "funding-stress",
+      "rate-shock"
+    ],
+    "expected_inferred_fields": [
+      "contagion_risk",
+      "liquidity_stress",
+      "policy_credibility",
+      "policy_optionality",
+      "rate_pressure"
+    ]
+  }
+]

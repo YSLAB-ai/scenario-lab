@@ -10,7 +10,7 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
-from forecasting_harness.knowledge import load_builtin_replay_cases
+from forecasting_harness.knowledge import load_builtin_replay_cases, summarize_builtin_replay_corpus
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.replay import ReplayCase, run_replay_suite, summarize_calibration
@@ -326,6 +326,11 @@ def run_replay_suite_command(
 @app.command("run-builtin-replay-suite")
 def run_builtin_replay_suite_command() -> None:
     print(run_replay_suite(load_builtin_replay_cases()).model_dump_json())
+
+
+@app.command("summarize-builtin-replay-corpus")
+def summarize_builtin_replay_corpus_command() -> None:
+    print(summarize_builtin_replay_corpus().model_dump_json())
 
 
 @app.command("summarize-replay-calibration")

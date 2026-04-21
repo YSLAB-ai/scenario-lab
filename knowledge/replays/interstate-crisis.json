@@ -1,0 +1,161 @@
+[
+  {
+    "run_id": "us-iran-gulf",
+    "domain_pack": "interstate-crisis",
+    "intake": {
+      "event_framing": "Assess 30-day escalation risk after a Gulf shipping strike and retaliatory warnings.",
+      "focus_entities": [
+        "United States",
+        "Iran"
+      ],
+      "current_development": "Iran-backed attacks on Gulf shipping are followed by US retaliatory threats and regional force movement.",
+      "current_stage": "trigger",
+      "time_horizon": "30d",
+      "known_constraints": [
+        "Energy market disruption would hurt both sides",
+        "Regional allies are pressing for restraint"
+      ],
+      "known_unknowns": [
+        "Whether proxy militias will act independently"
+      ],
+      "suggested_entities": [
+        "Israel",
+        "Gulf States"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Neither side wants immediate total war"
+      ],
+      "suggested_actors": [
+        "Israel",
+        "Gulf States"
+      ]
+    },
+    "documents": {
+      "us-iran-warning.md": "The United States warns Iran that any further attacks on Gulf shipping will trigger retaliation while allies push restraint.",
+      "iran-mobilization.md": "Iran signals mobilization and missile readiness near the Gulf as regional diplomats attempt backchannel talks."
+    },
+    "expected_top_branch": "Alliance consultation (coordinated signaling)",
+    "expected_root_strategy": "Alliance consultation",
+    "expected_evidence_sources": [
+      "iran-mobilization",
+      "us-iran-warning"
+    ],
+    "expected_inferred_fields": [
+      "alliance_pressure",
+      "diplomatic_channel",
+      "geographic_flashpoint",
+      "leader_style",
+      "mediation_window",
+      "military_posture",
+      "tension_index"
+    ]
+  },
+  {
+    "run_id": "japan-china-strait",
+    "domain_pack": "interstate-crisis",
+    "intake": {
+      "event_framing": "Assess crisis dynamics after a Japanese naval transit through the Taiwan Strait triggers a Chinese military response.",
+      "focus_entities": [
+        "Japan",
+        "China"
+      ],
+      "current_development": "A Japanese naval transit through the Taiwan Strait triggers Chinese intercept threats and emergency diplomacy.",
+      "current_stage": "trigger",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "Commercial shipping lanes must stay open",
+        "US alliance commitments are under scrutiny"
+      ],
+      "known_unknowns": [
+        "Whether China will intercept directly"
+      ],
+      "suggested_entities": [
+        "United States",
+        "Taiwan"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Both parties want to avoid a shooting war"
+      ],
+      "suggested_actors": [
+        "United States",
+        "Taiwan"
+      ]
+    },
+    "documents": {
+      "japan-transit.md": "Japan defends the Taiwan Strait transit as lawful while China threatens an intercept and raises naval readiness.",
+      "china-backchannel.md": "Chinese and Japanese officials keep emergency backchannel talks open to avoid a wider clash in the strait."
+    },
+    "expected_top_branch": "Signal resolve (managed signal)",
+    "expected_root_strategy": "Signal resolve",
+    "expected_evidence_sources": [
+      "china-backchannel",
+      "japan-transit"
+    ],
+    "expected_inferred_fields": [
+      "alliance_pressure",
+      "diplomatic_channel",
+      "geographic_flashpoint",
+      "leader_style",
+      "mediation_window",
+      "military_posture",
+      "tension_index"
+    ]
+  },
+  {
+    "run_id": "india-pakistan-crisis",
+    "domain_pack": "interstate-crisis",
+    "intake": {
+      "event_framing": "Estimate escalation paths after a cross-border militant attack and military mobilization.",
+      "focus_entities": [
+        "India",
+        "Pakistan"
+      ],
+      "current_development": "A militant attack near the India-Pakistan border triggers mobilization, retaliatory rhetoric, and mediator pressure.",
+      "current_stage": "trigger",
+      "time_horizon": "14d",
+      "known_constraints": [
+        "Nuclear deterrence constrains open war",
+        "International mediators are active"
+      ],
+      "known_unknowns": [
+        "Whether militant groups will attempt follow-on attacks"
+      ],
+      "suggested_entities": [
+        "China",
+        "United States"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Both governments need to signal resolve domestically"
+      ],
+      "suggested_actors": [
+        "China",
+        "United States"
+      ]
+    },
+    "documents": {
+      "border-attack.md": "India accuses Pakistan-linked militants after a border attack and threatens retaliation while both armies mobilize.",
+      "mediator-restraint.md": "International mediators urge restraint as India and Pakistan keep diplomatic channels partially open."
+    },
+    "expected_top_branch": "Signal resolve (backchannel opening)",
+    "expected_root_strategy": "Signal resolve",
+    "expected_evidence_sources": [
+      "border-attack",
+      "mediator-restraint"
+    ],
+    "expected_inferred_fields": [
+      "alliance_pressure",
+      "diplomatic_channel",
+      "geographic_flashpoint",
+      "leader_style",
+      "mediation_window",
+      "military_posture",
+      "tension_index"
+    ]
+  }
+]

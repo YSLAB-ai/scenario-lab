@@ -129,8 +129,10 @@ Verified current progress:
   - `Supplier flooding` -> `Reserve logistics`
 - The replay suite now measures both exact top-branch matches and root-strategy matches per domain.
 - The repo now includes a built-in 10-case replay library under `knowledge/replays/` so replay and calibration checks can run without ad hoc JSON input.
+- The built-in replay library is now split into domain-scoped files under `knowledge/replays/` instead of one monolithic JSON blob.
 - The CLI now exposes:
   - `forecast-harness run-builtin-replay-suite`
+  - `forecast-harness summarize-builtin-replay-corpus`
   - `forecast-harness summarize-replay-calibration`
 - The calibration summary now reports:
   - overall top-branch accuracy

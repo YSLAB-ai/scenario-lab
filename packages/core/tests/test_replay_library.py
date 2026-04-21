@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 from forecasting_harness.cli import app
 from forecasting_harness.replay import CalibrationSummary, ReplaySuiteResult, run_replay_suite, summarize_calibration
-from forecasting_harness.knowledge import load_builtin_replay_cases
+from forecasting_harness.knowledge import load_builtin_replay_cases, summarize_builtin_replay_corpus
 
 
 def test_builtin_replay_library_covers_repo_owned_domains() -> None:
     cases = load_builtin_replay_cases()
+    corpus = summarize_builtin_replay_corpus()
 
     assert len(cases) == 10
     assert {case.domain_pack for case in cases} == {
@@ -22,6 +24,11 @@ def test_builtin_replay_library_covers_repo_owned_domains() -> None:
         "supply-chain-disruption",
     }
     assert len({case.run_id for case in cases}) == 10
+    assert corpus.case_count == 10
+    assert corpus.domain_counts["interstate-crisis"] == 3
+    assert corpus.domain_counts["company-action"] == 2
+    assert len(corpus.files) == 6
+    assert corpus.files["interstate-crisis.json"] == 3
 
 
 def test_builtin_replay_suite_and_calibration_summary_are_structured(tmp_path: Path) -> None:
@@ -51,3 +58,9 @@ def test_builtin_replay_cli_commands_emit_structured_payloads(tmp_path: Path) ->
     summary_payload = CalibrationSummary.model_validate_json(summary_result.stdout)
     assert summary_payload.case_count == 10
     assert summary_payload.domains_needing_attention == []
+
+    corpus_result = runner.invoke(app, ["summarize-builtin-replay-corpus"])
+    assert corpus_result.exit_code == 0
+    corpus_payload = json.loads(corpus_result.stdout)
+    assert corpus_payload["case_count"] == 10
+    assert corpus_payload["domain_counts"]["supply-chain-disruption"] == 2

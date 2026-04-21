@@ -44,6 +44,7 @@ Date: 2026-04-21
 - The domain registry now exposes reusable domain template packs for company action, election shock, market shock, supply-chain disruption, and regulatory enforcement in addition to the existing generic and interstate packs.
 - The repo now includes a repo-owned knowledge blueprint under `knowledge/domains/` with source-manifest files for six high-value domains.
 - The repo now also includes a repo-owned replay library under `knowledge/replays/`.
+- The replay library is now split into domain-scoped files under `knowledge/replays/`, and the core can summarize that corpus directly.
 - The repo-owned manifests now load through a typed `forecasting_harness.knowledge` module instead of remaining documentation-only files.
 - The retrieval layer now accepts manifest-specific semantic alias groups during search.
 - Evidence packet drafting now uses manifest evidence-category terms to diversify packet coverage and emit category-aware reasons.
@@ -86,6 +87,7 @@ Date: 2026-04-21
   - `forecast-harness run-builtin-replay-suite` -> `case_count = 10`
   - `forecast-harness run-builtin-replay-suite` -> `top_branch_accuracy = 1.0`
   - `forecast-harness run-builtin-replay-suite` -> `root_strategy_accuracy = 1.0`
+  - `forecast-harness summarize-builtin-replay-corpus` -> `files = 6`
   - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
@@ -106,6 +108,7 @@ Date: 2026-04-21
   - branch reports that let unvisited root children outrank explored branches with a default `0.0` score
   - replay evaluation that depended on ad hoc input files instead of a repo-owned calibration library
   - package initialization that risked circular imports once replay loading moved into the shared knowledge layer
+  - a monolithic replay corpus file that would not scale cleanly as the library grows by domain
 - A clean install worked on 2026-04-20 in a fresh Python 3.13 virtual environment with:
   - `pip install -e 'packages/core[dev]'`
   - `forecast-harness ingest-file`

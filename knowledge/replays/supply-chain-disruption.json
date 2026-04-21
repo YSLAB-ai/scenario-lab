@@ -1,0 +1,104 @@
+[
+  {
+    "run_id": "supply-rare-earth",
+    "domain_pack": "supply-chain-disruption",
+    "intake": {
+      "event_framing": "Assess rare-earth supply disruption after export restrictions and port delays.",
+      "focus_entities": [
+        "Battery Maker",
+        "Rare Earth Supplier"
+      ],
+      "current_development": "Export restrictions and port delays disrupt a rare-earth supply corridor for a battery maker.",
+      "current_stage": "trigger",
+      "time_horizon": "90d",
+      "known_constraints": [
+        "Downstream production schedules are inflexible",
+        "Alternative sources are limited"
+      ],
+      "known_unknowns": [
+        "How quickly substitute processing routes can be certified"
+      ],
+      "suggested_entities": [
+        "Logistics Partners",
+        "Key Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Customers will tolerate short delays before switching suppliers"
+      ],
+      "suggested_actors": [
+        "Logistics Partners",
+        "Key Customers"
+      ]
+    },
+    "documents": {
+      "rare-earth-ports.md": "Port delays and export restrictions hit rare-earth materials needed by the battery maker.",
+      "rare-earth-substitute.md": "Procurement teams scramble to qualify alternate sources for specialized rare-earth processing."
+    },
+    "expected_top_branch": "Expedite alternatives",
+    "expected_root_strategy": "Expedite alternatives",
+    "expected_evidence_sources": [
+      "rare-earth-ports",
+      "rare-earth-substitute"
+    ],
+    "expected_inferred_fields": [
+      "customer_penalty_pressure",
+      "inventory_cover_days",
+      "substitution_flexibility",
+      "supplier_concentration",
+      "transport_reliability"
+    ]
+  },
+  {
+    "run_id": "supplier-flooding",
+    "domain_pack": "supply-chain-disruption",
+    "intake": {
+      "event_framing": "Assess an auto supply chain after flooding shuts a single-source electronics plant.",
+      "focus_entities": [
+        "Automaker",
+        "Electronics Supplier"
+      ],
+      "current_development": "Severe flooding shuts a single-source electronics plant feeding a major automaker.",
+      "current_stage": "trigger",
+      "time_horizon": "60d",
+      "known_constraints": [
+        "Vehicle launches are already committed",
+        "Dealer inventories are thin"
+      ],
+      "known_unknowns": [
+        "Whether the supplier can restart partial output within two weeks"
+      ],
+      "suggested_entities": [
+        "Alternate Suppliers",
+        "Logistics Partners"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The automaker will prioritize its highest-margin models"
+      ],
+      "suggested_actors": [
+        "Alternate Suppliers",
+        "Logistics Partners"
+      ]
+    },
+    "documents": {
+      "supplier-flood.md": "Flooding disrupts a single-source electronics plant and leaves the automaker with thin inventory cover.",
+      "supplier-reroute.md": "The automaker and logistics partners consider rerouting and alternate suppliers to keep launches alive."
+    },
+    "expected_top_branch": "Reserve logistics",
+    "expected_root_strategy": "Reserve logistics",
+    "expected_evidence_sources": [
+      "supplier-flood",
+      "supplier-reroute"
+    ],
+    "expected_inferred_fields": [
+      "customer_penalty_pressure",
+      "inventory_cover_days",
+      "substitution_flexibility",
+      "supplier_concentration",
+      "transport_reliability"
+    ]
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "run_id": "apple-ceo-transition",
+    "domain_pack": "company-action",
+    "intake": {
+      "event_framing": "Assess Apple strategy after a sudden CEO transition during product delays and margin pressure.",
+      "focus_entities": [
+        "Apple"
+      ],
+      "current_development": "Apple faces a sudden CEO transition after product delays, investor concern, and supplier anxiety.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "Premium brand positioning must be preserved",
+        "China supply exposure remains material"
+      ],
+      "known_unknowns": [
+        "Whether the board will favor an internal successor"
+      ],
+      "suggested_entities": [
+        "Board",
+        "Key Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The board wants stability before the next product cycle"
+      ],
+      "suggested_actors": [
+        "Board",
+        "Key Customers"
+      ]
+    },
+    "documents": {
+      "apple-succession.md": "Analysts focus on Apple succession clarity, supplier reassurance, and investor concern after product delays.",
+      "apple-roadmap.md": "Apple product roadmap credibility and premium brand messaging are central to calming customers and suppliers."
+    },
+    "expected_top_branch": "Stakeholder reset",
+    "expected_root_strategy": "Stakeholder reset",
+    "expected_evidence_sources": [
+      "apple-roadmap",
+      "apple-succession"
+    ],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
+  },
+  {
+    "run_id": "boeing-post-reporting",
+    "domain_pack": "company-action",
+    "intake": {
+      "event_framing": "Assess Boeing strategy after another weak quarter and renewed safety scrutiny.",
+      "focus_entities": [
+        "Boeing"
+      ],
+      "current_development": "Boeing reports another weak quarter while safety scrutiny, delivery concerns, and customer anxiety intensify.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "Airline customers need delivery certainty",
+        "Regulators are scrutinizing quality systems"
+      ],
+      "known_unknowns": [
+        "Whether the company can stabilize production rates quickly"
+      ],
+      "suggested_entities": [
+        "Regulator",
+        "Key Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Management needs visible operational credibility quickly"
+      ],
+      "suggested_actors": [
+        "Regulator",
+        "Key Customers"
+      ]
+    },
+    "documents": {
+      "boeing-quarter.md": "Boeing faces investor concern, a weak quarter, and cash preservation pressure as delivery concerns mount.",
+      "boeing-safety.md": "Safety scrutiny and regulatory pressure are forcing Boeing to reassure customers and defend production recovery."
+    },
+    "expected_top_branch": "Contain message (message lands)",
+    "expected_root_strategy": "Contain message",
+    "expected_evidence_sources": [
+      "boeing-quarter",
+      "boeing-safety"
+    ],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
+  }
+]
