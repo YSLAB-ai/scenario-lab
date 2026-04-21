@@ -9,6 +9,7 @@ from forecasting_harness import __version__
 from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
+from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import default_objective_profile
 from forecasting_harness.simulation.engine import SimulationEngine
@@ -47,12 +48,15 @@ def _top_branch_label(result: dict[str, object]) -> str:
     return "No branches generated"
 
 
+def _registry():
+    return build_default_registry()
+
+
 def _pack_for_slug(domain_pack: str) -> GenericEventPack | InterstateCrisisPack:
-    if domain_pack == "generic-event":
-        return GenericEventPack()
-    if domain_pack == "interstate-crisis":
-        return InterstateCrisisPack()
-    raise typer.BadParameter(f"unsupported domain pack: {domain_pack!r}", param_hint="domain_pack")
+    try:
+        return _registry().resolve(domain_pack)
+    except KeyError as exc:
+        raise typer.BadParameter(str(exc), param_hint="domain_pack") from exc
 
 
 def _service(root: Path) -> WorkflowService:
@@ -126,6 +130,11 @@ def _write_standard_outputs(
 
 def _load_pack_for_run(repo: RunRepository, run_id: str) -> GenericEventPack | InterstateCrisisPack:
     return _pack_for_slug(repo.load_run_record(run_id).domain_pack)
+
+
+@app.command("list-domain-packs")
+def list_domain_packs() -> None:
+    print(json.dumps(_registry().list_slugs()))
 
 
 @app.command("demo-run")

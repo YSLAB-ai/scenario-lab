@@ -7,6 +7,13 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.cli import app
 
 
+def test_list_domain_packs() -> None:
+    result = CliRunner().invoke(app, ["list-domain-packs"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.stdout) == ["generic-event", "interstate-crisis"]
+
+
 def test_demo_run_creates_report_and_workbench(tmp_path: Path) -> None:
     result = CliRunner().invoke(app, ["demo-run", "--root", str(tmp_path / ".forecast")])
 
