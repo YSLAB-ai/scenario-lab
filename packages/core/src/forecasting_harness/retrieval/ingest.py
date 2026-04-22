@@ -127,6 +127,7 @@ _PUBLISHED_AT_META_KEYS = {
     "published_time",
 }
 _TITLE_META_KEYS = {"og:title", "title", "twitter:title"}
+_HTML_CHARSET_RE = re.compile(br"charset\s*=\s*['\"]?\s*([A-Za-z0-9._-]+)", re.IGNORECASE)
 
 
 class _SavedPageParser(HTMLParser):
@@ -271,13 +272,45 @@ def _parse_saved_page_html(html: str) -> tuple[str | None, str | None, list[Inge
     parser.feed(html)
     parser.close()
     if not parser.chunks:
-        raise ValueError("html has no extractable text")
+        if parser.heading_stack:
+            parser.chunks.append(
+                IngestedChunk(
+                    chunk_id="1",
+                    location="heading:" + " > ".join(parser.heading_stack),
+                    content=parser.heading_stack[-1],
+                )
+            )
+        else:
+            raise ValueError("html has no extractable text")
     return parser.extracted_title(), parser.extracted_published_at(), parser.chunks
+
+
+def _decode_html_bytes(raw: bytes) -> str:
+    encodings: list[str] = []
+    match = _HTML_CHARSET_RE.search(raw[:4096])
+    if match is not None:
+        declared = match.group(1).decode("ascii", errors="ignore").strip()
+        if declared:
+            encodings.append(declared)
+    encodings.extend(["utf-8-sig", "utf-8", "cp1252"])
+
+    seen: set[str] = set()
+    for encoding in encodings:
+        if encoding in seen:
+            continue
+        seen.add(encoding)
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+        except LookupError:
+            continue
+    return raw.decode("utf-8", errors="replace")
 
 
 def _read_html_from_path(path: Path, source_type: str) -> str:
     if source_type == "html":
-        return path.read_text(encoding="utf-8", errors="replace")
+        return _decode_html_bytes(path.read_bytes())
     if source_type != "web-archive":
         raise ValueError(f"unsupported html source type: {source_type}")
 

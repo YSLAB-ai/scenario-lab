@@ -171,6 +171,38 @@ def test_html_ingestion_preserves_metadata_and_heading_locations(tmp_path: Path)
     assert "chief executive" in document.chunks[0].content
 
 
+def test_html_ingestion_handles_cp1252_encoded_pages(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.html"
+    path.write_bytes(
+        b"""<!doctype html>
+<html>
+  <head>
+    <title>Legacy Page</title>
+  </head>
+  <body>
+    <p>caf\xe9</p>
+  </body>
+</html>
+"""
+    )
+
+    document = ingest_file(path)
+
+    assert document.source_type == "html"
+    assert document.chunks[0].content == "café"
+
+
+def test_html_ingestion_accepts_heading_only_pages(tmp_path: Path) -> None:
+    path = tmp_path / "heading-only.html"
+    path.write_text("<html><body><h1>Headline only</h1></body></html>", encoding="utf-8")
+
+    document = ingest_file(path)
+
+    assert document.source_type == "html"
+    assert [chunk.location for chunk in document.chunks] == ["heading:Headline only"]
+    assert document.chunks[0].content == "Headline only"
+
+
 def test_web_archive_ingestion_uses_saved_page_metadata_and_chunk_locations(tmp_path: Path) -> None:
     path = tmp_path / "saved.webarchive"
     archive_html = """<!doctype html>
