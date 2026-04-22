@@ -142,6 +142,8 @@ class _SavedPageParser(HTMLParser):
         self.published_at_candidates: list[str] = []
         self.chunks: list[IngestedChunk] = []
         self.heading_stack: list[str] = []
+        self._heading_only_chunks: list[IngestedChunk] = []
+        self._saw_block_content = False
         self._skip_depth = 0
         self._title_capture = False
         self._title_buffer: list[str] = []
@@ -157,6 +159,7 @@ class _SavedPageParser(HTMLParser):
         self._block_buffer.clear()
         if not content:
             return
+        self._saw_block_content = True
         if self.heading_stack:
             key = tuple(self.heading_stack)
             self._heading_paragraph_counts[key] = self._heading_paragraph_counts.get(key, 0) + 1
@@ -225,6 +228,14 @@ class _SavedPageParser(HTMLParser):
             level = int(normalized_tag[1])
             self.heading_stack[:] = self.heading_stack[: level - 1]
             self.heading_stack.append(heading)
+            if not self._saw_block_content:
+                self._heading_only_chunks.append(
+                    IngestedChunk(
+                        chunk_id=str(len(self._heading_only_chunks) + 1),
+                        location="heading:" + " > ".join(self.heading_stack),
+                        content=heading,
+                    )
+                )
             return
         if normalized_tag in self._BLOCK_TAGS and self._block_stack:
             if self._block_stack[-1] == normalized_tag:
@@ -254,6 +265,8 @@ class _SavedPageParser(HTMLParser):
     def close(self) -> None:
         if self._block_stack:
             self._flush_block()
+        if not self._saw_block_content and self._heading_only_chunks:
+            self.chunks.extend(self._heading_only_chunks)
         super().close()
 
     def extracted_title(self) -> str | None:

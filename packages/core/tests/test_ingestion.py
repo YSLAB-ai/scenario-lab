@@ -203,6 +203,21 @@ def test_html_ingestion_accepts_heading_only_pages(tmp_path: Path) -> None:
     assert document.chunks[0].content == "Headline only"
 
 
+def test_html_ingestion_preserves_multiple_heading_only_headings(tmp_path: Path) -> None:
+    path = tmp_path / "outline.html"
+    path.write_text("<html><body><h1>Alpha</h1><h2>Beta</h2><h2>Gamma</h2></body></html>", encoding="utf-8")
+
+    document = ingest_file(path)
+
+    assert document.source_type == "html"
+    assert [chunk.location for chunk in document.chunks] == [
+        "heading:Alpha",
+        "heading:Alpha > Beta",
+        "heading:Alpha > Gamma",
+    ]
+    assert [chunk.content for chunk in document.chunks] == ["Alpha", "Beta", "Gamma"]
+
+
 def test_web_archive_ingestion_uses_saved_page_metadata_and_chunk_locations(tmp_path: Path) -> None:
     path = tmp_path / "saved.webarchive"
     archive_html = """<!doctype html>
