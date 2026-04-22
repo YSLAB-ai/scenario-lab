@@ -39,7 +39,7 @@ This pass extends the protected-surface domain-evolution system so the repo can 
 ## Verified Smoke Checks
 
 - Temporary workspace no-branch synthesis:
-  - command: `forecast-harness synthesize-domain --workspace-root <tmp> --input <blueprint> --no-branch`
+  - command: `forecast-harness synthesize-domain --workspace-root <tmp> --slug product-recall --class-name ProductRecallPack --description "Product recall response" --focus-entity-rule-min-count 2 --canonical-stage trigger --canonical-stage response --canonical-stage resolution --field-schema severity=float --field-schema recall_readiness=float --actor-category company --actor-category regulator --actor-category customers --evidence-category "safety reports" --evidence-category-term-json '{"safety reports":["injuries"]}' --semantic-alias-group-json '["recall","withdrawal"]' --starter-source-json '{"kind":"report","description":"Incident reports"}' --replay-seed-case-json '<case-json>' --no-branch`
   - result:
     - generated manifest file
     - generated replay file
@@ -48,7 +48,7 @@ This pass extends the protected-surface domain-evolution system so the repo can 
     - updated registry file
   - dynamic import of the generated `product-recall` pack succeeded and returned slug `product-recall`
 - Temporary git-repo branch-promotion synthesis:
-  - command: `forecast-harness synthesize-domain --workspace-root <tmprepo> --input <blueprint>`
+  - command: `forecast-harness synthesize-domain --workspace-root <tmprepo> --slug product-recall --class-name ProductRecallPack --description "Product recall response" --focus-entity-rule-min-count 2 --canonical-stage trigger --canonical-stage response --canonical-stage resolution --field-schema severity=float --field-schema recall_readiness=float --actor-category company --actor-category regulator --actor-category customers --evidence-category "safety reports" --evidence-category-term-json '{"safety reports":["injuries"]}' --semantic-alias-group-json '["recall","withdrawal"]' --starter-source-json '{"kind":"report","description":"Incident reports"}' --replay-seed-case-json '<case-json>'`
   - result:
     - branch created: `codex/domain-synthesis-product-recall-20260421`
     - head commit message: `feat: synthesize product-recall domain`

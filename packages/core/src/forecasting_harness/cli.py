@@ -265,6 +265,157 @@ def _evidence_packet_from_flags(
     return EvidencePacket(revision_id=revision_id, items=items)
 
 
+def _load_json_payload(raw_value: str, *, param_hint: str) -> object:
+    try:
+        return json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid {param_hint} JSON: {exc}") from exc
+
+
+def _replay_cases_from_payloads(
+    *,
+    input: Path | None,
+    replay_case_json: list[str] | None,
+) -> list[ReplayCase] | None:
+    if input is not None:
+        payload = json.loads(input.read_text(encoding="utf-8"))
+        if not isinstance(payload, list):
+            raise ValueError("replay case input must be a JSON array")
+        return [ReplayCase.model_validate(item) for item in payload]
+    if replay_case_json is None:
+        return None
+
+    cases: list[ReplayCase] = []
+    for raw_case in replay_case_json:
+        try:
+            cases.append(ReplayCase.model_validate_json(raw_case))
+        except Exception as exc:  # pragma: no cover - surfaced through CLI validation
+            raise ValueError(f"invalid replay case JSON: {exc}") from exc
+    return cases
+
+
+def _string_mapping_from_flags(values: list[str] | None) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for value in values or []:
+        if "=" not in value:
+            raise typer.BadParameter("values must be key=value", param_hint="field_schema")
+        key, raw_value = value.split("=", 1)
+        if not key:
+            raise typer.BadParameter("field key cannot be empty", param_hint="field_schema")
+        mapping[key] = raw_value
+    return mapping
+
+
+def _domain_blueprint_from_flags(
+    *,
+    slug: str | None,
+    class_name: str | None,
+    description: str | None,
+    focus_entity_rule_min_count: int,
+    focus_entity_rule_exact_count: int | None,
+    canonical_stage: list[str] | None,
+    suggested_related_actor: list[str] | None,
+    follow_up_question: list[str] | None,
+    field_schema: list[str] | None,
+    actor_category: list[str] | None,
+    evidence_category: list[str] | None,
+    evidence_category_term_json: list[str] | None,
+    semantic_alias_group_json: list[str] | None,
+    starter_source_json: list[str] | None,
+    field_inference_rule_json: list[str] | None,
+    action_template_json: list[str] | None,
+    scoring_weight_json: list[str] | None,
+    replay_seed_case_json: list[str] | None,
+) -> DomainBlueprint:
+    canonical_stages = canonical_stage or []
+    if not canonical_stages:
+        raise typer.BadParameter("required when --input is not provided", param_hint="canonical_stage")
+
+    blueprint_payload: dict[str, object] = {
+        "slug": _require_flag(slug, param_hint="slug"),
+        "class_name": _require_flag(class_name, param_hint="class_name"),
+        "description": _require_flag(description, param_hint="description"),
+        "focus_entity_rule": {
+            "min_count": focus_entity_rule_min_count,
+            "exact_count": focus_entity_rule_exact_count,
+        },
+        "canonical_stages": canonical_stages,
+        "suggested_related_actors": suggested_related_actor or [],
+        "follow_up_questions": follow_up_question or [],
+        "field_schema": _string_mapping_from_flags(field_schema),
+        "actor_categories": actor_category or [],
+        "evidence_categories": evidence_category or [],
+        "evidence_category_terms": {},
+        "semantic_alias_groups": [],
+        "starter_sources": [],
+        "field_inference_rules": {},
+        "action_templates": [],
+        "scoring_weights": {},
+        "replay_seed_cases": [],
+    }
+
+    evidence_category_terms = blueprint_payload["evidence_category_terms"]
+    assert isinstance(evidence_category_terms, dict)
+    for raw_value in evidence_category_term_json or []:
+        payload = _load_json_payload(raw_value, param_hint="evidence_category_term_json")
+        if not isinstance(payload, dict):
+            raise ValueError("evidence_category_term_json must contain a JSON object")
+        evidence_category_terms.update(payload)
+
+    semantic_alias_groups = blueprint_payload["semantic_alias_groups"]
+    assert isinstance(semantic_alias_groups, list)
+    for raw_value in semantic_alias_group_json or []:
+        payload = _load_json_payload(raw_value, param_hint="semantic_alias_group_json")
+        if not isinstance(payload, list):
+            raise ValueError("semantic_alias_group_json must contain a JSON array")
+        semantic_alias_groups.append(payload)
+
+    starter_sources = blueprint_payload["starter_sources"]
+    assert isinstance(starter_sources, list)
+    for raw_value in starter_source_json or []:
+        payload = _load_json_payload(raw_value, param_hint="starter_source_json")
+        if not isinstance(payload, dict):
+            raise ValueError("starter_source_json must contain a JSON object")
+        starter_sources.append(payload)
+
+    field_inference_rules = blueprint_payload["field_inference_rules"]
+    assert isinstance(field_inference_rules, dict)
+    for raw_value in field_inference_rule_json or []:
+        payload = _load_json_payload(raw_value, param_hint="field_inference_rule_json")
+        if not isinstance(payload, dict):
+            raise ValueError("field_inference_rule_json must contain a JSON object")
+        field_inference_rules.update(payload)
+
+    action_templates = blueprint_payload["action_templates"]
+    assert isinstance(action_templates, list)
+    for raw_value in action_template_json or []:
+        payload = _load_json_payload(raw_value, param_hint="action_template_json")
+        if not isinstance(payload, dict):
+            raise ValueError("action_template_json must contain a JSON object")
+        action_templates.append(payload)
+
+    scoring_weights = blueprint_payload["scoring_weights"]
+    assert isinstance(scoring_weights, dict)
+    for raw_value in scoring_weight_json or []:
+        payload = _load_json_payload(raw_value, param_hint="scoring_weight_json")
+        if not isinstance(payload, dict):
+            raise ValueError("scoring_weight_json must contain a JSON object")
+        scoring_weights.update(payload)
+
+    replay_seed_cases = blueprint_payload["replay_seed_cases"]
+    assert isinstance(replay_seed_cases, list)
+    for raw_value in replay_seed_case_json or []:
+        payload = _load_json_payload(raw_value, param_hint="replay_seed_case_json")
+        if not isinstance(payload, dict):
+            raise ValueError("replay_seed_case_json must contain a JSON object")
+        replay_seed_cases.append(payload)
+
+    try:
+        return DomainBlueprint.model_validate(blueprint_payload)
+    except Exception as exc:  # pragma: no cover - surfaced through CLI validation
+        raise typer.BadParameter(str(exc), param_hint="blueprint") from exc
+
+
 def _register_ingested_document(registry: CorpusRegistry, path: Path, *, source_id: str | None, title: str | None, published_at: str | None, tags: dict[str, str]) -> dict[str, object]:
     document = ingest_file(
         path,
@@ -351,11 +502,13 @@ def run_replay_retuning_command(
     workspace_root: Path = typer.Option(Path(".")),
     domain_pack: str = typer.Option(...),
     input: Path | None = typer.Option(None),
+    replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
     no_branch: bool = typer.Option(False),
 ) -> None:
-    replay_cases = None
-    if input is not None:
-        replay_cases = [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
+    try:
+        replay_cases = _replay_cases_from_payloads(input=input, replay_case_json=replay_case_json)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
     summary = _evolution_service(workspace_root).run_replay_retuning(
         domain_pack,
         replay_cases=replay_cases,
@@ -388,10 +541,53 @@ def summarize_domain_evolution_command(
 @app.command("synthesize-domain")
 def synthesize_domain_command(
     workspace_root: Path = typer.Option(Path(".")),
-    input: Path = typer.Option(...),
+    input: Path | None = typer.Option(None),
+    slug: str | None = typer.Option(None),
+    class_name: str | None = typer.Option(None),
+    description: str | None = typer.Option(None),
+    focus_entity_rule_min_count: int = typer.Option(1),
+    focus_entity_rule_exact_count: int | None = typer.Option(None),
+    canonical_stage: list[str] | None = typer.Option(None),
+    suggested_related_actor: list[str] | None = typer.Option(None),
+    follow_up_question: list[str] | None = typer.Option(None),
+    field_schema: list[str] | None = typer.Option(None),
+    actor_category: list[str] | None = typer.Option(None),
+    evidence_category: list[str] | None = typer.Option(None),
+    evidence_category_term_json: list[str] | None = typer.Option(None, "--evidence-category-term-json"),
+    semantic_alias_group_json: list[str] | None = typer.Option(None, "--semantic-alias-group-json"),
+    starter_source_json: list[str] | None = typer.Option(None, "--starter-source-json"),
+    field_inference_rule_json: list[str] | None = typer.Option(None, "--field-inference-rule-json"),
+    action_template_json: list[str] | None = typer.Option(None, "--action-template-json"),
+    scoring_weight_json: list[str] | None = typer.Option(None, "--scoring-weight-json"),
+    replay_seed_case_json: list[str] | None = typer.Option(None, "--replay-seed-case-json"),
     no_branch: bool = typer.Option(False),
 ) -> None:
-    blueprint = DomainBlueprint.model_validate_json(input.read_text(encoding="utf-8"))
+    if input is not None:
+        blueprint = DomainBlueprint.model_validate_json(input.read_text(encoding="utf-8"))
+    else:
+        try:
+            blueprint = _domain_blueprint_from_flags(
+                slug=slug,
+                class_name=class_name,
+                description=description,
+                focus_entity_rule_min_count=focus_entity_rule_min_count,
+                focus_entity_rule_exact_count=focus_entity_rule_exact_count,
+                canonical_stage=canonical_stage,
+                suggested_related_actor=suggested_related_actor,
+                follow_up_question=follow_up_question,
+                field_schema=field_schema,
+                actor_category=actor_category,
+                evidence_category=evidence_category,
+                evidence_category_term_json=evidence_category_term_json,
+                semantic_alias_group_json=semantic_alias_group_json,
+                starter_source_json=starter_source_json,
+                field_inference_rule_json=field_inference_rule_json,
+                action_template_json=action_template_json,
+                scoring_weight_json=scoring_weight_json,
+                replay_seed_case_json=replay_seed_case_json,
+            )
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="blueprint") from exc
     print(json.dumps(_evolution_service(workspace_root).synthesize_domain(blueprint, create_branch=not no_branch)))
 
 
@@ -455,9 +651,15 @@ def rebuild_corpus_embeddings_command(
 
 @app.command("run-replay-suite")
 def run_replay_suite_command(
-    input: Path = typer.Option(...),
+    input: Path | None = typer.Option(None),
+    replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
 ) -> None:
-    cases = [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
+    try:
+        cases = _replay_cases_from_payloads(input=input, replay_case_json=replay_case_json)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
+    if cases is None:
+        raise typer.BadParameter("required when --input is not provided", param_hint="replay_case_json")
     print(run_replay_suite(cases).model_dump_json())
 
 
@@ -479,8 +681,16 @@ def list_builtin_replay_cases_command() -> None:
 @app.command("summarize-replay-calibration")
 def summarize_replay_calibration_command(
     input: Path | None = typer.Option(None),
+    replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
 ) -> None:
-    cases = load_builtin_replay_cases() if input is None else [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
+    if input is not None or replay_case_json is not None:
+        try:
+            cases = _replay_cases_from_payloads(input=input, replay_case_json=replay_case_json)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
+        assert cases is not None
+    else:
+        cases = load_builtin_replay_cases()
     summary = summarize_calibration(run_replay_suite(cases))
     print(summary.model_dump_json())
 

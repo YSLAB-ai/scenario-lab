@@ -5,7 +5,7 @@ Date: 2026-04-21
 ## Summary
 
 - Added a one-domain replay retuning loop: `forecast-harness run-replay-retuning`
-- The loop accepts either built-in replay cases for a domain or a custom replay-case file.
+- The loop accepts either built-in replay cases for a domain or repeated `--replay-case-json` payloads for ad hoc runs; the file-backed form remains available for import/export compatibility.
 - Replay misses now feed idempotent self-detected suggestions instead of appending duplicate suggestion rows on repeated runs.
 
 ## Verified Behavior
@@ -28,7 +28,7 @@ Date: 2026-04-21
 - full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
   - result: `266 passed in 3.40s`
-- direct custom-case retuning smoke through `run-replay-retuning --domain-pack company-action --input <file> --no-branch`
+- direct custom-case retuning smoke through `run-replay-retuning --domain-pack company-action --replay-case-json '<case-json>' --no-branch`
   - result:
     - `case_count = 1`
     - `weak_case_count = 1`

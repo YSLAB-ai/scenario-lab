@@ -287,6 +287,47 @@ def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> 
     }
 
 
+def test_run_replay_suite_command_accepts_replay_case_json(tmp_path: Path) -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "run-replay-suite",
+            "--replay-case-json",
+            _replay_case().model_dump_json(),
+            "--replay-case-json",
+            _market_replay_case().model_dump_json(),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = ReplaySuiteResult.model_validate_json(result.stdout)
+    assert payload.case_count == 2
+    assert payload.top_branch_accuracy == 1.0
+    assert payload.root_strategy_accuracy == 1.0
+
+
+def test_summarize_replay_calibration_command_accepts_replay_case_json(tmp_path: Path) -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "summarize-replay-calibration",
+            "--replay-case-json",
+            _replay_case().model_dump_json(),
+            "--replay-case-json",
+            _market_replay_case().model_dump_json(),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = CalibrationSummary.model_validate_json(result.stdout)
+    assert payload.case_count == 2
+    assert payload.domains_needing_attention == []
+
+
 def test_builtin_interstate_replay_case_pins_actor_preference_differentiation() -> None:
     cases = load_builtin_replay_cases()
 

@@ -22,6 +22,8 @@ Core code:
 - `packages/core/src/forecasting_harness/knowledge/__init__.py`
 - `packages/core/src/forecasting_harness/cli.py`
 
+The CLI now also accepts repeated `--replay-case-json` payloads for ad hoc calibration runs, so `run-replay-suite` and `summarize-replay-calibration` no longer require a temporary JSON file for normal use.
+
 Replay corpus updates:
 
 - `knowledge/replays/company-action.json`
