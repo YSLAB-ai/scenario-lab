@@ -46,6 +46,7 @@ def objective_profile_by_name(name: str) -> ObjectiveProfile:
             actor_weights={},
             aggregation_mode="balanced-system",
             focal_actor_id=None,
+            focal_weight=1.0,
             destabilization_penalty=0.1,
         )
 
@@ -71,6 +72,7 @@ def objective_profile_by_name(name: str) -> ObjectiveProfile:
             actor_weights={},
             aggregation_mode="focal-actor",
             focal_actor_id=None,
+            focal_weight=2.0,
             destabilization_penalty=0.15,
         )
 

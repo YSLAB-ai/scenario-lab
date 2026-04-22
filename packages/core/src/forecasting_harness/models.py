@@ -50,6 +50,7 @@ class ObjectiveProfile(BaseModel):
     actor_weights: dict[str, float] = Field(default_factory=dict)
     aggregation_mode: Literal["balanced-system", "focal-actor"] = "balanced-system"
     focal_actor_id: str | None = None
+    focal_weight: float = Field(default=1.0, gt=0.0)
     destabilization_penalty: float = 0.0
 
     def scalarize(self, metrics: dict[str, float]) -> float:
@@ -71,9 +72,10 @@ class ObjectiveProfile(BaseModel):
                 "destabilization_penalty": 0.0,
             }
             return sum(breakdown.values()), breakdown
-        actor_score = self._aggregate_actor_metrics(actor_metrics)
+        actor_scores = self._weighted_actor_scores(actor_metrics)
+        actor_score = self._aggregate_actor_scores(actor_scores)
         destabilization_signal = max(
-            (metrics.get("domestic_sensitivity", 0.0) for metrics in actor_metrics.values()),
+            (max(-score, 0.0) for score, _ in actor_scores),
             default=0.0,
         )
         destabilization_component = -self.destabilization_penalty * destabilization_signal
@@ -84,9 +86,9 @@ class ObjectiveProfile(BaseModel):
         }
         return sum(breakdown.values()), breakdown
 
-    def _aggregate_actor_metrics(self, actor_metrics: dict[str, dict[str, float]]) -> float:
+    def _weighted_actor_scores(self, actor_metrics: dict[str, dict[str, float]]) -> list[tuple[float, float]]:
         if not actor_metrics or not self.actor_metric_weights:
-            return 0.0
+            return []
 
         weighted_scores: list[tuple[float, float]] = []
         for actor_id, metrics in actor_metrics.items():
@@ -96,9 +98,13 @@ class ObjectiveProfile(BaseModel):
             actor_score = sum(self.actor_metric_weights[metric] * value for metric, value in metrics.items())
             actor_weight = self.actor_weights.get(actor_id, 1.0)
             if self.aggregation_mode == "focal-actor" and actor_id == self.focal_actor_id:
-                actor_weight *= 2.0
+                actor_weight *= self.focal_weight
             weighted_scores.append((actor_score, actor_weight))
+        return weighted_scores
 
+    def _aggregate_actor_scores(self, weighted_scores: list[tuple[float, float]]) -> float:
+        if not weighted_scores:
+            return 0.0
         total_weight = sum(weight for _, weight in weighted_scores)
         if total_weight <= 0.0:
             return 0.0

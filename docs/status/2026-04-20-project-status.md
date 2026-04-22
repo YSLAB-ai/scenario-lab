@@ -50,6 +50,9 @@ Date: 2026-04-21
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
+- Focal-actor aggregation now uses an explicit `focal_weight` field instead of a hidden multiplier.
+- Destabilization penalty now tracks the worst negative actor utility outcome in a branch instead of reusing a static actor trait.
+- `company-action` and `pandemic-response` now implement actor-utility hooks through both `recommend_objective_profile()` and `score_actor_impacts()`.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The company-action pack now infers `board_cohesion` and `operational_stability` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The market-shock pack now infers `contagion_risk` and `policy_optionality` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -76,7 +79,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `246 passed in 2.69s`
+  - Result: `252 passed in 2.58s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -103,7 +106,7 @@ Date: 2026-04-21
   - `Boeing post-reporting` -> `Contain message (message lands)`
 - A direct end-to-end rerun of the checked-in smoke campaign on the actor-utility branch on 2026-04-21 also verified:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - Result: `16 passed in 0.65s`
+  - Result: `16 passed in 0.67s`
   - Direct branch outputs:
     - `Pandemic first wave` -> `Containment push (coordination holds)`
     - `Pandemic vaccine wave` -> `Vaccine acceleration (uptake improves)`
@@ -217,7 +220,7 @@ Date: 2026-04-21
   - the payload embedded `intake_guidance`, `retrieval_plan`, `ingestion_plan`, and `ingestion_recommendations`
 - A fresh-install simulation smoke test on 2026-04-20 also verified:
   - `simulation/r1.approved.json` contained `search_mode = mcts`
-  - `simulation/r1.approved.json` contained `iterations = 18`
+  - `simulation/r1.approved.json` contained `iterations = 32`
   - the top branch label remained `Signal resolve`
   - `reports/r1.report.md` existed after simulation
 - A fresh-install child-revision smoke test on 2026-04-20 also verified:

@@ -85,7 +85,7 @@ class InterstateCrisisPack(DomainPack):
         return InteractionModel.EVENT_DRIVEN
 
     def search_config(self) -> dict[str, int | float]:
-        return {"iterations": 18, "max_depth": 4, "rollout_depth": 3, "c_puct": 1.15}
+        return {"iterations": 32, "max_depth": 4, "rollout_depth": 3, "c_puct": 1.15}
 
     def canonical_phases(self) -> list[str]:
         return list(self.PHASES)

@@ -46,11 +46,70 @@ def test_objective_profile_can_aggregate_system_and_actor_metrics() -> None:
         },
     )
 
-    assert aggregate_score == pytest.approx(1 / 6)
+    assert aggregate_score == pytest.approx(0.2866666666666666)
     assert breakdown == {
         "system": pytest.approx(0.12),
         "actors": pytest.approx(1 / 6),
-        "destabilization_penalty": pytest.approx(-0.12),
+        "destabilization_penalty": pytest.approx(0.0),
+    }
+
+
+def test_objective_profile_uses_explicit_focal_weight_for_focal_actor_aggregation() -> None:
+    profile = ObjectiveProfile(
+        name="domestic-politics-first",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+        actor_metric_weights={"domestic_sensitivity": 1.0},
+        actor_weights={},
+        aggregation_mode="focal-actor",
+        focal_actor_id="alpha",
+        focal_weight=3.0,
+    )
+
+    aggregate_score, breakdown = profile.aggregate(
+        system_metrics={"escalation": 0.0, "negotiation": 0.0},
+        actor_metrics={
+            "alpha": {"domestic_sensitivity": 1.0},
+            "beta": {"domestic_sensitivity": 0.0},
+        },
+    )
+
+    assert aggregate_score == pytest.approx(0.75)
+    assert breakdown == {
+        "system": pytest.approx(0.0),
+        "actors": pytest.approx(0.75),
+        "destabilization_penalty": pytest.approx(0.0),
+    }
+
+
+def test_objective_profile_destabilization_penalty_tracks_worst_negative_actor_score() -> None:
+    profile = ObjectiveProfile(
+        name="balanced-system",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+        actor_metric_weights={"domestic_sensitivity": 1.0, "coercive_bias": -2.0},
+        actor_weights={},
+        aggregation_mode="balanced-system",
+        destabilization_penalty=0.2,
+    )
+
+    aggregate_score, breakdown = profile.aggregate(
+        system_metrics={"escalation": 0.0, "negotiation": 0.0},
+        actor_metrics={
+            "alpha": {"domestic_sensitivity": 0.4, "coercive_bias": 0.7},
+            "beta": {"domestic_sensitivity": 0.6, "coercive_bias": 0.1},
+        },
+    )
+
+    assert aggregate_score == pytest.approx(-0.5)
+    assert breakdown == {
+        "system": pytest.approx(0.0),
+        "actors": pytest.approx(-0.3),
+        "destabilization_penalty": pytest.approx(-0.2),
     }
 
 
@@ -301,9 +360,9 @@ def test_simulation_engine_reports_actor_metrics_and_aggregate_breakdown() -> No
     assert branch["aggregate_score_breakdown"] == {
         "system": pytest.approx(0.13),
         "actors": pytest.approx(0.25),
-        "destabilization_penalty": pytest.approx(-0.18),
+        "destabilization_penalty": pytest.approx(-0.02),
     }
-    assert branch["score"] == pytest.approx(0.2)
+    assert branch["score"] == pytest.approx(0.36)
 
 
 def test_simulation_engine_allows_system_only_profile_when_actor_metrics_exist() -> None:
@@ -750,14 +809,14 @@ def test_simulation_engine_rehydrates_task3_accumulators_when_reusing_nodes() ->
     reused_node = next(node for node in second["tree_nodes"] if node["node_id"] == "root/stable-path")
 
     assert reused_node["visits"] == 1
-    assert reused_node["value_sum"] == pytest.approx(0.445)
+    assert reused_node["value_sum"] == pytest.approx(0.625)
     assert reused_node["actor_metric_sums"] == {
         "alpha": {"domestic_sensitivity": pytest.approx(0.9), "coercive_bias": pytest.approx(0.1)}
     }
     assert reused_node["aggregate_score_breakdown_sums"] == {
         "system": pytest.approx(0.2),
         "actors": pytest.approx(0.425),
-        "destabilization_penalty": pytest.approx(-0.18),
+        "destabilization_penalty": pytest.approx(0.0),
     }
 
 

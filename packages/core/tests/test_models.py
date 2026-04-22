@@ -80,6 +80,8 @@ def test_objective_profile_registry_supports_aggregation_aliases() -> None:
     assert balanced.focal_actor_id is None
     assert balanced_system.focal_actor_id is None
     assert focal.focal_actor_id is None
+    assert balanced.focal_weight == 1.0
+    assert focal.focal_weight == 2.0
     assert set(balanced.actor_metric_weights) == {
         "domestic_sensitivity",
         "economic_pain_tolerance",

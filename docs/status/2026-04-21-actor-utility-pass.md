@@ -27,6 +27,10 @@ Date: 2026-04-21
 - Confirm actor alias normalization preserves reuse and focal-actor continuity.
 - Confirm report and query summaries match the engine's explored-first branch ordering.
 - Confirm the replay and smoke outputs still match the checked-in expectations after the branch-only changes.
+- Confirm the review-fix pass:
+  - makes focal weighting explicit
+  - bases destabilization on branch downside instead of a static actor trait
+  - extends actor-utility hooks to at least two additional packs
 
 ## Changed Files
 
@@ -34,7 +38,9 @@ Date: 2026-04-21
 - `packages/core/src/forecasting_harness/cli.py`
 - `packages/core/src/forecasting_harness/compatibility.py`
 - `packages/core/src/forecasting_harness/domain/base.py`
+- `packages/core/src/forecasting_harness/domain/company_action.py`
 - `packages/core/src/forecasting_harness/domain/interstate_crisis.py`
+- `packages/core/src/forecasting_harness/domain/pandemic_response.py`
 - `packages/core/src/forecasting_harness/models.py`
 - `packages/core/src/forecasting_harness/objectives.py`
 - `packages/core/tests/test_replay.py`
@@ -68,11 +74,16 @@ Date: 2026-04-21
   - approval-packet `recommended_run_lens`
   - replayed top-branch and root-strategy expectations
 - The strengthened replay test verifies the shoal case reaches a `domestic-politics-first` recommended run lens with `focal_actor_id = "united-states"` while the searched top branch remains `Signal resolve (managed signal)`.
+- The follow-up review-fix pass preserved that replay behavior after changing actor aggregation by:
+  - making focal weighting explicit through `focal_weight`
+  - redefining destabilization as the worst negative actor utility score
+  - raising the default `interstate-crisis` search budget from `18` to `32` iterations so the shoal replay no longer collapses onto a single visited root branch
 - The final branch fixes also verified that:
   - actor `behavior_profile` changes now block warm-start reuse
   - the recommended run lens becomes the default when no explicit lens is selected
   - `US`, `U.S.`, and `United States` now persist as the same canonical actor id
   - report and query summaries keep the engine's explored-before-unexplored branch ordering
+  - `company-action` and `pandemic-response` now implement `recommend_objective_profile()` and `score_actor_impacts()`
 
 ## Documentation
 
@@ -83,10 +94,10 @@ Date: 2026-04-21
 
 - Scoped replay verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_replay.py packages/core/tests/test_replay_library.py -q`
-  - Result: `7 passed`
+  - Result: `7 passed in 0.26s`
 - Checked-in smoke campaign verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - Result: `16 passed in 0.65s`
+  - Result: `16 passed in 0.67s`
 - Direct end-to-end smoke rerun on the same branch verified these top branches across the checked-in 12 scenarios:
   - `US-Iran Gulf` -> `Alliance consultation (coordinated signaling)`
   - `Japan-China Strait` -> `Signal resolve (managed signal)`
@@ -102,7 +113,7 @@ Date: 2026-04-21
   - `Supplier flooding` -> `Reserve logistics`
 - Required full-suite verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `246 passed in 2.69s`
+  - Result: `252 passed in 2.58s`
 
 ## Remaining Gaps
 
