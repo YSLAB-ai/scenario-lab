@@ -255,23 +255,22 @@ def test_calibration_summary_surfaces_attention_items_for_missed_cases(tmp_path:
 
 def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> None:
     runner = CliRunner()
-    replay_path = tmp_path / "replay-suite.json"
-    replay_path.write_text(
-        json.dumps(
-            [
-                _replay_case().model_dump(mode="json"),
-                _market_replay_case().model_dump(mode="json"),
-                _regulatory_replay_case().model_dump(mode="json"),
-                _election_replay_case().model_dump(mode="json"),
-                _supply_replay_case().model_dump(mode="json"),
-            ]
-        ),
-        encoding="utf-8",
-    )
 
     result = runner.invoke(
         app,
-        ["run-replay-suite", "--input", str(replay_path)],
+        [
+            "run-replay-suite",
+            "--replay-case-json",
+            _replay_case().model_dump_json(),
+            "--replay-case-json",
+            _market_replay_case().model_dump_json(),
+            "--replay-case-json",
+            _regulatory_replay_case().model_dump_json(),
+            "--replay-case-json",
+            _election_replay_case().model_dump_json(),
+            "--replay-case-json",
+            _supply_replay_case().model_dump_json(),
+        ],
     )
 
     assert result.exit_code == 0
@@ -285,6 +284,15 @@ def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> 
         "Message reset (reset holds)",
         "Reserve logistics",
     }
+
+
+def test_run_replay_suite_command_rejects_input_file() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path("replay-suite.json").write_text(json.dumps([_replay_case().model_dump(mode="json")]), encoding="utf-8")
+        result = runner.invoke(app, ["run-replay-suite", "--input", "replay-suite.json"])
+
+    assert result.exit_code != 0
 
 
 def test_run_replay_suite_command_accepts_replay_case_json(tmp_path: Path) -> None:
@@ -306,6 +314,15 @@ def test_run_replay_suite_command_accepts_replay_case_json(tmp_path: Path) -> No
     assert payload.case_count == 2
     assert payload.top_branch_accuracy == 1.0
     assert payload.root_strategy_accuracy == 1.0
+
+
+def test_summarize_replay_calibration_command_rejects_input_file() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path("replay-suite.json").write_text(json.dumps([_replay_case().model_dump(mode="json")]), encoding="utf-8")
+        result = runner.invoke(app, ["summarize-replay-calibration", "--input", "replay-suite.json"])
+
+    assert result.exit_code != 0
 
 
 def test_summarize_replay_calibration_command_accepts_replay_case_json(tmp_path: Path) -> None:

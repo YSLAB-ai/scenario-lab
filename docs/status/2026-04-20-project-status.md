@@ -360,7 +360,7 @@ Date: 2026-04-22
 
 ## Current Gaps
 
-- Some broader bulk-edit workflows still rely on file-backed JSON inputs instead of structured CLI/runtime inputs end to end.
+- Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
 - The simulation engine still reports raw ranking instead of calibrated probability or confidence outputs.
 - The built-in replay corpus is still at `22` cases rather than the frozen `40`-case target.
 - The system still does not implement a rule-extraction / knowledge compiler pass.

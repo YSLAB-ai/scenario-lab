@@ -340,7 +340,7 @@ Current boundary:
 
 ## Current Gaps
 
-- Some broader bulk-edit workflows remain file-backed instead of using structured CLI/runtime inputs end to end.
+- Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
 - The simulation engine still reports raw ranking rather than calibrated probability or confidence outputs.
 - The built-in replay corpus still has `22` cases rather than the frozen `40`-case calibration target.
 - Knowledge compiler / rule extraction, richer new-domain synthesis, and packaged Codex/Claude local integrations are still pending.

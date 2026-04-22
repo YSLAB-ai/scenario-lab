@@ -90,35 +90,27 @@ def test_run_replay_retuning_command_reports_structured_summary(tmp_path: Path) 
         json.dumps({"slug": "company-action", "description": "test manifest"}),
         encoding="utf-8",
     )
-    replay_path = tmp_path / "retune-cases.json"
-    replay_path.write_text(
-        json.dumps(
-            [
-                {
-                    "run_id": "openai-governance-retune",
-                    "domain_pack": "company-action",
-                    "intake": {
-                        "event_framing": "Assess OpenAI strategy after a board-driven leadership crisis.",
-                        "focus_entities": ["OpenAI"],
-                        "current_development": "OpenAI faces leadership turnover, governance questions, and partner pressure.",
-                        "current_stage": "trigger",
-                        "time_horizon": "120d",
-                        "suggested_entities": ["Board", "Enterprise Customers"],
-                    },
-                    "assumptions": {
-                        "summary": ["The company will prioritize stakeholder reassurance."],
-                        "suggested_actors": ["Board", "Enterprise Customers"],
-                    },
-                    "documents": {
-                        "leadership-transition.md": "OpenAI leadership turnover created partner pressure and governance concern.",
-                        "board-reset.md": "Board reset and stakeholder reassurance dominate the next strategic move."
-                    },
-                    "expected_top_branch": "Nonexistent branch",
-                    "expected_root_strategy": "Nonexistent strategy"
-                }
-            ]
+    case = ReplayCase(
+        run_id="openai-governance-retune",
+        domain_pack="company-action",
+        intake=IntakeDraft(
+            event_framing="Assess OpenAI strategy after a board-driven leadership crisis.",
+            focus_entities=["OpenAI"],
+            current_development="OpenAI faces leadership turnover, governance questions, and partner pressure.",
+            current_stage="trigger",
+            time_horizon="120d",
+            suggested_entities=["Board", "Enterprise Customers"],
         ),
-        encoding="utf-8",
+        assumptions=AssumptionSummary(
+            summary=["The company will prioritize stakeholder reassurance."],
+            suggested_actors=["Board", "Enterprise Customers"],
+        ),
+        documents={
+            "leadership-transition.md": "OpenAI leadership turnover created partner pressure and governance concern.",
+            "board-reset.md": "Board reset and stakeholder reassurance dominate the next strategic move.",
+        },
+        expected_top_branch="Nonexistent branch",
+        expected_root_strategy="Nonexistent strategy",
     )
 
     result = CliRunner().invoke(
@@ -129,8 +121,8 @@ def test_run_replay_retuning_command_reports_structured_summary(tmp_path: Path) 
             str(tmp_path),
             "--domain-pack",
             "company-action",
-            "--input",
-            str(replay_path),
+            "--replay-case-json",
+            case.model_dump_json(),
             "--no-branch",
         ],
     )
@@ -142,6 +134,54 @@ def test_run_replay_retuning_command_reports_structured_summary(tmp_path: Path) 
     assert payload["weak_case_count"] == 1
     assert payload["generated_suggestion_count"] >= 1
     assert payload["evolution_summary"]["promotion_decision"] == "promoted"
+
+
+def test_run_replay_retuning_command_rejects_input_file() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        Path("retune-cases.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "run_id": "openai-governance-retune",
+                        "domain_pack": "company-action",
+                        "intake": {
+                            "event_framing": "Assess OpenAI strategy after a board-driven leadership crisis.",
+                            "focus_entities": ["OpenAI"],
+                            "current_development": "OpenAI faces leadership turnover, governance questions, and partner pressure.",
+                            "current_stage": "trigger",
+                            "time_horizon": "120d",
+                            "suggested_entities": ["Board", "Enterprise Customers"],
+                        },
+                        "assumptions": {
+                            "summary": ["The company will prioritize stakeholder reassurance."],
+                            "suggested_actors": ["Board", "Enterprise Customers"],
+                        },
+                        "documents": {
+                            "leadership-transition.md": "OpenAI leadership turnover created partner pressure and governance concern.",
+                            "board-reset.md": "Board reset and stakeholder reassurance dominate the next strategic move.",
+                        },
+                        "expected_top_branch": "Nonexistent branch",
+                        "expected_root_strategy": "Nonexistent strategy",
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        result = runner.invoke(
+            app,
+            [
+                "run-replay-retuning",
+                "--workspace-root",
+                ".",
+                "--domain-pack",
+                "company-action",
+                "--input",
+                "retune-cases.json",
+            ],
+        )
+
+    assert result.exit_code != 0
 
 
 def test_run_replay_retuning_command_accepts_replay_case_json(tmp_path: Path) -> None:

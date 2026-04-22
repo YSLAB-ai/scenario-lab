@@ -274,14 +274,8 @@ def _load_json_payload(raw_value: str, *, param_hint: str) -> object:
 
 def _replay_cases_from_payloads(
     *,
-    input: Path | None,
     replay_case_json: list[str] | None,
 ) -> list[ReplayCase] | None:
-    if input is not None:
-        payload = json.loads(input.read_text(encoding="utf-8"))
-        if not isinstance(payload, list):
-            raise ValueError("replay case input must be a JSON array")
-        return [ReplayCase.model_validate(item) for item in payload]
     if replay_case_json is None:
         return None
 
@@ -501,12 +495,11 @@ def run_domain_evolution_command(
 def run_replay_retuning_command(
     workspace_root: Path = typer.Option(Path(".")),
     domain_pack: str = typer.Option(...),
-    input: Path | None = typer.Option(None),
     replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
     no_branch: bool = typer.Option(False),
 ) -> None:
     try:
-        replay_cases = _replay_cases_from_payloads(input=input, replay_case_json=replay_case_json)
+        replay_cases = _replay_cases_from_payloads(replay_case_json=replay_case_json)
     except ValueError as exc:
         raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
     summary = _evolution_service(workspace_root).run_replay_retuning(
@@ -541,7 +534,6 @@ def summarize_domain_evolution_command(
 @app.command("synthesize-domain")
 def synthesize_domain_command(
     workspace_root: Path = typer.Option(Path(".")),
-    input: Path | None = typer.Option(None),
     slug: str | None = typer.Option(None),
     class_name: str | None = typer.Option(None),
     description: str | None = typer.Option(None),
@@ -562,32 +554,29 @@ def synthesize_domain_command(
     replay_seed_case_json: list[str] | None = typer.Option(None, "--replay-seed-case-json"),
     no_branch: bool = typer.Option(False),
 ) -> None:
-    if input is not None:
-        blueprint = DomainBlueprint.model_validate_json(input.read_text(encoding="utf-8"))
-    else:
-        try:
-            blueprint = _domain_blueprint_from_flags(
-                slug=slug,
-                class_name=class_name,
-                description=description,
-                focus_entity_rule_min_count=focus_entity_rule_min_count,
-                focus_entity_rule_exact_count=focus_entity_rule_exact_count,
-                canonical_stage=canonical_stage,
-                suggested_related_actor=suggested_related_actor,
-                follow_up_question=follow_up_question,
-                field_schema=field_schema,
-                actor_category=actor_category,
-                evidence_category=evidence_category,
-                evidence_category_term_json=evidence_category_term_json,
-                semantic_alias_group_json=semantic_alias_group_json,
-                starter_source_json=starter_source_json,
-                field_inference_rule_json=field_inference_rule_json,
-                action_template_json=action_template_json,
-                scoring_weight_json=scoring_weight_json,
-                replay_seed_case_json=replay_seed_case_json,
-            )
-        except ValueError as exc:
-            raise typer.BadParameter(str(exc), param_hint="blueprint") from exc
+    try:
+        blueprint = _domain_blueprint_from_flags(
+            slug=slug,
+            class_name=class_name,
+            description=description,
+            focus_entity_rule_min_count=focus_entity_rule_min_count,
+            focus_entity_rule_exact_count=focus_entity_rule_exact_count,
+            canonical_stage=canonical_stage,
+            suggested_related_actor=suggested_related_actor,
+            follow_up_question=follow_up_question,
+            field_schema=field_schema,
+            actor_category=actor_category,
+            evidence_category=evidence_category,
+            evidence_category_term_json=evidence_category_term_json,
+            semantic_alias_group_json=semantic_alias_group_json,
+            starter_source_json=starter_source_json,
+            field_inference_rule_json=field_inference_rule_json,
+            action_template_json=action_template_json,
+            scoring_weight_json=scoring_weight_json,
+            replay_seed_case_json=replay_seed_case_json,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="blueprint") from exc
     print(json.dumps(_evolution_service(workspace_root).synthesize_domain(blueprint, create_branch=not no_branch)))
 
 
@@ -651,15 +640,13 @@ def rebuild_corpus_embeddings_command(
 
 @app.command("run-replay-suite")
 def run_replay_suite_command(
-    input: Path | None = typer.Option(None),
-    replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
+    replay_case_json: list[str] = typer.Option(..., "--replay-case-json"),
 ) -> None:
     try:
-        cases = _replay_cases_from_payloads(input=input, replay_case_json=replay_case_json)
+        cases = _replay_cases_from_payloads(replay_case_json=replay_case_json)
     except ValueError as exc:
         raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
-    if cases is None:
-        raise typer.BadParameter("required when --input is not provided", param_hint="replay_case_json")
+    assert cases is not None
     print(run_replay_suite(cases).model_dump_json())
 
 
@@ -680,12 +667,11 @@ def list_builtin_replay_cases_command() -> None:
 
 @app.command("summarize-replay-calibration")
 def summarize_replay_calibration_command(
-    input: Path | None = typer.Option(None),
     replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
 ) -> None:
-    if input is not None or replay_case_json is not None:
+    if replay_case_json is not None:
         try:
-            cases = _replay_cases_from_payloads(input=input, replay_case_json=replay_case_json)
+            cases = _replay_cases_from_payloads(replay_case_json=replay_case_json)
         except ValueError as exc:
             raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
         assert cases is not None
