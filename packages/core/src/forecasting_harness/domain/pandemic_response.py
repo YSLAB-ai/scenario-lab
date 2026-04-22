@@ -6,6 +6,7 @@ from forecasting_harness.domain.base import DomainPack, InteractionModel
 from forecasting_harness.domain.template_utils import (
     apply_manifest_action_biases,
     apply_manifest_state_overlays,
+    any_term_matches,
     bounded,
     compose_signal_text,
     count_term_matches,
@@ -141,6 +142,54 @@ class PandemicResponsePack(DomainPack):
 
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
+
+    def recommend_objective_profile(self, intake: IntakeDraft, state: Any):
+        from forecasting_harness.objectives import objective_profile_by_name
+
+        focal_actor = max(
+            (
+                actor
+                for actor in getattr(state, "actors", [])
+                if getattr(getattr(actor, "behavior_profile", None), "domestic_sensitivity", None) is not None
+            ),
+            key=lambda actor: (
+                actor.behavior_profile.domestic_sensitivity or 0.0,
+                actor.behavior_profile.reputational_sensitivity or 0.0,
+                actor.actor_id,
+            ),
+            default=None,
+        )
+        if focal_actor is None:
+            return self.default_objective_profile()
+
+        hospital = numeric_field(state, "hospital_strain", 0.35)
+        compliance = numeric_field(state, "public_compliance", 0.5)
+        transmission = numeric_field(state, "transmission_pressure", 0.45)
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+        )
+        if (
+            (focal_actor.behavior_profile.domestic_sensitivity or 0.0) >= 0.7
+            and any_term_matches(
+                text,
+                [
+                    "government credibility",
+                    "public compliance",
+                    "political pressure",
+                    "hospital strain",
+                    "mandates",
+                    "public trust",
+                ],
+            )
+            and (hospital >= 0.6 or compliance <= 0.45 or transmission >= 0.65)
+        ):
+            return objective_profile_by_name("domestic-politics-first").model_copy(
+                update={"focal_actor_id": focal_actor.actor_id}
+            )
+        return self.default_objective_profile()
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
@@ -443,6 +492,49 @@ class PandemicResponsePack(DomainPack):
             "negotiation": bounded(0.18 + alignment * 0.26 + compliance * 0.18 + vaccine * 0.16),
             "economic_stress": bounded(0.22 + transmission * 0.16 + max(0.0, 0.5 - compliance) * 0.18 + (0.12 if phase in {"containment", "surge-response"} else 0.04)),
         }
+
+    def score_actor_impacts(self, state: Any) -> dict[str, dict[str, float]]:
+        hospital = numeric_field(state, "hospital_strain", 0.35)
+        alignment = numeric_field(state, "policy_alignment", 0.45)
+        compliance = numeric_field(state, "public_compliance", 0.5)
+        testing = numeric_field(state, "testing_capacity", 0.45)
+        transmission = numeric_field(state, "transmission_pressure", 0.45)
+        vaccine = numeric_field(state, "vaccine_readiness", 0.1)
+        actor_impacts: dict[str, dict[str, float]] = {}
+
+        for actor in getattr(state, "actors", []):
+            profile = getattr(actor, "behavior_profile", None)
+            if profile is None:
+                continue
+
+            actor_impacts[actor.actor_id] = {
+                "domestic_sensitivity": bounded(
+                    (profile.domestic_sensitivity or 0.0)
+                    * (0.8 + hospital * 0.25 + max(0.0, 0.55 - compliance) * 0.35)
+                ),
+                "economic_pain_tolerance": bounded(
+                    (profile.economic_pain_tolerance or 0.0)
+                    * (0.55 + vaccine * 0.18 + max(0.0, 0.55 - hospital) * 0.15 - transmission * 0.1)
+                ),
+                "negotiation_openness": bounded(
+                    (profile.negotiation_openness or 0.0)
+                    * (0.55 + alignment * 0.25 + compliance * 0.15 - transmission * 0.15)
+                ),
+                "reputational_sensitivity": bounded(
+                    (profile.reputational_sensitivity or 0.0)
+                    * (0.7 + max(0.0, 0.5 - compliance) * 0.25 + hospital * 0.15)
+                ),
+                "alliance_dependence": bounded(
+                    (profile.alliance_dependence or 0.0)
+                    * (0.8 + alignment * 0.25 + max(0.0, 0.55 - testing) * 0.25)
+                ),
+                "coercive_bias": bounded(
+                    (profile.coercive_bias or 0.0)
+                    * (0.35 + max(0.0, 0.45 - compliance) * 0.2 + transmission * 0.1)
+                ),
+            }
+
+        return actor_impacts
 
     def validate_state(self, state: Any) -> list[str]:
         phase = getattr(state, "phase", None) or ""

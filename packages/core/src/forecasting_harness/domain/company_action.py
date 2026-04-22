@@ -132,6 +132,54 @@ class CompanyActionPack(DomainPack):
     def is_terminal(self, state: Any, depth: int) -> bool:
         return getattr(state, "phase", None) == "resolution"
 
+    def recommend_objective_profile(self, intake: IntakeDraft, state: Any):
+        from forecasting_harness.objectives import objective_profile_by_name
+
+        focal_actor = max(
+            (
+                actor
+                for actor in getattr(state, "actors", [])
+                if getattr(getattr(actor, "behavior_profile", None), "domestic_sensitivity", None) is not None
+            ),
+            key=lambda actor: (
+                actor.behavior_profile.domestic_sensitivity or 0.0,
+                actor.behavior_profile.reputational_sensitivity or 0.0,
+                actor.actor_id,
+            ),
+            default=None,
+        )
+        if focal_actor is None:
+            return self.default_objective_profile()
+
+        board_cohesion = numeric_field(state, "board_cohesion", 0.5)
+        brand_sentiment = numeric_field(state, "brand_sentiment", 0.5)
+        regulatory_pressure = numeric_field(state, "regulatory_pressure", 0.35)
+        text = compose_signal_text(
+            intake.event_framing,
+            intake.current_development,
+            intake.known_constraints,
+            intake.known_unknowns,
+        )
+        if (
+            (focal_actor.behavior_profile.domestic_sensitivity or 0.0) >= 0.7
+            and any_term_matches(
+                text,
+                [
+                    "board confidence",
+                    "leadership credibility",
+                    "stakeholder confidence",
+                    "ceo transition",
+                    "governance crisis",
+                    "board cohesion",
+                ],
+            )
+            and (board_cohesion <= 0.45 or brand_sentiment <= 0.45 or regulatory_pressure >= 0.45)
+        ):
+            return objective_profile_by_name("domestic-politics-first").model_copy(
+                update={"focal_actor_id": focal_actor.actor_id}
+            )
+        return self.default_objective_profile()
+
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
         board_cohesion = numeric_field(state, "board_cohesion", 0.5)
@@ -362,6 +410,45 @@ class CompanyActionPack(DomainPack):
             "negotiation": bounded(0.18 + sentiment * 0.28 + max(0, runway - 6) * 0.03 + board_cohesion * 0.12 + operational_stability * 0.1),
             "economic_stress": bounded(0.72 - min(runway, 12) / 16 + pressure * 0.18 + max(0.0, 0.5 - operational_stability) * 0.2),
         }
+
+    def score_actor_impacts(self, state: Any) -> dict[str, dict[str, float]]:
+        board_cohesion = numeric_field(state, "board_cohesion", 0.5)
+        runway = integer_field(state, "cash_runway_months", 9)
+        sentiment = numeric_field(state, "brand_sentiment", 0.5)
+        operational_stability = numeric_field(state, "operational_stability", 0.5)
+        pressure = numeric_field(state, "regulatory_pressure", 0.35)
+        actor_impacts: dict[str, dict[str, float]] = {}
+
+        for actor in getattr(state, "actors", []):
+            profile = getattr(actor, "behavior_profile", None)
+            if profile is None:
+                continue
+
+            actor_impacts[actor.actor_id] = {
+                "domestic_sensitivity": bounded(
+                    (profile.domestic_sensitivity or 0.0)
+                    * (0.7 + max(0.0, 0.55 - board_cohesion) * 0.45 + max(0.0, 0.5 - sentiment) * 0.35)
+                ),
+                "economic_pain_tolerance": bounded(
+                    (profile.economic_pain_tolerance or 0.0)
+                    * (0.55 + min(runway, 12) / 18 - pressure * 0.15 + operational_stability * 0.05)
+                ),
+                "negotiation_openness": bounded(
+                    (profile.negotiation_openness or 0.0)
+                    * (0.7 + board_cohesion * 0.3 + max(0.0, 0.7 - pressure) * 0.2)
+                ),
+                "reputational_sensitivity": bounded(
+                    (profile.reputational_sensitivity or 0.0)
+                    * (0.7 + max(0.0, 0.55 - sentiment) * 0.45 + pressure * 0.15)
+                ),
+                "alliance_dependence": bounded((profile.alliance_dependence or 0.0) * (0.4 + pressure * 0.3)),
+                "coercive_bias": bounded(
+                    (profile.coercive_bias or 0.0)
+                    * (0.45 + pressure * 0.25 + max(0.0, 0.5 - board_cohesion) * 0.2)
+                ),
+            }
+
+        return actor_impacts
 
     def validate_state(self, state: Any) -> list[str]:
         phase = getattr(state, "phase", None) or ""

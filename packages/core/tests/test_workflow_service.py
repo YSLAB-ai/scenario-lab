@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from forecasting_harness.artifacts import RunRepository
+from forecasting_harness.compatibility import compare_belief_states
 from forecasting_harness.domain.company_action import CompanyActionPack
 from forecasting_harness.domain.election_shock import ElectionShockPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
@@ -15,6 +16,7 @@ from forecasting_harness.domain.regulatory_enforcement import RegulatoryEnforcem
 from forecasting_harness.models import BeliefState
 from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.query_api import summarize_top_branches
+from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.models import (
     ApprovalPacket,
     AssumptionSummary,
@@ -273,6 +275,306 @@ def test_draft_intake_guidance_uses_domain_pack_hooks(tmp_path: Path) -> None:
     assert "military_posture" in guidance.pack_field_schema
 
 
+def test_compile_belief_state_infers_actor_behavior_profiles_from_interstate_signals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess whether domestic resolve and alliance signaling drive the next Taiwan Strait phase.",
+            focus_entities=["China", "Taiwan"],
+            current_development=(
+                "Beijing is signaling resolve ahead of domestic political meetings while Taipei emphasizes"
+                " alliance coordination and US security support."
+            ),
+            current_stage="signaling",
+            time_horizon="30d",
+            known_constraints=["Leaders face domestic audience costs."],
+            suggested_entities=["US"],
+        ),
+        assumptions=AssumptionSummary(
+            summary=[
+                "Chinese leaders are sensitive to domestic resolve narratives.",
+                "Taiwan is relying on alliance signaling and US backing."
+            ],
+            suggested_actors=["Japan"],
+        ),
+        approved_evidence_ids=["ev-1", "ev-2"],
+        approved_evidence_items=[
+            EvidencePacketItem(
+                evidence_id="ev-1",
+                source_id="src-1",
+                source_title="Resolve signal",
+                reason="Supports domestic resolve pressure",
+                raw_passages=[
+                    "Chinese officials framed the exercise as a resolve signal for domestic audiences before party meetings."
+                ],
+            ),
+            EvidencePacketItem(
+                evidence_id="ev-2",
+                source_id="src-2",
+                source_title="Alliance signal",
+                reason="Supports alliance dependence",
+                raw_passages=[
+                    "Taiwanese officials highlighted alliance coordination, US support, and broader security commitments."
+                ],
+            ),
+        ],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["China"].behavior_profile is not None
+    assert actors["China"].behavior_profile.domestic_sensitivity is not None
+    assert actors["China"].behavior_profile.domestic_sensitivity > 0.6
+    assert actors["Taiwan"].behavior_profile is not None
+    assert actors["Taiwan"].behavior_profile.alliance_dependence is not None
+    assert actors["Taiwan"].behavior_profile.alliance_dependence > 0.6
+
+
+def test_compile_belief_state_does_not_match_us_actor_from_russia_substring(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling.",
+            focus_entities=["US", "Russia"],
+            current_development="Russia is discussing alliance coordination and domestic resolve.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(),
+        approved_evidence_ids=["ev-1"],
+        approved_evidence_items=[
+            EvidencePacketItem(
+                evidence_id="ev-1",
+                source_id="src-1",
+                source_title="Russia note",
+                reason="Only mentions Russia",
+                raw_passages=[
+                    "Russia signaled domestic resolve and alliance coordination after the latest move."
+                ],
+            )
+        ],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["Russia"].behavior_profile is not None
+    assert actors["US"].behavior_profile is None
+
+
+def test_compile_belief_state_does_not_fabricate_profile_from_suggested_entity_listing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess escalation around the strait.",
+            focus_entities=["China", "Taiwan"],
+            current_development="Military signaling continues without naming outside backers.",
+            current_stage="signaling",
+            time_horizon="30d",
+            suggested_entities=["United States"],
+        ),
+        assumptions=AssumptionSummary(),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["United States"].behavior_profile is None
+
+
+def test_compile_belief_state_matches_united_states_and_us_aliases_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    united_states_state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["United States", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["US security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+    us_state = compile_belief_state(
+        run_id="crisis-2",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["US", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["United States security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    united_states_actor = {actor.name: actor for actor in united_states_state.actors}["United States"]
+    us_actor = {actor.name: actor for actor in us_state.actors}["US"]
+
+    assert united_states_actor.behavior_profile is not None
+    assert united_states_actor.behavior_profile.alliance_dependence is not None
+    assert us_actor.behavior_profile is not None
+    assert us_actor.behavior_profile.alliance_dependence is not None
+
+
+def test_compile_belief_state_matches_us_punctuation_variant_symmetrically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    punctuated_state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["U.S.", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["United States security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+    united_states_state = compile_belief_state(
+        run_id="crisis-2",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["United States", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=["U.S. security support and alliance coordination remain central."]
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    punctuated_actor = {actor.name: actor for actor in punctuated_state.actors}["U.S."]
+    united_states_actor = {actor.name: actor for actor in united_states_state.actors}["United States"]
+
+    assert punctuated_actor.behavior_profile is not None
+    assert punctuated_actor.behavior_profile.alliance_dependence is not None
+    assert united_states_actor.behavior_profile is not None
+    assert united_states_actor.behavior_profile.alliance_dependence is not None
+
+
+def test_compile_belief_state_dedupes_united_states_alias_family_to_one_actor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=InterstateCrisisPack(),
+        intake=IntakeDraft(
+            event_framing="Assess alliance signaling and security support.",
+            focus_entities=["US", "Taiwan"],
+            current_development="Taipei is emphasizing alliance coordination.",
+            current_stage="signaling",
+            time_horizon="30d",
+            suggested_entities=["United States", "U.S."],
+        ),
+        assumptions=AssumptionSummary(
+            suggested_actors=["United States", "U.S.", "Japan"],
+        ),
+        approved_evidence_ids=[],
+        approved_evidence_items=[],
+    )
+
+    assert [actor.name for actor in state.actors] == ["US", "Taiwan", "Japan"]
+
+
+def test_compile_belief_state_persists_canonical_actor_ids_for_united_states_aliases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    def _compile(alias: str, run_id: str) -> BeliefState:
+        return compile_belief_state(
+            run_id=run_id,
+            revision_id="r1",
+            pack=InterstateCrisisPack(),
+            intake=IntakeDraft(
+                event_framing="Assess alliance signaling and security support.",
+                focus_entities=[alias, "China"],
+                current_development="Alliance coordination and security support remain central.",
+                current_stage="signaling",
+                time_horizon="30d",
+            ),
+            assumptions=AssumptionSummary(
+                summary=["United States security support and alliance coordination remain central."]
+            ),
+            approved_evidence_ids=[],
+            approved_evidence_items=[],
+        )
+
+    united_states_state = _compile("United States", "crisis-1")
+    us_state = _compile("US", "crisis-2")
+    punctuated_state = _compile("U.S.", "crisis-3")
+
+    for state in (united_states_state, us_state, punctuated_state):
+        actor = next(item for item in state.actors if item.name != "China")
+        assert actor.actor_id == "united-states"
+
+    assert compare_belief_states(united_states_state, us_state, tolerances={})["reasons"] == []
+    assert compare_belief_states(united_states_state, punctuated_state, tolerances={})["reasons"] == []
+
+
 def test_draft_approval_packet_summarizes_evidence_and_warnings(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)
@@ -289,6 +591,103 @@ def test_draft_approval_packet_summarizes_evidence_and_warnings(tmp_path: Path) 
     assert packet.revision_id == "r1"
     assert packet.evidence_summary[0]["source_id"] == "source-0"
     assert "known unknowns remain unresolved" in packet.warnings
+
+
+def test_draft_approval_packet_includes_actor_preferences_and_recommended_run_lens(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess domestic resolve and alliance security after the exchange of strikes.",
+        primary_actors=["United States", "Iran"],
+        trigger="U.S. leaders weigh domestic resolve and alliance security commitments after the exchange of strikes.",
+        current_phase="trigger",
+        time_horizon="30d",
+        known_constraints=["United States alliance security backing remains visible."],
+        known_unknowns=["United States domestic audience response is still uncertain."],
+    )
+    evidence = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="doc-1",
+                source_title="Doc 1",
+                reason="Relevant context",
+                raw_passages=[
+                    (
+                        "United States officials described domestic political pressure, public resolve, "
+                        "and alliance security backing as the main constraints."
+                    )
+                ],
+            )
+        ],
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    packet = service.draft_approval_packet("crisis-1", "r1")
+
+    assert packet.actor_preferences
+    united_states = next(item for item in packet.actor_preferences if item["actor_id"] == "united-states")
+    assert united_states["preferences"]["domestic_sensitivity"] >= 0.7
+    assert united_states["preferences"]["alliance_dependence"] >= 0.7
+    assert packet.recommended_run_lens["name"] == "domestic-politics-first"
+    assert packet.recommended_run_lens["aggregation_mode"] == "focal-actor"
+    assert packet.recommended_run_lens["focal_actor_id"] == "united-states"
+
+
+def test_approve_revision_defaults_to_recommended_run_lens_when_none_selected(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess domestic resolve and alliance security after the exchange of strikes.",
+        focus_entities=["United States", "Iran"],
+        current_development="U.S. leaders weigh domestic resolve and alliance security commitments after the exchange of strikes.",
+        current_stage="trigger",
+        time_horizon="30d",
+        known_constraints=["United States alliance security backing remains visible."],
+        known_unknowns=["United States domestic audience response is still uncertain."],
+    )
+    evidence = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="doc-1",
+                source_title="Doc 1",
+                reason="Relevant context",
+                raw_passages=[
+                    (
+                        "United States officials described domestic political pressure, public resolve, "
+                        "and alliance security backing as the main constraints."
+                    )
+                ],
+            )
+        ],
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", AssumptionSummary())
+
+    approved_assumptions = repository.load_revision_model(
+        "crisis-1", "assumptions", "r1", AssumptionSummary, approved=True
+    )
+    result = service.simulate_revision("crisis-1", "r1", pack=pack)
+    approved_state = repository.load_revision_model(
+        "crisis-1", "belief-state", "r1", BeliefState, approved=True
+    )
+
+    assert approved_assumptions.objective_profile_name == ""
+    assert approved_state.objectives["selected_run_lens"] == "domestic-politics-first"
+    assert approved_state.objectives["focal_actor_id"] == "united-states"
+    assert result["aggregation_lens"]["name"] == "domestic-politics-first"
+    assert result["aggregation_lens"]["focal_actor_id"] == "united-states"
 
 
 def test_summarize_run_returns_revision_statuses(tmp_path: Path) -> None:
@@ -474,7 +873,13 @@ def test_approve_revision_freezes_revision_artifacts_and_advances_the_run() -> N
     assert repository.written_revision_json == [
         ("run-1", "intake", "rev-1", intake.model_dump(mode="json"), True),
         ("run-1", "evidence", "rev-1", evidence.model_dump(mode="json"), True),
-        ("run-1", "assumptions", "rev-1", assumptions.model_dump(mode="json"), True),
+        (
+            "run-1",
+            "assumptions",
+            "rev-1",
+            assumptions.model_dump(mode="json"),
+            True,
+        ),
     ]
     assert repository.saved_runs == [run]
     assert repository.appended_events == [("run-1", "revision-approved", {"revision_id": "rev-1"})]
@@ -507,8 +912,80 @@ def test_simulate_revision_writes_belief_state_summary_and_report(tmp_path: Path
     assert "# Scenario Report" in report
     assert "- Revision: r1" in report
     assert "- Unsupported assumptions: 1" in report
+    assert "## Actor Utility Summary" in report
+    assert "## Aggregation Lens" in report
+    assert "## Top Branch Aggregate Breakdown" in report
     assert "## Scenario Families" in report
     assert "low-credibility exploratory run" not in report
+
+
+def test_simulate_revision_honors_approved_objective_profile_over_recommended_lens(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess domestic resolve and alliance security after the exchange of strikes.",
+        primary_actors=["United States", "Iran"],
+        trigger="U.S. leaders weigh domestic resolve and alliance security commitments after the exchange of strikes.",
+        current_phase="trigger",
+        time_horizon="30d",
+        known_constraints=["United States alliance security backing remains visible."],
+        known_unknowns=["United States domestic audience response is still uncertain."],
+    )
+    evidence = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-1",
+                source_id="doc-1",
+                source_title="Doc 1",
+                reason="Relevant context",
+                raw_passages=[
+                    (
+                        "United States officials described domestic political pressure, public resolve, "
+                        "and alliance security backing as the main constraints."
+                    )
+                ],
+            )
+        ],
+    )
+    assumptions = AssumptionSummary(summary=["assumption-1"], objective_profile_name="balanced")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    result = service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    assert result["aggregation_lens"]["name"] == "balanced-system"
+    assert result["aggregation_lens"]["aggregation_mode"] == "balanced-system"
+    assert result["recommended_run_lens"]["name"] == "domestic-politics-first"
+    assert result["recommended_run_lens"]["focal_actor_id"] == "united-states"
+    report = (repository.run_dir("crisis-1") / "reports" / "r1.report.md").read_text(encoding="utf-8")
+    assert "Lens: balanced-system" in report
+    assert "Recommended lens: domestic-politics-first" in report
+
+
+def test_approve_revision_rejects_invalid_objective_profile_name_before_simulation(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, _ = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+
+    with pytest.raises(ValueError, match="unknown objective profile: typo-lens"):
+        service.approve_revision(
+            "crisis-1",
+            "r1",
+            AssumptionSummary(summary=["assumption-1"], objective_profile_name="typo-lens"),
+        )
+
+    assumptions_path = repository.run_dir("crisis-1") / "assumptions" / "r1.approved.json"
+    assert not assumptions_path.exists()
 
 
 def test_generate_report_writes_revision_specific_reports_and_credibility_note(tmp_path: Path) -> None:
@@ -1284,6 +1761,102 @@ def test_simulate_revision_reuses_parent_tree_when_child_revision_is_compatible(
     assert result["reuse_summary"]["source_revision_id"] == "r1"
     assert result["reuse_summary"]["reused_nodes"] > 0
     assert result["reuse_summary"]["skipped_nodes"] > 0
+
+
+def test_simulate_revision_reuses_parent_tree_when_only_recommended_lens_changes(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        focus_entities=["Japan", "China"],
+        current_development="Naval transit through the Taiwan Strait",
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+    evidence = _make_revision_inputs("r1", evidence_count=2)[1]
+    assumptions = AssumptionSummary(summary=["assumption-1"], objective_profile_name="balanced")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+    service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    service.begin_revision_update("crisis-1", "r2", parent_revision_id="r1")
+    service.approve_revision("crisis-1", "r2", assumptions.model_copy())
+
+    original_recommend = pack.recommend_objective_profile
+
+    def _alternate_recommendation(intake_arg, state_arg):
+        if state_arg.revision_id == "r2":
+            from forecasting_harness.objectives import objective_profile_by_name
+
+            return objective_profile_by_name("domestic-politics-first").model_copy(
+                update={"focal_actor_id": "japan"}
+            )
+        return original_recommend(intake_arg, state_arg)
+
+    pack.recommend_objective_profile = _alternate_recommendation  # type: ignore[method-assign]
+    try:
+        result = service.simulate_revision("crisis-1", "r2", pack=pack)
+    finally:
+        pack.recommend_objective_profile = original_recommend  # type: ignore[method-assign]
+
+    child_state = repository.load_revision_model("crisis-1", "belief-state", "r2", BeliefState, approved=True)
+    assert child_state.objectives["selected_run_lens"] == "balanced-system"
+    assert "recommended_run_lens" not in child_state.objectives
+    assert result["aggregation_lens"]["name"] == "balanced-system"
+    assert result["recommended_run_lens"]["name"] == "domestic-politics-first"
+    assert result["reuse_summary"]["enabled"] is True
+    assert result["reuse_summary"]["source_revision_id"] == "r1"
+    assert result["reuse_summary"]["reused_nodes"] > 0
+
+
+def test_simulate_revision_preserves_focal_actor_for_explicit_domestic_lens_selection(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess domestic resolve pressure.",
+        focus_entities=["China", "Taiwan"],
+        current_development="Beijing is signaling resolve ahead of domestic political meetings.",
+        current_stage="signaling",
+        time_horizon="30d",
+    )
+    evidence = EvidencePacket(
+        revision_id="r1",
+        items=[
+            EvidencePacketItem(
+                evidence_id="r1-ev-0",
+                source_id="src-1",
+                source_title="Resolve signal",
+                reason="Supports domestic resolve pressure",
+                raw_passages=[
+                    "Chinese officials framed the latest move as a resolve signal for domestic audiences."
+                ],
+            )
+        ],
+    )
+    assumptions = AssumptionSummary(
+        summary=["China remains highly sensitive to domestic resolve narratives."],
+        objective_profile_name="domestic-politics-first",
+    )
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    result = service.simulate_revision("crisis-1", "r1", pack=pack)
+
+    approved_state = repository.load_revision_model("crisis-1", "belief-state", "r1", BeliefState, approved=True)
+    assert approved_state.objectives["selected_run_lens"] == "domestic-politics-first"
+    assert approved_state.objectives["focal_actor_id"] == "china"
+    assert result["aggregation_lens"]["name"] == "domestic-politics-first"
+    assert result["aggregation_lens"]["focal_actor_id"] == "china"
+    assert result["recommended_run_lens"]["name"] == "balanced-system"
+    assert result["recommended_run_lens"]["focal_actor_id"] is None
 
 
 def test_revision_record_tracks_lifecycle_timestamps(tmp_path: Path) -> None:

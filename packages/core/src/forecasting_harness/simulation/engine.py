@@ -50,6 +50,8 @@ class _NodeStats:
     visits: int = 0
     value_sum: float = 0.0
     metric_sums: dict[str, float] = field(default_factory=dict)
+    actor_metric_sums: dict[str, dict[str, float]] = field(default_factory=dict)
+    aggregate_score_breakdown_sums: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -89,6 +91,14 @@ class _SearchNode:
     @property
     def metric_sums(self) -> dict[str, float]:
         return self.stats.metric_sums
+
+    @property
+    def actor_metric_sums(self) -> dict[str, dict[str, float]]:
+        return self.stats.actor_metric_sums
+
+    @property
+    def aggregate_score_breakdown_sums(self) -> dict[str, float]:
+        return self.stats.aggregate_score_breakdown_sums
 
 
 @dataclass
@@ -145,6 +155,13 @@ class _ReuseTracker:
         node.stats.value_sum = float(cached.get("value_sum", 0.0))
         node.stats.metric_sums = {
             str(name): float(value) for name, value in dict(cached.get("metric_sums", {})).items()
+        }
+        node.stats.actor_metric_sums = {
+            str(actor_id): {str(name): float(value) for name, value in dict(metrics).items()}
+            for actor_id, metrics in dict(cached.get("actor_metric_sums", {})).items()
+        }
+        node.stats.aggregate_score_breakdown_sums = {
+            str(name): float(value) for name, value in dict(cached.get("aggregate_score_breakdown_sums", {})).items()
         }
         self.reused_nodes += 1
 
@@ -297,6 +314,30 @@ def _mean_metrics(node: _SearchNode) -> dict[str, float]:
     return node.mean_metrics
 
 
+def _actor_metric_sums(actor_metrics: dict[str, dict[str, float]]) -> dict[str, dict[str, float]]:
+    return {
+        actor_id: {metric_name: float(metric_value) for metric_name, metric_value in metrics.items()}
+        for actor_id, metrics in actor_metrics.items()
+    }
+
+
+def _mean_actor_metrics(node: _SearchNode) -> dict[str, dict[str, float]]:
+    if node.stats.visits == 0:
+        return {}
+    return {
+        actor_id: {metric_name: value / node.stats.visits for metric_name, value in metrics.items()}
+        for actor_id, metrics in node.stats.actor_metric_sums.items()
+    }
+
+
+def _mean_breakdown(node: _SearchNode) -> dict[str, float]:
+    if node.stats.visits == 0:
+        return {}
+    return {
+        metric_name: value / node.stats.visits for metric_name, value in node.stats.aggregate_score_breakdown_sums.items()
+    }
+
+
 def _serialize_tree_node(node: _SearchNode) -> dict[str, Any]:
     return {
         "node_id": node.node_id,
@@ -310,8 +351,12 @@ def _serialize_tree_node(node: _SearchNode) -> dict[str, Any]:
         "visits": node.visits,
         "value_sum": node.value_sum,
         "metric_sums": node.metric_sums,
+        "actor_metric_sums": node.actor_metric_sums,
+        "aggregate_score_breakdown_sums": node.aggregate_score_breakdown_sums,
         "score": node.mean_value,
         "metrics": node.mean_metrics,
+        "actor_metrics": _mean_actor_metrics(node),
+        "aggregate_score_breakdown": _mean_breakdown(node),
         "child_ids": [child.node_id for child in node.children or []],
     }
 
@@ -406,7 +451,11 @@ class SimulationEngine:
             return None
         return max(children, key=lambda child: (child.prior, child.branch_id or child.node_id))
 
-    def _evaluate_leaf(self, node: _SearchNode, config: SearchConfig) -> tuple[float, dict[str, float], int]:
+    def _evaluate_leaf(
+        self,
+        node: _SearchNode,
+        config: SearchConfig,
+    ) -> tuple[float, dict[str, float], dict[str, dict[str, float]], dict[str, float], int]:
         rollout_state = node.state
         rollout_depth = node.depth
         steps = 0
@@ -431,8 +480,10 @@ class SimulationEngine:
             steps += 1
 
         metrics = self.domain_pack.score_state(rollout_state)
-        value = scalarize_node_value(metrics, self.objective_profile)
-        return value, metrics, rollout_depth
+        actor_impact_fn = getattr(self.domain_pack, "score_actor_impacts", None)
+        actor_metrics = actor_impact_fn(rollout_state) if callable(actor_impact_fn) else {}
+        value, aggregate_score_breakdown = self.objective_profile.aggregate(metrics, actor_metrics)
+        return value, metrics, actor_metrics, aggregate_score_breakdown, rollout_depth
 
     def _synthesize_branch(self, node: _SearchNode, config: SearchConfig, *, root_visits: int) -> dict[str, Any]:
         current_state = node.state
@@ -470,6 +521,9 @@ class SimulationEngine:
             )
 
         terminal_metrics = self.domain_pack.score_state(current_state)
+        actor_impact_fn = getattr(self.domain_pack, "score_actor_impacts", None)
+        actor_metrics = actor_impact_fn(current_state) if callable(actor_impact_fn) else {}
+        _, aggregate_score_breakdown = self.objective_profile.aggregate(terminal_metrics, actor_metrics)
         key_drivers = sorted(driver_fields)
         if not key_drivers:
             key_drivers = [
@@ -486,6 +540,8 @@ class SimulationEngine:
             "path": path,
             "terminal_phase": getattr(current_state, "phase", None),
             "terminal_metrics": terminal_metrics,
+            "terminal_actor_metrics": actor_metrics,
+            "terminal_aggregate_score_breakdown": aggregate_score_breakdown,
             "key_drivers": key_drivers[:3],
             "confidence_signal": round(node.visits / max(root_visits, 1), 3),
         }
@@ -527,14 +583,24 @@ class SimulationEngine:
                     node = max(unvisited_children, key=lambda child: (child.prior, child.branch_id or child.node_id))
                     path.append(node)
 
-            value, metrics, reached_depth = self._evaluate_leaf(node, config)
+            value, metrics, actor_metrics, aggregate_score_breakdown, reached_depth = self._evaluate_leaf(node, config)
             max_depth_reached = max(max_depth_reached, reached_depth)
             metric_updates = _metric_sums(metrics)
+            actor_metric_updates = _actor_metric_sums(actor_metrics)
+            aggregate_score_breakdown_updates = _metric_sums(aggregate_score_breakdown)
             for ancestor in path:
                 ancestor.stats.visits += 1
                 ancestor.stats.value_sum += value
                 for name, metric_value in metric_updates.items():
                     ancestor.stats.metric_sums[name] = ancestor.stats.metric_sums.get(name, 0.0) + metric_value
+                for actor_id, actor_metric_map in actor_metric_updates.items():
+                    existing_actor_metrics = ancestor.stats.actor_metric_sums.setdefault(actor_id, {})
+                    for metric_name, metric_value in actor_metric_map.items():
+                        existing_actor_metrics[metric_name] = existing_actor_metrics.get(metric_name, 0.0) + metric_value
+                for name, metric_value in aggregate_score_breakdown_updates.items():
+                    ancestor.stats.aggregate_score_breakdown_sums[name] = (
+                        ancestor.stats.aggregate_score_breakdown_sums.get(name, 0.0) + metric_value
+                    )
 
         root_children = self._expand_node(root)
         branch_rows: list[dict[str, Any]] = []
@@ -543,6 +609,8 @@ class SimulationEngine:
                 "branch_id": child.branch_id,
                 "label": child.label,
                 "metrics": _mean_metrics(child),
+                "actor_metrics": _mean_actor_metrics(child),
+                "aggregate_score_breakdown": _mean_breakdown(child),
                 "score": child.mean_value,
                 "visits": child.visits,
                 "prior": child.prior,
@@ -551,7 +619,11 @@ class SimulationEngine:
             }
             if child.visits == 0:
                 branch["metrics"] = dict(branch["terminal_metrics"])
-                branch["score"] = scalarize_node_value(branch["terminal_metrics"], self.objective_profile)
+                branch["actor_metrics"] = dict(branch["terminal_actor_metrics"])
+                branch["score"], branch["aggregate_score_breakdown"] = self.objective_profile.aggregate(
+                    branch["terminal_metrics"],
+                    branch["actor_metrics"],
+                )
             branch_rows.append(branch)
         branches = sorted(
             branch_rows,

@@ -207,7 +207,10 @@ def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
     assert (run_dir / "belief-state" / "r1.approved.json").exists()
     assert (run_dir / "simulation" / "r1.approved.json").exists()
     assert (run_dir / "reports" / "r1.report.md").exists()
-    assert "- Unsupported assumptions: 1" in (run_dir / "reports" / "r1.report.md").read_text(encoding="utf-8")
+    report = (run_dir / "reports" / "r1.report.md").read_text(encoding="utf-8")
+    assert "- Unsupported assumptions: 1" in report
+    assert "## Actor Utility Summary" in report
+    assert "## Aggregation Lens" in report
 
 
 def test_draft_evidence_packet_command(tmp_path: Path) -> None:
@@ -716,6 +719,8 @@ def test_draft_approval_packet_command_returns_grouped_summary(tmp_path: Path) -
     payload = json.loads(result.stdout)
     assert payload["revision_id"] == "r1"
     assert "warnings" in payload
+    assert "actor_preferences" in payload
+    assert "recommended_run_lens" in payload
     assert payload["evidence_summary"][0]["source_id"] == "doc-1"
 
 
@@ -789,7 +794,143 @@ def test_approve_revision_command_accepts_direct_flags(tmp_path: Path) -> None:
     approved = RunRepository(root).load_revision_model("crisis-1", "assumptions", "r1", AssumptionSummary, approved=True)
     assert approved.summary == ["Both sides prefer limited signaling"]
     assert approved.suggested_actors == ["United States"]
-    assert approved.objective_profile_name == "balanced"
+    assert approved.objective_profile_name == "balanced-system"
+
+
+def test_approve_revision_command_leaves_objective_profile_unset_when_flag_omitted(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "revision_id": "r1",
+                "items": [
+                    {
+                        "evidence_id": "r1-ev-1",
+                        "source_id": "doc-1",
+                        "source_title": "Doc 1",
+                        "reason": "Relevant context",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "approve-revision",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--assumption",
+            "Both sides prefer limited signaling",
+        ],
+    )
+
+    assert result.exit_code == 0
+    approved = RunRepository(root).load_revision_model("crisis-1", "assumptions", "r1", AssumptionSummary, approved=True)
+    assert approved.summary == ["Both sides prefer limited signaling"]
+    assert approved.objective_profile_name == ""
+
+
+def test_approve_revision_command_rejects_invalid_objective_profile_flag(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "revision_id": "r1",
+                "items": [
+                    {
+                        "evidence_id": "r1-ev-1",
+                        "source_id": "doc-1",
+                        "source_title": "Doc 1",
+                        "reason": "Relevant context",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "approve-revision",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--objective-profile-name",
+            "typo-lens",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "unknown objective profile:" in result.output
+    assert "typo-lens" in result.output
+    assert not (root / "runs" / "crisis-1" / "assumptions" / "r1.approved.json").exists()
 
 
 def test_summarize_run_and_revision_commands_return_narrow_json(tmp_path: Path) -> None:

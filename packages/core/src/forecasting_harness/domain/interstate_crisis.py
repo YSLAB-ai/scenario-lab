@@ -85,7 +85,7 @@ class InterstateCrisisPack(DomainPack):
         return InteractionModel.EVENT_DRIVEN
 
     def search_config(self) -> dict[str, int | float]:
-        return {"iterations": 18, "max_depth": 4, "rollout_depth": 3, "c_puct": 1.15}
+        return {"iterations": 32, "max_depth": 4, "rollout_depth": 3, "c_puct": 1.15}
 
     def canonical_phases(self) -> list[str]:
         return list(self.PHASES)
@@ -189,13 +189,13 @@ class InterstateCrisisPack(DomainPack):
             text=text,
             slug=self.slug(),
             field_values={
-            "alliance_pressure": round(bounded(alliance_pressure), 3),
-            "leader_style": leader_style,
-            "geographic_flashpoint": round(bounded(geographic_flashpoint), 3),
-            "mediation_window": round(bounded(mediation_window), 3),
-            "military_posture": military_posture,
-            "tension_index": round(bounded(tension_index), 3),
-            "diplomatic_channel": round(bounded(diplomatic_channel), 3),
+                "alliance_pressure": round(bounded(alliance_pressure), 3),
+                "leader_style": leader_style,
+                "geographic_flashpoint": round(bounded(geographic_flashpoint), 3),
+                "mediation_window": round(bounded(mediation_window), 3),
+                "military_posture": military_posture,
+                "tension_index": round(bounded(tension_index), 3),
+                "diplomatic_channel": round(bounded(diplomatic_channel), 3),
             },
         )
 
@@ -203,6 +203,35 @@ class InterstateCrisisPack(DomainPack):
         if phase not in self.PHASES:
             return [f"unsupported phase: {phase}"]
         return []
+
+    def recommend_objective_profile(self, intake: IntakeDraft, state: "BeliefState"):
+        from forecasting_harness.objectives import objective_profile_by_name
+
+        domestic_focus_actor = max(
+            (
+                actor
+                for actor in getattr(state, "actors", [])
+                if getattr(getattr(actor, "behavior_profile", None), "domestic_sensitivity", None) is not None
+            ),
+            key=lambda actor: actor.behavior_profile.domestic_sensitivity or 0.0,
+            default=None,
+        )
+        alliance_salient = any(
+            (getattr(actor.behavior_profile, "alliance_dependence", 0.0) or 0.0) >= 0.7
+            for actor in getattr(state, "actors", [])
+            if getattr(actor, "behavior_profile", None) is not None
+        )
+        text = " ".join([intake.event_framing, intake.current_development]).lower()
+        if (
+            domestic_focus_actor is not None
+            and (domestic_focus_actor.behavior_profile.domestic_sensitivity or 0.0) >= 0.7
+            and alliance_salient
+            and any_term_matches(text, ["domestic", "resolve", "alliance", "security"])
+        ):
+            return objective_profile_by_name("domestic-politics-first").model_copy(
+                update={"focal_actor_id": domestic_focus_actor.actor_id}
+            )
+        return self.default_objective_profile()
 
     def is_terminal(self, state: "BeliefState", depth: int) -> bool:
         return getattr(state, "phase", None) == "settlement-stalemate"
@@ -553,6 +582,31 @@ class InterstateCrisisPack(DomainPack):
             "negotiation": bounded(diplomacy + mediation * 0.16 + max(0.0, 0.55 - tension) * 0.08),
             "economic_stress": bounded(phase_stress + tension * 0.15 + flashpoint * 0.08),
         }
+
+    def score_actor_impacts(self, state: "BeliefState") -> dict[str, dict[str, float]]:
+        tension = _numeric_field(state, "tension_index", 0.5)
+        diplomacy = _numeric_field(state, "diplomatic_channel", 0.3)
+        alliance = _numeric_field(state, "alliance_pressure", 0.25)
+        mediation = _numeric_field(state, "mediation_window", 0.25)
+        actor_impacts: dict[str, dict[str, float]] = {}
+
+        for actor in getattr(state, "actors", []):
+            profile = getattr(actor, "behavior_profile", None)
+            if profile is None:
+                continue
+
+            actor_impacts[actor.actor_id] = {
+                "domestic_sensitivity": bounded(profile.domestic_sensitivity or 0.0),
+                "economic_pain_tolerance": bounded((profile.economic_pain_tolerance or 0.0) * (1.0 - tension * 0.3)),
+                "negotiation_openness": bounded(
+                    (profile.negotiation_openness or 0.0) * (0.6 + diplomacy * 0.5 + mediation * 0.2)
+                ),
+                "reputational_sensitivity": bounded(profile.reputational_sensitivity or 0.0),
+                "alliance_dependence": bounded((profile.alliance_dependence or 0.0) * max(alliance, 0.2)),
+                "coercive_bias": bounded((profile.coercive_bias or 0.0) * (0.5 + tension * 0.4 - diplomacy * 0.1)),
+            }
+
+        return actor_impacts
 
     def validate_state(self, state: "BeliefState") -> list[str]:
         return self.validate_phase(state.phase or "")

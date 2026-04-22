@@ -106,47 +106,47 @@
     ]
   },
   {
-    "run_id": "india-pakistan-crisis",
+    "run_id": "philippines-china-shoal",
     "domain_pack": "interstate-crisis",
     "intake": {
-      "event_framing": "Estimate escalation paths after a cross-border militant attack and military mobilization.",
+      "event_framing": "Assess 21-day escalation risk after a Second Thomas Shoal water-cannon clash sharpens domestic resolve and alliance signaling.",
       "focus_entities": [
-        "India",
-        "Pakistan"
+        "Philippines",
+        "China"
       ],
-      "current_development": "A militant attack near the India-Pakistan border triggers mobilization, retaliatory rhetoric, and mediator pressure.",
+      "current_development": "A Chinese coast guard water-cannon incident near Second Thomas Shoal triggers Philippine public resolve messaging, alliance coordination around a US security guarantee, and a reopened backchannel with Beijing after an intercept threat.",
       "current_stage": "trigger",
-      "time_horizon": "14d",
+      "time_horizon": "21d",
       "known_constraints": [
-        "Nuclear deterrence constrains open war",
-        "International mediators are active"
+        "Both sides want to avoid a direct naval firefight",
+        "US security commitments are being publicly tested"
       ],
       "known_unknowns": [
-        "Whether militant groups will attempt follow-on attacks"
+        "Whether another resupply mission will force a direct intercept"
       ],
       "suggested_entities": [
-        "China",
-        "United States"
+        "United States",
+        "ASEAN"
       ]
     },
     "assumptions": {
       "summary": [
-        "Both governments need to signal resolve domestically"
+        "Philippine leadership faces domestic audience pressure to show resolve while preserving alliance backing and backchannel diplomacy"
       ],
       "suggested_actors": [
-        "China",
-        "United States"
+        "United States",
+        "ASEAN"
       ]
     },
     "documents": {
-      "border-attack.md": "India accuses Pakistan-linked militants after a border attack and threatens retaliation while both armies mobilize.",
-      "mediator-restraint.md": "International mediators urge restraint as India and Pakistan keep diplomatic channels partially open."
+      "shoal-water-cannon.md": "Philippine officials issue an official statement after the Second Thomas Shoal water-cannon clash warning that public resolve, domestic political pressure, and alliance coordination under the US security guarantee will shape the next resupply mission.",
+      "beijing-hotline.md": "Chinese and Philippine officials keep a backchannel hotline active after the shoal clash as regional diplomats push negotiation to avoid another coast guard intercept threat and preserve diplomatic signaling."
     },
-    "expected_top_branch": "Signal resolve (backchannel opening)",
+    "expected_top_branch": "Signal resolve (managed signal)",
     "expected_root_strategy": "Signal resolve",
     "expected_evidence_sources": [
-      "border-attack",
-      "mediator-restraint"
+      "beijing-hotline",
+      "shoal-water-cannon"
     ],
     "expected_inferred_fields": [
       "alliance_pressure",

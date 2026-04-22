@@ -2,6 +2,10 @@
 
 Date: 2026-04-21
 
+## Context
+
+- Start with [README.md](../../README.md) for the concise repo handoff, then use this file and [2026-04-21-actor-utility-pass.md](2026-04-21-actor-utility-pass.md) for detailed verification.
+
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
@@ -19,6 +23,9 @@ Date: 2026-04-21
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
 - The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
+- Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
+- Actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so domain packs inherit actor-aware behavior even when they do not implement custom hooks.
+- The shared actor-aware default now explicitly depends on `score_state()` exposing `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The repo now also supports domain-scoped self-improvement through:
@@ -35,11 +42,18 @@ Date: 2026-04-21
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
+- Belief-state compilation now also infers actor utility preference fields from approved evidence and case framing, including `domestic_sensitivity`, `economic_pain_tolerance`, `negotiation_openness`, `reputational_sensitivity`, `alliance_dependence`, and `coercive_bias`.
 - The repo now also includes a built-in 12-case replay library plus deterministic calibration reporting through:
   - `forecast-harness run-builtin-replay-suite`
   - `forecast-harness summarize-replay-calibration`
+- The interstate replay slice inside that 12-case corpus now includes `philippines-china-shoal`, a preference-differentiated shoal crisis case that preserves full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
+- Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
+- Focal-actor aggregation now uses an explicit `focal_weight` field instead of a hidden multiplier.
+- `aggregation_mode` is now an extensible validated string rather than a closed `Literal[...]`.
+- Destabilization penalty now tracks the worst negative actor utility outcome in a branch instead of reusing a static actor trait.
+- `company-action` and `pandemic-response` now implement domain-specific actor-utility hooks through both `recommend_objective_profile()` and `score_actor_impacts()`, while untouched packs such as `market-shock` and `regulatory-enforcement` inherit the new shared actor-aware defaults.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The company-action pack now infers `board_cohesion` and `operational_stability` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The market-shock pack now infers `contagion_risk` and `policy_optionality` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -64,10 +78,10 @@ Date: 2026-04-21
 - The workflow now exposes concrete ingest tasks for missing evidence categories.
 - The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
-- The test suite passed on 2026-04-21 with:
-  - `packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `213 passed`
-- A realistic 10-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
+- The latest full-suite verification in this worktree on 2026-04-21 ran:
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
+  - Result: `257 passed in 4.76s`
+- A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
   - `india-pakistan-crisis`
@@ -75,6 +89,8 @@ Date: 2026-04-21
   - `boeing-post-reporting`
   - `election-debate-collapse`
   - `market-rate-shock`
+  - `pandemic-first-wave`
+  - `pandemic-vaccine-wave`
   - `regulator-adtech`
   - `supply-rare-earth`
   - `supplier-flooding`
@@ -89,18 +105,27 @@ Date: 2026-04-21
   - `India-Pakistan crisis` -> `Signal resolve (backchannel opening)`
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
+- A direct end-to-end rerun of the checked-in smoke campaign on the actor-utility branch on 2026-04-21 also verified:
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - Result: `16 passed in 0.67s`
+  - Direct branch outputs:
+    - `Pandemic first wave` -> `Containment push (coordination holds)`
+    - `Pandemic vaccine wave` -> `Vaccine acceleration (uptake improves)`
+    - `Regulator ad-tech` -> `Internal remediation`
+    - `Supply rare-earth` -> `Expedite alternatives`
+    - `Supplier flooding` -> `Reserve logistics`
 - The next deepening pass on 2026-04-21 also verified richer evidence-conditioned state construction and replay coverage for:
   - `election-shock`
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The calibration pass on 2026-04-21 also verified:
+- The initial calibration pass on 2026-04-21, before the later pandemic replay expansion, also verified:
   - `forecast-harness run-builtin-replay-suite` -> `case_count = 10`
   - `forecast-harness run-builtin-replay-suite` -> `top_branch_accuracy = 1.0`
   - `forecast-harness run-builtin-replay-suite` -> `root_strategy_accuracy = 1.0`
   - `forecast-harness summarize-builtin-replay-corpus` -> `files = 6`
   - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
-- The pandemic from-zero benchmark pass on 2026-04-21 also verified:
+- The later pandemic from-zero benchmark pass on 2026-04-21 expanded that built-in corpus and also verified:
   - `forecast-harness summarize-builtin-replay-corpus` -> `case_count = 12`
   - `forecast-harness summarize-builtin-replay-corpus` -> `files = 7`
   - `forecast-harness summarize-builtin-replay-corpus` includes domain `pandemic-response`
@@ -196,7 +221,7 @@ Date: 2026-04-21
   - the payload embedded `intake_guidance`, `retrieval_plan`, `ingestion_plan`, and `ingestion_recommendations`
 - A fresh-install simulation smoke test on 2026-04-20 also verified:
   - `simulation/r1.approved.json` contained `search_mode = mcts`
-  - `simulation/r1.approved.json` contained `iterations = 18`
+  - `simulation/r1.approved.json` contained `iterations = 32`
   - the top branch label remained `Signal resolve`
   - `reports/r1.report.md` existed after simulation
 - A fresh-install child-revision smoke test on 2026-04-20 also verified:

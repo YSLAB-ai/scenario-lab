@@ -12,7 +12,11 @@ from forecasting_harness.domain.registry import DomainPackRegistry, build_defaul
 from forecasting_harness.domain.template_utils import normalize_text, term_match_score
 from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.models import BeliefState
-from forecasting_harness.objectives import default_objective_profile
+from forecasting_harness.objectives import (
+    normalize_objective_profile_name,
+    normalize_selected_objective_profile_name,
+    objective_profile_by_name,
+)
 from forecasting_harness.query_api import summarize_scenario_families, summarize_top_branches
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
@@ -53,6 +57,72 @@ def _validate_pack_fields(pack: DomainPack, intake: IntakeDraft) -> None:
             raise ValueError(f"unsupported pack field type: {expected_type_name}")
         if not isinstance(value, expected_type):
             raise ValueError(f"pack_fields.{field_name} must be {expected_type_name}")
+
+
+def _summarize_actor_preferences(state: BeliefState) -> list[dict[str, object]]:
+    actor_preferences: list[dict[str, object]] = []
+    for actor in state.actors:
+        profile = actor.behavior_profile
+        if profile is None:
+            continue
+        preferences = profile.model_dump(exclude_none=True)
+        if not preferences:
+            continue
+        actor_preferences.append(
+            {
+                "actor_id": actor.actor_id,
+                "actor_name": actor.name,
+                "preferences": preferences,
+            }
+        )
+    return actor_preferences
+
+
+def _serialize_run_lens(profile: Any) -> dict[str, object]:
+    if hasattr(profile, "model_dump"):
+        return profile.model_dump(mode="json")
+    if isinstance(profile, dict):
+        return dict(profile)
+    raise TypeError(f"unsupported run lens profile: {type(profile)!r}")
+
+
+def _derive_focal_actor_id(state: BeliefState, selected_profile: Any) -> str | None:
+    if getattr(selected_profile, "name", None) != "domestic-politics-first":
+        return None
+
+    candidates: list[tuple[float, str]] = []
+    for actor in state.actors:
+        profile = actor.behavior_profile
+        if profile is None or profile.domestic_sensitivity is None:
+            continue
+        candidates.append((profile.domestic_sensitivity, actor.actor_id))
+
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: (item[0], item[1]))[1]
+
+
+def _selected_run_lens(assumptions: AssumptionSummary, recommended_profile: Any, state: BeliefState) -> Any:
+    selected_name = assumptions.objective_profile_name or ""
+    recommended_name = getattr(recommended_profile, "name", None)
+    if selected_name in {"", recommended_name}:
+        return recommended_profile
+
+    selected_profile = objective_profile_by_name(normalize_objective_profile_name(selected_name))
+    if getattr(selected_profile, "aggregation_mode", None) != "focal-actor" or selected_profile.focal_actor_id:
+        return selected_profile
+
+    focal_actor_id = getattr(recommended_profile, "focal_actor_id", None) or _derive_focal_actor_id(state, selected_profile)
+    if focal_actor_id is None:
+        return selected_profile
+    return selected_profile.model_copy(update={"focal_actor_id": focal_actor_id})
+
+
+def _validated_assumptions(assumptions: AssumptionSummary) -> AssumptionSummary:
+    normalized_name = normalize_selected_objective_profile_name(assumptions.objective_profile_name)
+    if normalized_name == assumptions.objective_profile_name:
+        return assumptions
+    return assumptions.model_copy(update={"objective_profile_name": normalized_name})
 
 
 class WorkflowService:
@@ -210,7 +280,16 @@ class WorkflowService:
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
         pack = self._pack_for_run(run_id)
-        profile = pack.default_objective_profile()
+        state = compile_belief_state(
+            run_id=run_id,
+            revision_id=revision_id,
+            pack=pack,
+            intake=intake,
+            assumptions=AssumptionSummary(),
+            approved_evidence_ids=[item.evidence_id for item in evidence.items],
+            approved_evidence_items=evidence.items,
+        )
+        profile = pack.recommend_objective_profile(intake, state)
 
         warnings: list[str] = []
         if not evidence.items:
@@ -239,7 +318,9 @@ class WorkflowService:
                 "known_unknowns": intake.known_unknowns,
             },
             assumption_summary=assumption_summary,
-            objective_profile=profile.model_dump(mode="json"),
+            objective_profile=_serialize_run_lens(profile),
+            actor_preferences=_summarize_actor_preferences(state),
+            recommended_run_lens=_serialize_run_lens(profile),
             evidence_summary=[
                 {
                     "evidence_id": item.evidence_id,
@@ -623,6 +704,7 @@ class WorkflowService:
         }
 
     def approve_revision(self, run_id: str, revision_id: str, assumptions: AssumptionSummary) -> RunRecord:
+        assumptions = _validated_assumptions(assumptions)
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
 
@@ -667,6 +749,17 @@ class WorkflowService:
             approved_evidence_ids=[item.evidence_id for item in evidence.items],
             approved_evidence_items=evidence.items,
         )
+        recommended_profile = pack.recommend_objective_profile(intake, state)
+        objective_profile = _selected_run_lens(assumptions, recommended_profile, state)
+        state = state.model_copy(
+            update={
+                "objectives": {
+                    "selected_run_lens": objective_profile.name,
+                    "aggregation_mode": objective_profile.aggregation_mode,
+                    "focal_actor_id": objective_profile.focal_actor_id or "",
+                }
+            }
+        )
         self.repository.write_revision_json(run_id, "belief-state", revision_id, state.model_dump(mode="json"), approved=True)
 
         reuse_context: dict[str, object] | None = None
@@ -691,8 +784,11 @@ class WorkflowService:
                 "simulation": parent_simulation,
             }
 
-        engine = SimulationEngine(pack, default_objective_profile())
+        engine = SimulationEngine(pack, objective_profile)
         result = engine.run(state, reuse_context=reuse_context)
+        result["actor_utility_summary"] = _summarize_actor_preferences(state)
+        result["aggregation_lens"] = _serialize_run_lens(objective_profile)
+        result["recommended_run_lens"] = _serialize_run_lens(recommended_profile)
         self.repository.write_revision_json(run_id, "simulation", revision_id, result, approved=True)
 
         self.generate_report(

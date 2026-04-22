@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from numbers import Real
 from typing import Any
 
@@ -12,6 +13,26 @@ def _slice_get(slice_value: Any, key: str) -> Any:
 
 def _actor_ids(state: Any) -> list[str]:
     return sorted(getattr(actor, "actor_id", getattr(actor, "name", "")) for actor in getattr(state, "actors", []))
+
+
+def _behavior_profile_signature(profile: Any) -> str:
+    if profile is None:
+        return ""
+    if hasattr(profile, "model_dump"):
+        payload = profile.model_dump(mode="json", exclude_none=True)
+    elif isinstance(profile, dict):
+        payload = {key: value for key, value in profile.items() if value is not None}
+    else:
+        payload = profile
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def _actor_behavior_profile_map(state: Any) -> dict[str, str]:
+    profiles: dict[str, str] = {}
+    for actor in getattr(state, "actors", []):
+        actor_id = getattr(actor, "actor_id", getattr(actor, "name", ""))
+        profiles[actor_id] = _behavior_profile_signature(getattr(actor, "behavior_profile", None))
+    return profiles
 
 
 def compare_state_slices(
@@ -69,6 +90,16 @@ def compare_belief_states(previous: Any, current: Any, tolerances: dict[str, flo
         reasons.append("horizon changed")
     if _actor_ids(previous) != _actor_ids(current):
         reasons.append("actors changed")
+    else:
+        previous_profiles = _actor_behavior_profile_map(previous)
+        current_profiles = _actor_behavior_profile_map(current)
+        changed_actor_ids = sorted(
+            actor_id
+            for actor_id in previous_profiles
+            if previous_profiles[actor_id] != current_profiles.get(actor_id, "")
+        )
+        if changed_actor_ids:
+            reasons.append("actor behavior_profile changed: " + ", ".join(changed_actor_ids))
     if previous.objectives != current.objectives:
         reasons.append("objectives changed")
     if previous.capabilities != current.capabilities:

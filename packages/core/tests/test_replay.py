@@ -5,9 +5,14 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
+from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.cli import app
+from forecasting_harness.domain.registry import build_default_registry
+from forecasting_harness.knowledge import load_builtin_replay_cases
 from forecasting_harness.replay import ReplayCase, ReplayCaseResult, ReplaySuiteResult, run_replay_suite
+from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
+from forecasting_harness.workflow.service import WorkflowService
 
 
 def _replay_case() -> ReplayCase:
@@ -238,3 +243,61 @@ def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> 
         "Message reset (reset holds)",
         "Reserve logistics",
     }
+
+
+def test_builtin_interstate_replay_case_pins_actor_preference_differentiation() -> None:
+    cases = load_builtin_replay_cases()
+
+    case = next(case for case in cases if case.run_id == "philippines-china-shoal")
+
+    assert case.domain_pack == "interstate-crisis"
+    assert case.expected_top_branch == "Signal resolve (managed signal)"
+    assert case.expected_root_strategy == "Signal resolve"
+    assert sorted(case.expected_evidence_sources) == [
+        "beijing-hotline",
+        "shoal-water-cannon",
+    ]
+    assert sorted(case.expected_inferred_fields) == [
+        "alliance_pressure",
+        "diplomatic_channel",
+        "geographic_flashpoint",
+        "leader_style",
+        "mediation_window",
+        "military_posture",
+        "tension_index",
+    ]
+
+
+def test_builtin_interstate_replay_case_exercises_actor_preferences_and_run_lens(tmp_path: Path) -> None:
+    case = next(case for case in load_builtin_replay_cases() if case.run_id == "philippines-china-shoal")
+    registry = build_default_registry()
+    pack = registry.resolve(case.domain_pack)
+    docs_dir = tmp_path / "documents"
+    docs_dir.mkdir()
+
+    service = WorkflowService(
+        RunRepository(tmp_path / ".forecast"),
+        corpus_registry=CorpusRegistry(tmp_path / "corpus.db"),
+        domain_registry=registry,
+    )
+    service.start_run(case.run_id, case.domain_pack)
+    service.save_intake_draft(case.run_id, "r1", case.intake)
+    for filename, content in case.documents.items():
+        (docs_dir / filename).write_text(content, encoding="utf-8")
+
+    service.batch_ingest_recommended_files(case.run_id, "r1", pack=pack, path=docs_dir, max_files=len(case.documents))
+    service.draft_evidence_packet(case.run_id, "r1", pack=pack)
+    packet = service.draft_approval_packet(case.run_id, "r1")
+
+    assert packet.actor_preferences
+    assert packet.recommended_run_lens["name"] == "domestic-politics-first"
+    assert packet.recommended_run_lens["aggregation_mode"] == "focal-actor"
+    assert packet.recommended_run_lens["focal_actor_id"] == "united-states"
+    assert {item["actor_id"] for item in packet.actor_preferences} >= {"china", "united-states"}
+
+    replay_result = run_replay_suite([case], workspace_root=tmp_path / "suite")
+
+    assert replay_result.case_count == 1
+    assert replay_result.top_branch_accuracy == 1.0
+    assert replay_result.root_strategy_accuracy == 1.0
+    assert replay_result.results[0].top_branch == "Signal resolve (managed signal)"
