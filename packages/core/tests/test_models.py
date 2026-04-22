@@ -93,6 +93,19 @@ def test_objective_profile_registry_supports_aggregation_aliases() -> None:
     assert focal.actor_metric_weights["domestic_sensitivity"] > balanced.actor_metric_weights["domestic_sensitivity"]
 
 
+def test_objective_profile_accepts_extendable_aggregation_mode_strings() -> None:
+    profile = ObjectiveProfile(
+        name="coalitional",
+        metric_weights={"escalation": -0.4, "negotiation": 0.3},
+        veto_thresholds={},
+        risk_tolerance=0.5,
+        asymmetry_penalties={},
+        aggregation_mode="coalitional",
+    )
+
+    assert profile.aggregation_mode == "coalitional"
+
+
 def test_default_objective_profile_remains_available() -> None:
     profile = default_objective_profile()
 
@@ -130,6 +143,18 @@ def test_objective_profile_rejects_out_of_range_risk_tolerance() -> None:
             veto_thresholds={},
             risk_tolerance=1.2,
             asymmetry_penalties={},
+        )
+
+
+def test_objective_profile_rejects_blank_aggregation_mode() -> None:
+    with pytest.raises(ValidationError, match="aggregation_mode"):
+        ObjectiveProfile(
+            name="de-escalation",
+            metric_weights={"escalation": -0.7},
+            veto_thresholds={},
+            risk_tolerance=0.5,
+            asymmetry_penalties={},
+            aggregation_mode="   ",
         )
 
 

@@ -16,6 +16,8 @@ class InteractionModel(StrEnum):
 
 
 class DomainPack(ABC):
+    GENERIC_ACTOR_UTILITY_METRIC_KEYS = ("escalation", "negotiation", "economic_stress")
+
     @abstractmethod
     def slug(self) -> str:
         raise NotImplementedError
@@ -57,6 +59,11 @@ class DomainPack(ABC):
 
     @abstractmethod
     def score_state(self, state: "BeliefState") -> dict[str, float]:
+        """Return system metrics for a state.
+
+        Packs that rely on the shared actor-aware defaults must include
+        `escalation`, `negotiation`, and `economic_stress` in this mapping.
+        """
         raise NotImplementedError
 
     def score_actor_impacts(self, state: "BeliefState") -> dict[str, dict[str, float]]:
@@ -93,7 +100,7 @@ class DomainPack(ABC):
         return self._generic_recommended_objective_profile(state)
 
     def _generic_actor_impacts(self, state: "BeliefState") -> dict[str, dict[str, float]]:
-        system_metrics = self.score_state(state)
+        system_metrics = self._actor_utility_system_metrics(state)
         escalation = _bounded_metric(system_metrics.get("escalation", 0.0))
         negotiation = _bounded_metric(system_metrics.get("negotiation", 0.0))
         economic_stress = _bounded_metric(system_metrics.get("economic_stress", 0.0))
@@ -135,7 +142,7 @@ class DomainPack(ABC):
     def _generic_recommended_objective_profile(self, state: "BeliefState") -> "ObjectiveProfile":
         from forecasting_harness.objectives import objective_profile_by_name
 
-        system_metrics = self.score_state(state)
+        system_metrics = self._actor_utility_system_metrics(state)
         escalation = _bounded_metric(system_metrics.get("escalation", 0.0))
         negotiation = _bounded_metric(system_metrics.get("negotiation", 0.0))
         economic_stress = _bounded_metric(system_metrics.get("economic_stress", 0.0))
@@ -170,6 +177,25 @@ class DomainPack(ABC):
                 update={"focal_actor_id": top_actor_id}
             )
         return self.default_objective_profile()
+
+    def _actor_utility_system_metrics(self, state: "BeliefState") -> dict[str, float]:
+        system_metrics = self.score_state(state)
+        missing = [
+            metric_name
+            for metric_name in self.GENERIC_ACTOR_UTILITY_METRIC_KEYS
+            if metric_name not in system_metrics
+        ]
+        if missing and self._state_has_actor_preferences(state):
+            required = ", ".join(self.GENERIC_ACTOR_UTILITY_METRIC_KEYS)
+            raise ValueError(f"score_state must include metrics: {required}")
+        return system_metrics
+
+    def _state_has_actor_preferences(self, state: "BeliefState") -> bool:
+        for actor in getattr(state, "actors", []):
+            profile = getattr(actor, "behavior_profile", None)
+            if profile is not None and profile.model_dump(exclude_none=True):
+                return True
+        return False
 
 
 def _bounded_metric(value: float | int | None) -> float:

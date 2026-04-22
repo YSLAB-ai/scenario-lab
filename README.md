@@ -5,17 +5,16 @@ Local-first forecasting harness for scenario analysis. The repo contains a share
 ## Repo State
 
 - `main` is the accepted baseline branch.
-- `codex/actor-utility-run-lens` is a review branch. It is pushed to `origin/codex/actor-utility-run-lens` and is not merged into `main`.
-- This README describes the current state of `codex/actor-utility-run-lens`.
+- The actor-utility and run-lens work described here is intended to be the accepted baseline after merge.
 
 Verified on this branch on 2026-04-21:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - `254 passed in 2.61s`
+  - `257 passed in 4.76s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `16 passed in 0.67s`
+  - `16 passed in 0.66s`
 
 ## Repository Layout
 
@@ -38,7 +37,7 @@ Verified on this branch on 2026-04-21:
 
 ## What This Branch Adds
 
-This review branch adds actor-utility and run-lens behavior on top of the existing workflow core:
+This repo state adds actor-utility and run-lens behavior on top of the existing workflow core:
 
 - belief-state compilation now infers actor utility preference fields from approved evidence and case framing
 - actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so new and existing domains inherit actor-aware behavior even without custom pack code
@@ -46,8 +45,10 @@ This review branch adds actor-utility and run-lens behavior on top of the existi
 - simulation aggregation now includes actor impacts and aggregate-score breakdowns
 - reports now expose actor-utility and aggregation-lens summaries
 - focal-actor aggregation now uses an explicit `focal_weight` instead of a hidden multiplier
+- `aggregation_mode` is now an extensible validated string rather than a closed literal, so future modes like `coalitional` or `adversarial` can be added without a schema break
 - destabilization penalty now tracks the worst negative actor utility outcome instead of reusing a static actor trait
 - domain-specific actor-utility hooks still exist where they add value, including `interstate-crisis`, `company-action`, and `pandemic-response`
+- the shared actor-aware default now explicitly requires `score_state()` to provide `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present
 - `interstate-crisis` now uses a modestly higher default search budget (`32` iterations) so actor-centered replay cases do not collapse onto one visited root branch
 - the interstate replay slice now includes `philippines-china-shoal`
 

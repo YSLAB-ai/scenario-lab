@@ -2,11 +2,9 @@
 
 Date: 2026-04-21
 
-## Branch Context
+## Context
 
-- This status note is being read on `codex/actor-utility-run-lens`.
-- `main` does not yet include the actor-utility and run-lens changes described here.
-- Start with [README.md](../../README.md) for the concise branch handoff, then use this file and [2026-04-21-actor-utility-pass.md](2026-04-21-actor-utility-pass.md) for detailed verification.
+- Start with [README.md](../../README.md) for the concise repo handoff, then use this file and [2026-04-21-actor-utility-pass.md](2026-04-21-actor-utility-pass.md) for detailed verification.
 
 ## Verified Progress
 
@@ -27,6 +25,7 @@ Date: 2026-04-21
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
 - Actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so domain packs inherit actor-aware behavior even when they do not implement custom hooks.
+- The shared actor-aware default now explicitly depends on `score_state()` exposing `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The repo now also supports domain-scoped self-improvement through:
@@ -52,6 +51,7 @@ Date: 2026-04-21
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
 - Focal-actor aggregation now uses an explicit `focal_weight` field instead of a hidden multiplier.
+- `aggregation_mode` is now an extensible validated string rather than a closed `Literal[...]`.
 - Destabilization penalty now tracks the worst negative actor utility outcome in a branch instead of reusing a static actor trait.
 - `company-action` and `pandemic-response` now implement domain-specific actor-utility hooks through both `recommend_objective_profile()` and `score_actor_impacts()`, while untouched packs such as `market-shock` and `regulatory-enforcement` inherit the new shared actor-aware defaults.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -80,7 +80,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `254 passed in 2.61s`
+  - Result: `257 passed in 4.76s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`

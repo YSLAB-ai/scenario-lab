@@ -174,6 +174,36 @@ def test_domain_pack_recommend_objective_profile_defaults_to_balanced_system() -
     assert profile.aggregation_mode == "balanced-system"
 
 
+def test_generic_actor_utility_defaults_require_standard_system_metric_keys() -> None:
+    pack = _StubPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        focus_entities=["A", "B"],
+        current_development="A trigger event occurred.",
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+    state = type(
+        "State",
+        (),
+        {
+            "actors": [
+                Actor(
+                    actor_id="a",
+                    name="Actor A",
+                    behavior_profile=BehaviorProfile(domestic_sensitivity=0.8),
+                )
+            ]
+        },
+    )()
+
+    with pytest.raises(ValueError, match="score_state must include metrics: escalation, negotiation, economic_stress"):
+        pack.recommend_objective_profile(intake, state)
+
+    with pytest.raises(ValueError, match="score_state must include metrics: escalation, negotiation, economic_stress"):
+        pack.score_actor_impacts(state)
+
+
 def test_interstate_pack_can_recommend_domestic_politics_first_profile() -> None:
     pack = InterstateCrisisPack()
     intake = IntakeDraft(

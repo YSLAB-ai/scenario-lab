@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from forecasting_harness.domain.base import InteractionModel
 
@@ -48,10 +48,18 @@ class ObjectiveProfile(BaseModel):
     asymmetry_penalties: dict[str, float]
     actor_metric_weights: dict[str, float] = Field(default_factory=dict)
     actor_weights: dict[str, float] = Field(default_factory=dict)
-    aggregation_mode: Literal["balanced-system", "focal-actor"] = "balanced-system"
+    aggregation_mode: str = "balanced-system"
     focal_actor_id: str | None = None
     focal_weight: float = Field(default=1.0, gt=0.0)
     destabilization_penalty: float = 0.0
+
+    @field_validator("aggregation_mode")
+    @classmethod
+    def _validate_aggregation_mode(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("aggregation_mode must be a non-empty string")
+        return normalized
 
     def scalarize(self, metrics: dict[str, float]) -> float:
         unknown_metrics = sorted(metric for metric in metrics if metric not in self.metric_weights)

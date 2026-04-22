@@ -2,11 +2,9 @@
 
 Date: 2026-04-21
 
-## Review Handoff
+## Handoff
 
-- Branch under review: `codex/actor-utility-run-lens`
-- This branch is pushed and not merged into `main`.
-- Start with [README.md](../../README.md) for repo layout, workflow usage, and branch scope.
+- Start with [README.md](../../README.md) for repo layout, workflow usage, and accepted scope.
 - Then review these files first:
   - `packages/core/src/forecasting_harness/models.py`
   - `packages/core/src/forecasting_harness/objectives.py`
@@ -31,6 +29,8 @@ Date: 2026-04-21
   - makes focal weighting explicit
   - bases destabilization on branch downside instead of a static actor trait
   - extends actor-utility hooks to at least two additional packs
+  - relaxes `aggregation_mode` to an extensible validated string
+  - documents and enforces the shared `score_state()` metric contract used by the generic actor-aware defaults
 
 ## Changed Files
 
@@ -79,6 +79,9 @@ Date: 2026-04-21
   - redefining destabilization as the worst negative actor utility score
   - raising the default `interstate-crisis` search budget from `18` to `32` iterations so the shoal replay no longer collapses onto a single visited root branch
 - The latest generalization pass moved actor-aware defaults into the shared `DomainPack` base layer, so untouched packs like `market-shock` and `regulatory-enforcement` now inherit actor-impact scoring and run-lens recommendation without custom pack code.
+- The final follow-up pass also:
+  - relaxed `aggregation_mode` from a closed `Literal[...]` to a validated string
+  - added explicit validation that the shared actor-aware defaults require `score_state()` to return `escalation`, `negotiation`, and `economic_stress` when actor preferences are present
 - The final branch fixes also verified that:
   - actor `behavior_profile` changes now block warm-start reuse
   - the recommended run lens becomes the default when no explicit lens is selected
@@ -114,7 +117,7 @@ Date: 2026-04-21
   - `Supplier flooding` -> `Reserve logistics`
 - Required full-suite verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `254 passed in 2.61s`
+  - Result: `257 passed in 4.76s`
 
 ## Remaining Gaps
 
