@@ -26,11 +26,27 @@ from forecasting_harness.objectives import (
 from forecasting_harness.replay import ReplayCase, run_replay_suite, summarize_calibration
 from forecasting_harness.retrieval import CorpusRegistry, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
-from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft, RunRecord
+from forecasting_harness.workflow.models import (
+    AdapterRuntimeActionName,
+    AssumptionSummary,
+    EvidencePacket,
+    IntakeDraft,
+    RunRecord,
+)
 from forecasting_harness.workflow.service import WorkflowService
 
 
 app = Typer(no_args_is_help=True)
+_ADAPTER_RUNTIME_ACTIONS = {
+    "start-run",
+    "save-intake-draft",
+    "batch-ingest-recommended",
+    "draft-evidence-packet",
+    "curate-evidence-draft",
+    "approve-revision",
+    "simulate",
+    "begin-revision-update",
+}
 
 
 @app.callback()
@@ -617,6 +633,91 @@ def draft_conversation_turn(
         .draft_conversation_turn(run_id, revision_id, candidate_path=candidate_path)
         .model_dump_json()
     )
+
+
+@app.command("run-adapter-action")
+def run_adapter_action(
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
+    candidate_path: Path | None = typer.Option(None),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+    action: str = typer.Option(...),
+    domain_pack: str | None = typer.Option(None),
+    parent_revision_id: str | None = typer.Option(None),
+    input: Path | None = typer.Option(None),
+    event_framing: str | None = typer.Option(None),
+    focus_entity: list[str] | None = typer.Option(None),
+    current_development: str | None = typer.Option(None),
+    current_stage: str | None = typer.Option(None),
+    time_horizon: str | None = typer.Option(None),
+    known_constraint: list[str] | None = typer.Option(None),
+    known_unknown: list[str] | None = typer.Option(None),
+    suggested_entity: list[str] | None = typer.Option(None),
+    pack_field: list[str] | None = typer.Option(None),
+    query_text: str | None = typer.Option(None),
+    keep_evidence_id: list[str] | None = typer.Option(None),
+    assumption: list[str] | None = typer.Option(None),
+    suggested_actor: list[str] | None = typer.Option(None),
+    objective_profile_name: str | None = typer.Option(None),
+    iterations: int | None = typer.Option(None),
+    max_files: int = typer.Option(5),
+) -> None:
+    if action not in _ADAPTER_RUNTIME_ACTIONS:
+        allowed = ", ".join(sorted(_ADAPTER_RUNTIME_ACTIONS))
+        raise typer.BadParameter(f"unsupported action: {action}. Expected one of: {allowed}", param_hint="action")
+
+    intake_payload: IntakeDraft | None = None
+    assumptions_payload: AssumptionSummary | None = None
+
+    if action == "save-intake-draft":
+        if input is not None:
+            intake_payload = IntakeDraft.model_validate_json(input.read_text(encoding="utf-8"))
+        else:
+            intake_payload = _intake_from_flags(
+                event_framing=event_framing,
+                focus_entities=focus_entity,
+                current_development=current_development,
+                current_stage=current_stage,
+                time_horizon=time_horizon,
+                known_constraints=known_constraint,
+                known_unknowns=known_unknown,
+                suggested_entities=suggested_entity,
+                pack_fields=pack_field,
+            )
+    elif action == "approve-revision":
+        try:
+            if input is not None:
+                assumptions_payload = AssumptionSummary.model_validate_json(input.read_text(encoding="utf-8"))
+            else:
+                assumptions_payload = _assumptions_from_flags(
+                    assumptions=assumption,
+                    suggested_actors=suggested_actor,
+                    objective_profile_name=objective_profile_name,
+                )
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="objective_profile_name") from exc
+
+    service = _service(root, corpus_db=corpus_db)
+    try:
+        result = service.run_adapter_action(
+            run_id=run_id,
+            revision_id=revision_id,
+            action=action,  # type: ignore[arg-type]
+            domain_pack=domain_pack,
+            candidate_path=candidate_path,
+            intake=intake_payload,
+            assumptions=assumptions_payload,
+            keep_evidence_ids=keep_evidence_id,
+            query_text=query_text,
+            parent_revision_id=parent_revision_id,
+            iterations=iterations,
+            max_files=max_files,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="action") from exc
+
+    print(result.model_dump_json())
 
 
 @app.command("curate-evidence-draft")

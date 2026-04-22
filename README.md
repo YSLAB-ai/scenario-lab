@@ -1,6 +1,6 @@
 # Forecasting Harness
 
-Local-first forecasting harness for scenario analysis. The repo contains a shared deterministic Python core, repo-owned domain manifests and replay cases, thin Codex/Claude adapter scaffolding, and local artifact storage under `.forecast/`.
+Local-first forecasting harness for scenario analysis. The repo contains a shared deterministic Python core, repo-owned domain manifests and replay cases, a packaged adapter runtime for Codex/Claude-style workflows, and local artifact storage under `.forecast/`.
 
 ## Repo State
 
@@ -11,7 +11,7 @@ Verified on `main` on 2026-04-21:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - `257 passed in 4.76s`
+  - `262 passed in 3.57s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - `16 passed in 0.66s`
@@ -27,7 +27,7 @@ Verified on `main` on 2026-04-21:
 - [knowledge/replays](knowledge/replays)
   Built-in replay corpus used for regression and calibration checks.
 - [adapters](adapters)
-  Thin Codex and Claude scaffolding.
+  Thin Codex and Claude scaffolding that point at the shared packaged adapter runtime.
 - [docs/status](docs/status)
   Verified status notes and branch-specific pass summaries.
 - `.forecast/`
@@ -85,20 +85,26 @@ pip install -e 'packages/core[dev]'
 forecast-harness list-domain-packs
 ```
 
-### 2. Start a run
+### 2. Start a run through the packaged adapter runtime
 
 ```bash
 RUN_ROOT=.forecast
-forecast-harness start-run --root "$RUN_ROOT" --run-id china-taiwan-1 --domain-pack interstate-crisis
-```
-
-### 3. Save intake directly from structured flags
-
-```bash
-forecast-harness save-intake-draft \
+forecast-harness run-adapter-action \
   --root "$RUN_ROOT" \
   --run-id china-taiwan-1 \
   --revision-id r1 \
+  --action start-run \
+  --domain-pack interstate-crisis
+```
+
+### 3. Save intake through the same runtime surface
+
+```bash
+forecast-harness run-adapter-action \
+  --root "$RUN_ROOT" \
+  --run-id china-taiwan-1 \
+  --revision-id r1 \
+  --action save-intake-draft \
   --event-framing "Assess 30-day crisis paths in a China-Taiwan escalation scenario." \
   --focus-entity China \
   --focus-entity Taiwan \
@@ -107,12 +113,38 @@ forecast-harness save-intake-draft \
   --time-horizon 30d
 ```
 
-### 4. Let the core drive the next step
+### 4. Let the runtime drive the next step
 
-This is the adapter-facing loop surface:
+This is the adapter-facing execution surface. Each call applies one action and returns the next turn:
 
 ```bash
 CORPUS_DB=.forecast/corpus.db
+forecast-harness run-adapter-action \
+  --root "$RUN_ROOT" \
+  --corpus-db "$CORPUS_DB" \
+  --candidate-path /path/to/local/docs \
+  --run-id china-taiwan-1 \
+  --revision-id r1 \
+  --action batch-ingest-recommended
+```
+
+Use the returned:
+
+- `executed_action`
+- `action_result`
+- `headline`
+- `user_message`
+- `recommended_runtime_action`
+- `actions`
+- `context`
+
+for the next step instead of inferring workflow state yourself.
+
+### 5. Inspect or recover the current stage when needed
+
+If you need to query the current stage without executing a mutation:
+
+```bash
 forecast-harness draft-conversation-turn \
   --root "$RUN_ROOT" \
   --corpus-db "$CORPUS_DB" \
@@ -120,46 +152,25 @@ forecast-harness draft-conversation-turn \
   --revision-id r1
 ```
 
-Use the returned:
-
-- `headline`
-- `user_message`
-- `recommended_command`
-- `actions`
-- `context`
-
-for the next step instead of inferring workflow state yourself.
-
-### 5. Ingest local evidence if recommended
-
-If the conversation turn includes ingestion recommendations:
-
-```bash
-forecast-harness batch-ingest-recommended \
-  --root "$RUN_ROOT" \
-  --corpus-db "$CORPUS_DB" \
-  --path /path/to/local/docs \
-  --run-id china-taiwan-1 \
-  --revision-id r1
-```
-
 ### 6. Draft and curate evidence
 
 ```bash
-forecast-harness draft-evidence-packet \
+forecast-harness run-adapter-action \
   --root "$RUN_ROOT" \
   --corpus-db "$CORPUS_DB" \
   --run-id china-taiwan-1 \
-  --revision-id r1
+  --revision-id r1 \
+  --action draft-evidence-packet
 ```
 
 Then keep only the evidence ids you want:
 
 ```bash
-forecast-harness curate-evidence-draft \
+forecast-harness run-adapter-action \
   --root "$RUN_ROOT" \
   --run-id china-taiwan-1 \
   --revision-id r1 \
+  --action curate-evidence-draft \
   --keep-evidence-id ev-1 \
   --keep-evidence-id ev-2
 ```
@@ -185,13 +196,18 @@ before approval.
 ### 8. Approve, simulate, and inspect the result
 
 ```bash
-forecast-harness approve-revision \
+forecast-harness run-adapter-action \
   --root "$RUN_ROOT" \
   --run-id china-taiwan-1 \
   --revision-id r1 \
+  --action approve-revision \
   --assumption "Both sides prefer bounded signaling to immediate total war."
 
-forecast-harness simulate --root "$RUN_ROOT" --run-id china-taiwan-1 --revision-id r1
+forecast-harness run-adapter-action \
+  --root "$RUN_ROOT" \
+  --run-id china-taiwan-1 \
+  --revision-id r1 \
+  --action simulate
 forecast-harness summarize-revision --root "$RUN_ROOT" --run-id china-taiwan-1 --revision-id r1
 forecast-harness generate-report --root "$RUN_ROOT" --run-id china-taiwan-1 --revision-id r1
 ```
@@ -250,9 +266,9 @@ Verified adapter-facing pieces:
 
 Current boundary:
 
-- the deterministic core has a native conversational adapter loop through `draft-conversation-turn`
-- Codex and Claude are still skill/doc-driven integrations
-- there is not yet a fully packaged runtime that executes the loop automatically
+- the deterministic core now includes a packaged adapter runtime through `run-adapter-action`
+- `draft-conversation-turn` remains available as a query-only inspection and recovery surface
+- Codex and Claude scaffolding are still thin local wrappers around the shared runtime rather than marketplace-distributed integrations
 
 ## Detailed Status Notes
 
@@ -262,12 +278,13 @@ Current boundary:
   - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
 - High default iterations:
   - [2026-04-21-high-default-iterations.md](docs/status/2026-04-21-high-default-iterations.md)
+- Adapter runtime packaging:
+  - [2026-04-21-adapter-runtime-v1.md](docs/status/2026-04-21-adapter-runtime-v1.md)
 - Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 
 ## Current Gaps
 
-- The Codex and Claude integrations are still scaffolding, not a packaged runtime.
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The replay corpus is still modest rather than broad.
 - Some evidence replacement and bulk-edit paths remain file-backed.

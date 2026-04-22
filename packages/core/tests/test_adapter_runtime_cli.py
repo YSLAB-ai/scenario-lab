@@ -1,0 +1,305 @@
+import json
+from pathlib import Path
+
+from typer.testing import CliRunner
+
+from forecasting_harness.cli import app
+
+
+def test_run_adapter_action_executes_the_normal_adapter_loop(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+
+    start_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "start-run",
+            "--domain-pack",
+            "interstate-crisis",
+        ],
+    )
+
+    assert start_result.exit_code == 0
+    start_payload = json.loads(start_result.stdout)
+    assert start_payload["turn"]["stage"] == "intake"
+    assert start_payload["turn"]["recommended_runtime_action"] == "save-intake-draft"
+
+    intake_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--candidate-path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "save-intake-draft",
+            "--event-framing",
+            "Assess escalation",
+            "--focus-entity",
+            "Japan",
+            "--focus-entity",
+            "China",
+            "--current-development",
+            "Naval transit through the Taiwan Strait",
+            "--current-stage",
+            "trigger",
+            "--time-horizon",
+            "30d",
+        ],
+    )
+
+    assert intake_result.exit_code == 0
+    intake_payload = json.loads(intake_result.stdout)
+    assert intake_payload["turn"]["stage"] == "evidence"
+    assert intake_payload["turn"]["recommended_runtime_action"] == "batch-ingest-recommended"
+
+    ingest_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--candidate-path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "batch-ingest-recommended",
+        ],
+    )
+
+    assert ingest_result.exit_code == 0
+    ingest_payload = json.loads(ingest_result.stdout)
+    assert ingest_payload["action_result"]["ingested_count"] == 1
+    assert ingest_payload["turn"]["stage"] == "evidence"
+    assert ingest_payload["turn"]["recommended_runtime_action"] == "draft-evidence-packet"
+
+    evidence_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "draft-evidence-packet",
+        ],
+    )
+
+    assert evidence_result.exit_code == 0
+    evidence_payload = json.loads(evidence_result.stdout)
+    assert evidence_payload["turn"]["stage"] == "approval"
+    assert evidence_payload["turn"]["recommended_runtime_action"] == "approve-revision"
+
+    approval_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "approve-revision",
+            "--assumption",
+            "Maintain limited signaling",
+        ],
+    )
+
+    assert approval_result.exit_code == 0
+    approval_payload = json.loads(approval_result.stdout)
+    assert approval_payload["turn"]["stage"] == "simulation"
+    assert approval_payload["turn"]["recommended_runtime_action"] == "simulate"
+
+    simulation_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "simulate",
+            "--iterations",
+            "100",
+        ],
+    )
+
+    assert simulation_result.exit_code == 0
+    simulation_payload = json.loads(simulation_result.stdout)
+    assert simulation_payload["action_result"]["iterations"] == 100
+    assert simulation_payload["turn"]["stage"] == "report"
+    assert simulation_payload["turn"]["recommended_runtime_action"] == "begin-revision-update"
+
+
+def test_run_adapter_action_can_start_a_child_revision_from_a_report_stage(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    source = tmp_path / "signals.md"
+    source.write_text("# Overview\nJapan issues a warning and opens a backchannel.\n", encoding="utf-8")
+
+    assert runner.invoke(
+        app,
+        [
+            "ingest-file",
+            "--corpus-db",
+            str(corpus_db),
+            "--path",
+            str(source),
+            "--tag",
+            "domain=interstate-crisis",
+        ],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "start-run",
+            "--domain-pack",
+            "interstate-crisis",
+        ],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "save-intake-draft",
+            "--event-framing",
+            "Assess escalation",
+            "--focus-entity",
+            "Japan",
+            "--focus-entity",
+            "China",
+            "--current-development",
+            "Naval transit through the Taiwan Strait",
+            "--current-stage",
+            "trigger",
+            "--time-horizon",
+            "30d",
+        ],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--corpus-db",
+            str(corpus_db),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "draft-evidence-packet",
+        ],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "approve-revision",
+            "--assumption",
+            "Maintain limited signaling",
+        ],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "simulate",
+            "--iterations",
+            "100",
+        ],
+    ).exit_code == 0
+
+    update_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r2",
+            "--parent-revision-id",
+            "r1",
+            "--action",
+            "begin-revision-update",
+        ],
+    )
+
+    assert update_result.exit_code == 0
+    update_payload = json.loads(update_result.stdout)
+    assert update_payload["action_result"]["parent_revision_id"] == "r1"
+    assert update_payload["turn"]["revision_id"] == "r2"
+    assert update_payload["turn"]["stage"] == "approval"
+    assert update_payload["turn"]["recommended_runtime_action"] == "approve-revision"

@@ -79,6 +79,7 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness save-intake-draft" in codex_doc
     assert "forecast-harness draft-intake-guidance" in codex_doc
     assert "forecast-harness draft-conversation-turn" in codex_doc
+    assert "forecast-harness run-adapter-action" in codex_doc
     assert "forecast-harness draft-evidence-packet" in codex_doc
     assert "forecast-harness save-evidence-draft" in codex_doc
     assert "forecast-harness curate-evidence-draft" in codex_doc
@@ -93,6 +94,7 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness save-intake-draft" in claude_doc
     assert "forecast-harness draft-intake-guidance" in claude_doc
     assert "forecast-harness draft-conversation-turn" in claude_doc
+    assert "forecast-harness run-adapter-action" in claude_doc
     assert "forecast-harness draft-evidence-packet" in claude_doc
     assert "forecast-harness save-evidence-draft" in claude_doc
     assert "forecast-harness curate-evidence-draft" in claude_doc
@@ -107,6 +109,7 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness save-intake-draft" in codex_skill
     assert "forecast-harness draft-intake-guidance" in codex_skill
     assert "forecast-harness draft-conversation-turn" in codex_skill
+    assert "forecast-harness run-adapter-action" in codex_skill
     assert "forecast-harness draft-evidence-packet" in codex_skill
     assert "forecast-harness save-evidence-draft" in codex_skill
     assert "forecast-harness curate-evidence-draft" in codex_skill
@@ -121,6 +124,7 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness save-intake-draft" in claude_skill
     assert "forecast-harness draft-intake-guidance" in claude_skill
     assert "forecast-harness draft-conversation-turn" in claude_skill
+    assert "forecast-harness run-adapter-action" in claude_skill
     assert "forecast-harness draft-evidence-packet" in claude_skill
     assert "forecast-harness save-evidence-draft" in claude_skill
     assert "forecast-harness curate-evidence-draft" in claude_skill

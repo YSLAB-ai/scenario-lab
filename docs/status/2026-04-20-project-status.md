@@ -9,7 +9,7 @@ Date: 2026-04-21
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
-- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution and synthesis package under `packages/core/src/forecasting_harness/evolution/`.
+- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding plus a shared packaged adapter runtime, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution and synthesis package under `packages/core/src/forecasting_harness/evolution/`.
 - Domain packs are now discovered through a registry instead of hardcoded CLI branching.
 - The workflow now supports generic intake fields with compatibility aliases:
   - `focus_entities`
@@ -81,10 +81,11 @@ Date: 2026-04-21
 - The workflow can now draft evidence packets without an explicit query string by expanding deterministic query variants from intake plus manifest categories.
 - The workflow now exposes concrete ingest tasks for missing evidence categories.
 - The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
+- The workflow now also exposes a packaged adapter runtime through `forecast-harness run-adapter-action`, which executes one approved workflow mutation and immediately returns the next deterministic conversation turn.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `257 passed in 4.76s`
+  - Result: `262 passed in 3.57s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -118,6 +119,13 @@ Date: 2026-04-21
     - `Regulator ad-tech` -> `Internal remediation`
     - `Supply rare-earth` -> `Expedite alternatives`
     - `Supplier flooding` -> `Reserve logistics`
+- A direct packaged adapter-runtime smoke pass on 2026-04-21 also verified:
+  - `run-adapter-action --action start-run` -> intake stage
+  - `run-adapter-action --action save-intake-draft` -> evidence stage with `recommended_runtime_action = batch-ingest-recommended`
+  - `run-adapter-action --action batch-ingest-recommended` -> `ingested_count = 1`
+  - `run-adapter-action --action draft-evidence-packet` -> approval stage
+  - `run-adapter-action --action approve-revision` -> simulation stage
+  - `run-adapter-action --action simulate --iterations 250` -> report stage with top branch `Signal resolve (managed signal)`
 - The next deepening pass on 2026-04-21 also verified richer evidence-conditioned state construction and replay coverage for:
   - `election-shock`
   - `market-shock`
@@ -311,7 +319,7 @@ Date: 2026-04-21
 
 ## Current Gaps
 
-- The current analyst workflow now has a native deterministic adapter loop at the core and CLI layer, but the Codex and Claude integrations are still documentation/skill scaffolding rather than a packaged plugin runtime.
+- The current analyst workflow now has a packaged deterministic adapter runtime at the core and CLI layer, but the Codex and Claude integrations are still thin local scaffolding rather than marketplace-distributed plugin runtimes.
 - Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
   - calibrated real-world probabilities

@@ -7,6 +7,16 @@ from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 RevisionStatus = Literal["draft", "approved", "simulated"]
 ConversationStage = Literal["intake", "evidence", "approval", "simulation", "report"]
+AdapterRuntimeActionName = Literal[
+    "start-run",
+    "save-intake-draft",
+    "batch-ingest-recommended",
+    "draft-evidence-packet",
+    "curate-evidence-draft",
+    "approve-revision",
+    "simulate",
+    "begin-revision-update",
+]
 
 
 class RunRecord(BaseModel):
@@ -158,6 +168,7 @@ class RevisionSummary(BaseModel):
 
 class AdapterAction(BaseModel):
     command: str
+    runtime_action: str | None = None
     label: str
     description: str
     required_options: list[str] = Field(default_factory=list)
@@ -170,6 +181,15 @@ class ConversationTurn(BaseModel):
     headline: str
     user_message: str
     recommended_command: str | None = None
+    recommended_runtime_action: str | None = None
     available_sections: list[str] = Field(default_factory=list)
     actions: list[AdapterAction] = Field(default_factory=list)
     context: dict[str, object] = Field(default_factory=dict)
+
+
+class AdapterRuntimeResult(BaseModel):
+    run_id: str
+    revision_id: str
+    executed_action: AdapterRuntimeActionName
+    action_result: object = None
+    turn: ConversationTurn

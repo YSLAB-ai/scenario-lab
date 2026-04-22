@@ -23,6 +23,8 @@ from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
 from forecasting_harness.workflow.models import (
     AdapterAction,
+    AdapterRuntimeActionName,
+    AdapterRuntimeResult,
     ApprovalPacket,
     AssumptionSummary,
     BatchIngestionResult,
@@ -125,6 +127,28 @@ def _validated_assumptions(assumptions: AssumptionSummary) -> AssumptionSummary:
     return assumptions.model_copy(update={"objective_profile_name": normalized_name})
 
 
+def _runtime_action_from_command(command: str | None) -> str | None:
+    if command is None:
+        return None
+    prefix = "forecast-harness "
+    if command.startswith(prefix):
+        return command[len(prefix) :]
+    return None
+
+
+def _serialize_runtime_result(value: object) -> object:
+    if hasattr(value, "model_dump"):
+        return value.model_dump(mode="json")
+    if isinstance(value, dict):
+        return {
+            str(key): _serialize_runtime_result(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_serialize_runtime_result(item) for item in value]
+    return value
+
+
 class WorkflowService:
     def __init__(
         self,
@@ -169,6 +193,7 @@ class WorkflowService:
     ) -> AdapterAction:
         return AdapterAction(
             command=command,
+            runtime_action=_runtime_action_from_command(command),
             label=label,
             description=description,
             required_options=required_options or [],
@@ -851,6 +876,7 @@ class WorkflowService:
                 headline="Review simulation report",
                 user_message="Simulation is complete. Review the top branches and decide whether to update the revision.",
                 recommended_command="forecast-harness begin-revision-update",
+                recommended_runtime_action="begin-revision-update",
                 available_sections=available_sections,
                 actions=[
                     self._adapter_action(
@@ -879,6 +905,7 @@ class WorkflowService:
                 headline="Ready to simulate",
                 user_message="Revision is approved and ready to simulate.",
                 recommended_command="forecast-harness simulate",
+                recommended_runtime_action="simulate",
                 available_sections=available_sections,
                 actions=[
                     self._adapter_action(
@@ -900,6 +927,7 @@ class WorkflowService:
                 headline="Review approval packet",
                 user_message="Evidence draft is ready. Review warnings, assumptions, and evidence summary before approval.",
                 recommended_command="forecast-harness approve-revision",
+                recommended_runtime_action="approve-revision",
                 available_sections=available_sections,
                 actions=[
                     self._adapter_action(
@@ -964,6 +992,7 @@ class WorkflowService:
                 headline="Draft evidence packet",
                 user_message="Intake draft saved. Review suggested entities and follow-up questions, then draft evidence.",
                 recommended_command=recommended_command,
+                recommended_runtime_action=_runtime_action_from_command(recommended_command),
                 available_sections=available_sections,
                 actions=actions,
                 context=context,
@@ -976,6 +1005,7 @@ class WorkflowService:
             headline="Draft intake",
             user_message="Revision is ready for intake. Capture the event framing and core entities first.",
             recommended_command="forecast-harness save-intake-draft",
+            recommended_runtime_action="save-intake-draft",
             available_sections=available_sections,
             actions=[
                 self._adapter_action(
@@ -985,6 +1015,92 @@ class WorkflowService:
                 )
             ],
             context={},
+        )
+
+    def run_adapter_action(
+        self,
+        *,
+        run_id: str,
+        revision_id: str,
+        action: AdapterRuntimeActionName,
+        domain_pack: str | None = None,
+        candidate_path: Path | None = None,
+        intake: IntakeDraft | None = None,
+        assumptions: AssumptionSummary | None = None,
+        keep_evidence_ids: list[str] | None = None,
+        query_text: str | None = None,
+        parent_revision_id: str | None = None,
+        iterations: int | None = None,
+        max_files: int = 5,
+    ) -> AdapterRuntimeResult:
+        action_result: object = None
+
+        if action == "start-run":
+            if domain_pack is None:
+                raise ValueError("domain_pack is required for start-run")
+            run = self.start_run(run_id=run_id, domain_pack=domain_pack)
+            action_result = run
+        elif action == "save-intake-draft":
+            if intake is None:
+                raise ValueError("intake is required for save-intake-draft")
+            self.save_intake_draft(
+                run_id=run_id,
+                revision_id=revision_id,
+                intake=intake,
+                parent_revision_id=parent_revision_id,
+            )
+            action_result = {"saved": True, "section": "intake", "revision_id": revision_id}
+        elif action == "batch-ingest-recommended":
+            if candidate_path is None:
+                raise ValueError("candidate_path is required for batch-ingest-recommended")
+            pack = self._pack_for_run(run_id)
+            action_result = self.batch_ingest_recommended_files(
+                run_id,
+                revision_id,
+                pack=pack,
+                path=candidate_path,
+                max_files=max_files,
+            )
+        elif action == "draft-evidence-packet":
+            pack = self._pack_for_run(run_id)
+            action_result = self.draft_evidence_packet(
+                run_id,
+                revision_id,
+                pack=pack,
+                query_text=query_text,
+            )
+        elif action == "curate-evidence-draft":
+            if not keep_evidence_ids:
+                raise ValueError("keep_evidence_ids is required for curate-evidence-draft")
+            action_result = self.curate_evidence_draft(run_id, revision_id, keep_evidence_ids)
+        elif action == "approve-revision":
+            if assumptions is None:
+                raise ValueError("assumptions is required for approve-revision")
+            action_result = self.approve_revision(run_id=run_id, revision_id=revision_id, assumptions=assumptions)
+        elif action == "simulate":
+            pack = self._pack_for_run(run_id)
+            action_result = self.simulate_revision(
+                run_id=run_id,
+                revision_id=revision_id,
+                pack=pack,
+                iterations=iterations,
+            )
+        elif action == "begin-revision-update":
+            if parent_revision_id is None:
+                raise ValueError("parent_revision_id is required for begin-revision-update")
+            action_result = self.begin_revision_update(
+                run_id=run_id,
+                revision_id=revision_id,
+                parent_revision_id=parent_revision_id,
+            )
+
+        turn = self.draft_conversation_turn(run_id, revision_id, candidate_path=candidate_path)
+        return AdapterRuntimeResult(
+            run_id=run_id,
+            revision_id=revision_id,
+            executed_action=action,
+            action_result=_serialize_runtime_result(action_result),
+            turn=turn,
         )
 
     def summarize_run(self, run_id: str) -> RunSummary:

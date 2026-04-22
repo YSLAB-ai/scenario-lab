@@ -5,6 +5,7 @@
 3. Copy `adapters/codex/forecast-harness` into your local Codex plugins directory or link it from your workspace.
 4. Verify the shared CLI query-style commands are available:
    - `forecast-harness start-run --help`
+   - `forecast-harness run-adapter-action --help`
    - `forecast-harness save-intake-draft --help`
    - `forecast-harness draft-conversation-turn --help`
    - `forecast-harness batch-ingest-recommended --help`
@@ -17,14 +18,16 @@
    - `forecast-harness summarize-run --help`
    - `forecast-harness summarize-revision --help`
    - `forecast-harness generate-report --help`
-5. Drive the workflow through the native adapter loop rather than manually sequencing planning commands. For the normal adapter path, still prefer direct structured input over temporary JSON files:
-   - start a run with `forecast-harness start-run`
-   - save structured intake with `forecast-harness save-intake-draft --event-framing ... --focus-entity ... --current-development ...`
-   - after each workflow mutation, call `forecast-harness draft-conversation-turn --corpus-db <db> [--candidate-path <dir>]`
-   - treat the returned `recommended_command` as the default next action
-   - treat the returned `actions` list as the ordered set of allowed next steps
-   - use the returned `context` payload instead of separately calling `forecast-harness draft-intake-guidance`, `forecast-harness draft-retrieval-plan`, or `forecast-harness draft-ingestion-plan` during the normal loop
-   - when evidence-stage context includes `ingestion_recommendations`, prefer `forecast-harness batch-ingest-recommended` before drafting evidence
-   - once evidence is drafted, curate it in place with `forecast-harness curate-evidence-draft`, then ask `draft-conversation-turn` for the approval packet stage
-   - after approval, use the same loop to reach simulation, report review, and `begin-revision-update`
-6. Use `forecast-harness save-evidence-draft` only when the adapter needs to replace the drafted packet from a file rather than curating the existing draft in place.
+5. Drive the workflow through the packaged adapter runtime instead of manually chaining raw workflow commands. For the normal adapter path, still prefer direct structured input over temporary JSON files.
+   - bootstrap the run with:
+     - `forecast-harness run-adapter-action --root <root> --run-id <run> --revision-id r1 --action start-run --domain-pack <slug>`
+   - the underlying raw commands still exist, including `forecast-harness start-run` and `forecast-harness draft-conversation-turn`, but the packaged runtime is the normal path
+   - after each workflow mutation, advance the loop with the same command:
+     - `forecast-harness run-adapter-action --root <root> --corpus-db <db> [--candidate-path <dir>] --run-id <run> --revision-id <rev> --action <action-name> ...`
+   - treat `turn.recommended_runtime_action` as the default next runtime action
+   - treat `turn.actions` as the ordered set of allowed next steps
+   - use `turn.context` instead of separately calling `forecast-harness draft-intake-guidance`, `forecast-harness draft-retrieval-plan`, or `forecast-harness draft-ingestion-plan` during the normal path
+   - when the runtime returns evidence-stage `ingestion_recommendations`, prefer `--action batch-ingest-recommended` before `--action draft-evidence-packet`
+   - after approval, keep using `run-adapter-action` to reach simulation, report review, and `begin-revision-update`
+6. Use `forecast-harness draft-conversation-turn` only for inspection, recovery, or debugging when you need to query the current stage without executing a mutation.
+7. Use `forecast-harness save-evidence-draft` only when the adapter needs to replace the drafted packet from a file rather than curating the existing draft in place.
