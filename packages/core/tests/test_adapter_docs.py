@@ -19,6 +19,7 @@ def test_adapter_install_docs_reference_guided_query_style_workflow() -> None:
         Path(__file__).resolve().parents[3]
         / "adapters"
         / "claude"
+        / "forecast-harness"
         / "skills"
         / "forecast-harness"
         / "SKILL.md"
@@ -46,6 +47,10 @@ def test_adapter_install_docs_reference_guided_query_style_workflow() -> None:
     assert "after each workflow mutation" in claude_doc
     assert "after each workflow mutation" in codex_skill
     assert "after each workflow mutation" in claude_skill
+    assert "install.py --target-dir" in codex_doc
+    assert "install.py --target-dir" in claude_doc
+    assert "smoke.py" in codex_doc
+    assert "smoke.py" in claude_doc
     assert "forecast-harness demo-run" not in codex_doc
     assert "forecast-harness demo-run" not in claude_doc
     assert "forecast-harness demo-run" not in codex_skill
@@ -70,6 +75,7 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
         Path(__file__).resolve().parents[3]
         / "adapters"
         / "claude"
+        / "forecast-harness"
         / "skills"
         / "forecast-harness"
         / "SKILL.md"

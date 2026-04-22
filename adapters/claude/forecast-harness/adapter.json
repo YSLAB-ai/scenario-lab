@@ -1,0 +1,10 @@
+{
+  "name": "forecast-harness",
+  "adapter": "claude",
+  "install_entries": [
+    {
+      "source": "skills/forecast-harness",
+      "target": "skills/forecast-harness"
+    }
+  ]
+}

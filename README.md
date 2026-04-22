@@ -320,13 +320,17 @@ Verified adapter-facing pieces:
 - Codex install guide: [docs/install-codex.md](docs/install-codex.md)
 - Claude install guide: [docs/install-claude-code.md](docs/install-claude-code.md)
 - Codex skill: [adapters/codex/forecast-harness/skills/forecast-harness/SKILL.md](adapters/codex/forecast-harness/skills/forecast-harness/SKILL.md)
-- Claude skill: [adapters/claude/skills/forecast-harness/SKILL.md](adapters/claude/skills/forecast-harness/SKILL.md)
+- Claude skill: [adapters/claude/forecast-harness/skills/forecast-harness/SKILL.md](adapters/claude/forecast-harness/skills/forecast-harness/SKILL.md)
+- Codex bundle installer: [adapters/codex/forecast-harness/install.py](adapters/codex/forecast-harness/install.py)
+- Claude bundle installer: [adapters/claude/forecast-harness/install.py](adapters/claude/forecast-harness/install.py)
+- Codex bundle smoke: [adapters/codex/forecast-harness/smoke.py](adapters/codex/forecast-harness/smoke.py)
+- Claude bundle smoke: [adapters/claude/forecast-harness/smoke.py](adapters/claude/forecast-harness/smoke.py)
 
 Current boundary:
 
 - the deterministic core now includes a packaged adapter runtime through `run-adapter-action`
 - `draft-conversation-turn` remains available as a query-only inspection and recovery surface
-- Codex and Claude scaffolding are still thin local wrappers around the shared runtime rather than marketplace-distributed integrations
+- Codex and Claude now also ship repo-owned local installer and smoke bundles; marketplace distribution remains out of scope
 
 ## Detailed Status Notes
 
@@ -348,11 +352,12 @@ Current boundary:
   - [2026-04-22-replay-expansion-v3.md](docs/status/2026-04-22-replay-expansion-v3.md)
 - Direct evidence runtime editing:
   - [2026-04-21-evidence-runtime-v1.md](docs/status/2026-04-21-evidence-runtime-v1.md)
+- Local adapter packaging:
+  - [2026-04-22-adapter-packaging-v2.md](docs/status/2026-04-22-adapter-packaging-v2.md)
 - Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 
 ## Current Gaps
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
-- Packaged Codex/Claude local integrations are still pending.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.

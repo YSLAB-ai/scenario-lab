@@ -393,6 +393,10 @@ Date: 2026-04-22
 - Codex and Claude install notes exist:
   - `docs/install-codex.md`
   - `docs/install-claude-code.md`
+- The repo now also ships packaged local adapter bundles for both hosts:
+  - `adapters/codex/forecast-harness/`
+  - `adapters/claude/forecast-harness/`
+  Each bundle now includes a repo-owned installer and smoke flow around the shared runtime.
 - The design and workflow-slice planning docs are present:
   - `docs/superpowers/specs/2026-04-19-forecasting-harness-design.md`
   - `docs/superpowers/plans/2026-04-19-forecasting-harness-core-vertical-slice.md`
@@ -416,7 +420,6 @@ Date: 2026-04-22
 ## Current Gaps
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
-- Codex and Claude local integrations are still thin repository wrappers rather than fully packaged local runtimes.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.
 
 ## Known Issues and Risks

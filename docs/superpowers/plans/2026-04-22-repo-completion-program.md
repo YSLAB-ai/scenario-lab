@@ -189,16 +189,16 @@ This program is **done** only when all of these are true on accepted `main`:
 - Modify: `README.md`
 - Test: adapter CLI/runtime smoke coverage under `packages/core/tests/` or adapter-specific tests
 
-- [ ] Replace the remaining “thin wrapper” status with repo-owned packaged local integrations that can drive the existing runtime end to end.
-- [ ] Add install/test flows that verify the packaged local adapter bundle can:
+- [x] Replace the remaining “thin wrapper” status with repo-owned packaged local integrations that can drive the existing runtime end to end.
+- [x] Add install/test flows that verify the packaged local adapter bundle can:
   - start a run
   - save intake
   - ingest/retrieve evidence
   - approve
   - simulate
   - summarize/report
-- [ ] Keep marketplace publication explicitly out of scope; the deliverable is a local packaged integration with reproducible install and smoke coverage.
-- [ ] Update docs so the adapter status line is no longer an open gap.
+- [x] Keep marketplace publication explicitly out of scope; the deliverable is a local packaged integration with reproducible install and smoke coverage.
+- [x] Update docs so the adapter status line is no longer an open gap.
 
 ### Task 10: Final Cleanup And Stop Condition
 

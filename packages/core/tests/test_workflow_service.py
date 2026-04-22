@@ -795,6 +795,11 @@ def test_draft_conversation_turn_embeds_native_adapter_payloads_for_evidence_sta
         "forecast-harness draft-evidence-packet",
         "forecast-harness save-evidence-draft",
     ]
+    assert [action.runtime_action for action in turn.actions] == [
+        "batch-ingest-recommended",
+        "draft-evidence-packet",
+        "save-evidence-draft",
+    ]
     assert turn.context["intake_guidance"]["domain_pack"] == "interstate-crisis"
     assert "force posture" in turn.context["retrieval_plan"]["target_evidence_categories"]
     assert "diplomatic signaling" in turn.context["ingestion_plan"]["missing_evidence_categories"]
@@ -817,6 +822,7 @@ def test_draft_conversation_turn_returns_approval_stage_from_evidence_draft(tmp_
     assert turn.recommended_command == "forecast-harness approve-revision"
     assert turn.context["revision_id"] == "r1"
     assert turn.actions[0].command == "forecast-harness approve-revision"
+    assert turn.actions[0].runtime_action == "approve-revision"
 
 
 def test_draft_conversation_turn_returns_simulation_stage_from_approved_revision(tmp_path: Path) -> None:

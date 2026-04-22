@@ -1256,6 +1256,7 @@ def test_draft_conversation_turn_command_embeds_native_adapter_payloads(tmp_path
     assert payload["stage"] == "evidence"
     assert payload["recommended_command"] == "forecast-harness batch-ingest-recommended"
     assert payload["actions"][0]["command"] == "forecast-harness batch-ingest-recommended"
+    assert payload["actions"][0]["runtime_action"] == "batch-ingest-recommended"
     assert payload["context"]["intake_guidance"]["domain_pack"] == "interstate-crisis"
     assert payload["context"]["ingestion_recommendations"][0]["source_role"] == "official communications"
 

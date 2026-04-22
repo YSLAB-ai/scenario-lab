@@ -1,0 +1,18 @@
+{
+  "name": "forecast-harness",
+  "adapter": "codex",
+  "install_entries": [
+    {
+      "source": ".codex-plugin",
+      "target": "forecast-harness/.codex-plugin"
+    },
+    {
+      "source": "skills",
+      "target": "forecast-harness/skills"
+    },
+    {
+      "source": "README.md",
+      "target": "forecast-harness/README.md"
+    }
+  ]
+}
