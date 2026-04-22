@@ -151,15 +151,15 @@ This program is **done** only when all of these are true on accepted `main`:
 - Test: `packages/core/tests/test_smoke_campaign.py`
 - Test: replay and retuning suites
 
-- [ ] Use the larger replay corpus and compiler outputs to deepen the weakest packs first.
-- [ ] Require every retuning pass to improve or preserve:
+- [x] Use the larger replay corpus and compiler outputs to deepen the weakest packs first.
+- [x] Require every retuning pass to improve or preserve:
   - top-branch accuracy
   - root-strategy accuracy
   - evidence-source accuracy
   - inferred-field coverage
-- [ ] Expand actions, transitions, or state fields only when replay evidence justifies it.
-- [ ] Keep the retuning boundary one domain at a time.
-- [ ] Update smoke scenarios after each substantive domain change so the checked-in campaign remains a realistic regression suite.
+- [x] Expand actions, transitions, or state fields only when replay evidence justifies it.
+- [x] Keep the retuning boundary one domain at a time.
+- [x] Update smoke scenarios after each substantive domain change so the checked-in campaign remains a realistic regression suite.
 
 ### Task 8: Upgrade New-Domain Synthesis Beyond Template Starters
 

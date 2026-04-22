@@ -4,13 +4,13 @@
   "actor_categories": ["central bank", "treasury", "financial institutions", "investors", "dealers", "foreign authorities"],
   "evidence_categories": ["liquidity conditions", "rates pressure", "policy credibility", "market functioning", "cross-asset contagion"],
   "evidence_category_terms": {
-    "liquidity conditions": ["liquidity", "funding stress", "repo pressure", "market depth"],
+    "liquidity conditions": ["liquidity", "funding stress", "repo pressure", "market depth", "emergency liquidity", "support measures", "guarantees"],
     "rates pressure": ["rate pressure", "yield spike", "repricing", "tightening"],
     "policy credibility": ["policy credibility", "forward guidance", "credibility", "official communication"],
-    "market functioning": ["market functioning", "bid ask", "dislocation", "trading conditions"],
+    "market functioning": ["market functioning", "bid ask", "dislocation", "trading conditions", "forced takeover", "receivership", "rescue package", "protect depositors"],
     "cross-asset contagion": ["cross-asset contagion", "spillover", "volatility transmission", "correlation shock"]
   },
-  "key_state_fields": ["liquidity_stress", "rate_pressure", "policy_credibility"],
+  "key_state_fields": ["liquidity_stress", "rate_pressure", "policy_credibility", "institutional_fragility"],
   "canonical_stages": ["trigger", "repricing", "policy-response", "liquidity-stabilization", "resolution"],
   "recommended_source_types": ["central bank releases", "treasury statements", "market functioning reports", "yield/volatility datasets", "bank or dealer commentary"],
   "starter_sources": [
@@ -29,6 +29,7 @@
     ["rates pressure", "yield shock", "tightening pressure"],
     ["policy credibility", "guidance credibility", "policy trust"],
     ["market functioning", "market plumbing", "trading conditions"],
-    ["cross-asset contagion", "spillover stress", "contagion"]
+    ["cross-asset contagion", "spillover stress", "contagion"],
+    ["resolution package", "forced takeover", "guarantees", "rescue merger", "protect depositors"]
   ]
 }

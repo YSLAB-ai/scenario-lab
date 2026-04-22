@@ -45,7 +45,10 @@ class DomainEvolutionService:
     def _load_manifest(self, domain_slug: str) -> dict[str, object]:
         path = self._manifest_path(domain_slug)
         if not path.exists():
-            raise FileNotFoundError(path)
+            try:
+                return load_domain_manifest(domain_slug).model_dump(mode="json")
+            except FileNotFoundError:
+                raise FileNotFoundError(path)
         return json.loads(path.read_text(encoding="utf-8"))
 
     def _write_manifest(self, domain_slug: str, payload: dict[str, object]) -> Path:
@@ -277,7 +280,13 @@ class DomainEvolutionService:
         weak_cases = [
             result.run_id
             for result in domain_results
-            if result.top_branch_match is False or result.root_strategy_match is False
+            if result.top_branch_match is False
+            or result.root_strategy_match is False
+            or result.evidence_source_match is False
+            or (
+                bool(result.expected_inferred_fields)
+                and result.inferred_field_coverage < 1.0
+            )
         ]
         suggested_targets = sorted(
             {
@@ -287,8 +296,23 @@ class DomainEvolutionService:
             }
         )
         reasons: list[str] = []
-        if weak_cases:
-            reasons.append(f"{len(weak_cases)} replay cases missed expected top branch or root strategy")
+        top_or_root_misses = sum(
+            1
+            for result in domain_results
+            if result.top_branch_match is False or result.root_strategy_match is False
+        )
+        evidence_misses = sum(1 for result in domain_results if result.evidence_source_match is False)
+        field_gaps = sum(
+            1
+            for result in domain_results
+            if result.expected_inferred_fields and result.inferred_field_coverage < 1.0
+        )
+        if top_or_root_misses:
+            reasons.append(f"{top_or_root_misses} replay cases missed expected top branch or root strategy")
+        if evidence_misses:
+            reasons.append(f"{evidence_misses} replay cases missed expected evidence-source coverage")
+        if field_gaps:
+            reasons.append(f"{field_gaps} replay cases still have inferred-field gaps")
 
         brief = DomainWeaknessBrief(
             domain_slug=domain_slug,
@@ -333,6 +357,11 @@ class DomainEvolutionService:
             if replay_cases is not None
             else self._load_replay_cases(domain_slug)
         )
+        mixed_domains = sorted({case.domain_pack for case in normalized_cases if case.domain_pack != domain_slug})
+        if mixed_domains:
+            raise ValueError(
+                f"mixed-domain replay payload for {domain_slug}: {', '.join(mixed_domains)}"
+            )
         if not normalized_cases:
             summary = {
                 "domain_slug": domain_slug,
@@ -375,6 +404,23 @@ class DomainEvolutionService:
         self.evolution_storage.write_report(domain_slug, "retuning-latest.json", summary)
         return summary
 
+    def _retuning_priority_key(self, summary: dict[str, object]) -> tuple[float, float, float, float, int, int, str]:
+        calibration_summary = summary.get("calibration_summary", {})
+        compiler_summary = summary.get("compiler_summary", {})
+        if not isinstance(calibration_summary, dict):
+            calibration_summary = {}
+        if not isinstance(compiler_summary, dict):
+            compiler_summary = {}
+        return (
+            float(calibration_summary.get("top_branch_accuracy", 0.0)),
+            float(calibration_summary.get("root_strategy_accuracy", 0.0)),
+            float(calibration_summary.get("evidence_source_accuracy", 0.0)),
+            float(calibration_summary.get("average_inferred_field_coverage", 0.0)),
+            -int(compiler_summary.get("candidate_count", 0)),
+            int(summary.get("case_count", 0)),
+            str(summary.get("domain_slug", "")),
+        )
+
     def run_builtin_replay_retuning(
         self,
         *,
@@ -405,6 +451,7 @@ class DomainEvolutionService:
 
         result = {
             "domains": ordered_domains,
+            "prioritized_domains": sorted(ordered_domains, key=lambda slug: self._retuning_priority_key(per_domain[slug])),
             "domain_count": len(ordered_domains),
             "case_count": case_count,
             "weak_domain_count": weak_domain_count,
@@ -583,7 +630,12 @@ class DomainEvolutionService:
         post_metrics: dict[str, object],
         candidate: DomainEvolutionCandidate,
     ) -> str:
-        for key in ("top_branch_accuracy", "root_strategy_accuracy", "evidence_source_accuracy"):
+        for key in (
+            "top_branch_accuracy",
+            "root_strategy_accuracy",
+            "evidence_source_accuracy",
+            "average_inferred_field_coverage",
+        ):
             if float(post_metrics.get(key, 0.0)) < float(pre_metrics.get(key, 0.0)):
                 return "rejected"
         improved = any(

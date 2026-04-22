@@ -296,6 +296,63 @@ def test_election_pack_prefers_targeted_deal_during_coalition_shaping() -> None:
     assert targeted_score > discipline_score
 
 
+def test_election_pack_infers_governing_math_pressure_for_hung_parliament() -> None:
+    from forecasting_harness.domain.election_shock import ElectionShockPack
+    from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacketItem, IntakeDraft
+
+    pack = ElectionShockPack()
+    intake = IntakeDraft(
+        event_framing="Assess coalition bargaining after a hung parliament leaves no party able to govern alone.",
+        focus_entities=["Conservative Party", "Labour Party"],
+        current_development="A fragmented parliament pushes leaders toward confidence-and-supply talks and coalition bargaining.",
+        current_stage="coalition-shaping",
+        time_horizon="21d",
+        known_constraints=["No single party has a governing majority"],
+        known_unknowns=["Whether a support pact can stabilize the government quickly"],
+    )
+    assumptions = AssumptionSummary(summary=["Elite bargaining matters more than fresh persuasion."])
+    evidence = [
+        EvidencePacketItem(
+            evidence_id="r1:hung:1",
+            source_id="hung-parliament",
+            source_title="Hung parliament",
+            reason="test",
+            raw_passages=[
+                "The election produced a hung parliament with no single party able to govern alone, forcing confidence-and-supply talks."
+            ],
+        )
+    ]
+
+    fields = pack.infer_pack_fields(intake, assumptions, evidence)
+
+    assert "governing_math_pressure" in fields
+    assert float(fields["governing_math_pressure"]) > 0.6
+
+
+def test_election_pack_targeted_deal_has_multiple_outcomes_under_governing_pressure() -> None:
+    from forecasting_harness.domain.election_shock import ElectionShockPack
+
+    pack = ElectionShockPack()
+    state = _state(
+        "election-shock",
+        "coalition-shaping",
+        {
+            "coalition_fragility": _field(0.52),
+            "donor_confidence": _field(0.44),
+            "governing_math_pressure": _field(0.82),
+            "message_discipline": _field(0.47),
+            "poll_margin": _field(0.02),
+            "turnout_energy": _field(0.51),
+        },
+    )
+
+    actions = {action["action_id"]: action for action in pack.propose_actions(state)}
+    outcomes = pack.sample_transition(state, actions["targeted-deal"])
+
+    assert len(outcomes) >= 2
+    assert all(isinstance(item, dict) and "outcome_id" in item for item in outcomes)
+
+
 def test_pandemic_response_pack_recommends_focal_run_lens_for_compliance_crisis() -> None:
     from forecasting_harness.domain.pandemic_response import PandemicResponsePack
 
@@ -456,6 +513,64 @@ def test_market_shock_pack_uses_generic_actor_utility_defaults() -> None:
     assert set(actor_impacts) == {"federal-reserve", "treasury-market"}
     assert actor_impacts["federal-reserve"]["domestic_sensitivity"] > actor_impacts["treasury-market"]["domestic_sensitivity"]
     assert actor_impacts["federal-reserve"]["reputational_sensitivity"] > 0.75
+
+
+def test_market_pack_infers_institutional_fragility_for_bank_resolution_signal() -> None:
+    from forecasting_harness.domain.market_shock import MarketShockPack
+    from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacketItem, IntakeDraft
+
+    pack = MarketShockPack()
+    intake = IntakeDraft(
+        event_framing="Assess market scenarios after a bank failure triggers emergency guarantees and a forced takeover.",
+        focus_entities=["Swiss Authorities", "Swiss Banking System"],
+        current_development="Officials announce guarantees, extraordinary liquidity support, and a forced takeover to contain market stress.",
+        current_stage="trigger",
+        time_horizon="21d",
+        known_constraints=["Depositor confidence must be preserved quickly"],
+        known_unknowns=["Whether the package will fully contain contagion"],
+    )
+    assumptions = AssumptionSummary(summary=["Authorities will prioritize system stability over a passive wait-and-see response."])
+    evidence = [
+        EvidencePacketItem(
+            evidence_id="r1:rescue:1",
+            source_id="rescue-package",
+            source_title="Rescue package",
+            reason="test",
+            raw_passages=[
+                "A forced takeover backed by official guarantees and extraordinary liquidity support is used to contain broader financial contagion."
+            ],
+        )
+    ]
+
+    fields = pack.infer_pack_fields(intake, assumptions, evidence)
+
+    assert "institutional_fragility" in fields
+    assert float(fields["institutional_fragility"]) > 0.6
+
+
+def test_market_pack_coordinated_backstop_has_resolution_outcomes_when_fragility_is_high() -> None:
+    from forecasting_harness.domain.market_shock import MarketShockPack
+
+    pack = MarketShockPack()
+    state = _state(
+        "market-shock",
+        "trigger",
+        {
+            "contagion_risk": _field(0.84),
+            "institutional_fragility": _field(0.86),
+            "liquidity_stress": _field(0.79),
+            "policy_credibility": _field(0.46),
+            "policy_optionality": _field(0.72),
+            "rate_pressure": _field(0.58),
+            "event_framing": _field("forced takeover with guarantees"),
+        },
+    )
+
+    actions = {action["action_id"]: action for action in pack.propose_actions(state)}
+    outcomes = pack.sample_transition(state, actions["coordinated-backstop"])
+
+    assert len(outcomes) >= 2
+    assert all(isinstance(item, dict) and "outcome_id" in item for item in outcomes)
 
 
 def test_regulatory_enforcement_pack_uses_generic_actor_utility_defaults() -> None:

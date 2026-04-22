@@ -164,6 +164,35 @@ SCENARIOS = [
         "expected_fields": {
             "coalition_fragility",
             "donor_confidence",
+            "governing_math_pressure",
+            "message_discipline",
+            "poll_margin",
+            "turnout_energy",
+        },
+    },
+    {
+        "run_id": "election-hung-parliament",
+        "domain": "election-shock",
+        "intake": {
+            "event_framing": "Assess coalition bargaining after a hung parliament leaves no party able to govern alone.",
+            "focus_entities": ["Conservative Party", "Labour Party"],
+            "current_development": "A hung parliament pushes leaders toward confidence-and-supply talks while party leadership tests a broader coalition bargain.",
+            "current_stage": "coalition-shaping",
+            "time_horizon": "21d",
+            "known_constraints": ["No single party has a governing majority", "Investors want a stable government quickly"],
+            "known_unknowns": ["Whether a support pact can stabilize the government without reopening the campaign"],
+            "suggested_entities": ["Party Leadership", "Regional Bloc"],
+        },
+        "assumptions": ["Coalition arithmetic matters more than fresh persuasion at this stage"],
+        "docs": {
+            "hung-parliament.md": "The election produces a hung parliament with no single party able to govern alone, forcing immediate coalition bargaining.",
+            "support-pact.md": "Party leaders open confidence-and-supply talks while exploring a broader coalition pact to stabilize the government.",
+        },
+        "expected_sources": {"hung-parliament", "support-pact"},
+        "expected_fields": {
+            "coalition_fragility",
+            "donor_confidence",
+            "governing_math_pressure",
             "message_discipline",
             "poll_margin",
             "turnout_energy",
@@ -190,6 +219,35 @@ SCENARIOS = [
         "expected_sources": {"rate-shock", "funding-stress"},
         "expected_fields": {
             "contagion_risk",
+            "institutional_fragility",
+            "liquidity_stress",
+            "policy_credibility",
+            "policy_optionality",
+            "rate_pressure",
+        },
+    },
+    {
+        "run_id": "market-bank-rescue",
+        "domain": "market-shock",
+        "intake": {
+            "event_framing": "Assess market scenarios after a bank confidence crisis triggers guarantees, emergency liquidity, and a forced takeover.",
+            "focus_entities": ["Swiss Authorities", "Swiss Banking System"],
+            "current_development": "A confidence crisis at a major bank triggers extraordinary liquidity support, guarantees, and a forced takeover package.",
+            "current_stage": "trigger",
+            "time_horizon": "21d",
+            "known_constraints": ["Depositor confidence must be preserved quickly", "Authorities need to contain contagion across the financial system"],
+            "known_unknowns": ["Whether the rescue package will stabilize confidence without wider spillovers"],
+            "suggested_entities": ["Central Bank", "Acquiring Bank"],
+        },
+        "assumptions": ["Authorities will prioritize a coordinated stabilization package over a passive wait-and-see approach"],
+        "docs": {
+            "forced-takeover.md": "Authorities back a forced takeover with official guarantees to prevent greater harm to the financial system.",
+            "emergency-support.md": "Extraordinary liquidity support and public guarantees are used to stabilize confidence during the crisis.",
+        },
+        "expected_sources": {"forced-takeover", "emergency-support"},
+        "expected_fields": {
+            "contagion_risk",
+            "institutional_fragility",
             "liquidity_stress",
             "policy_credibility",
             "policy_optionality",
@@ -437,6 +495,37 @@ def test_company_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path)
     assert len(top_root_labels) >= 2
 
 
+def test_election_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    registry = build_default_registry()
+    service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
+
+    top_root_labels: set[str] = set()
+    for scenario in [item for item in SCENARIOS if item["domain"] == "election-shock"]:
+        pack = registry.resolve(str(scenario["domain"]))
+        run_id = str(scenario["run_id"])
+        service.start_run(run_id, pack.slug())
+        intake = IntakeDraft.model_validate(scenario["intake"])
+        service.save_intake_draft(run_id, "r1", intake)
+
+        docs_dir = tmp_path / run_id
+        docs_dir.mkdir()
+        for filename, content in dict(scenario["docs"]).items():
+            (docs_dir / filename).write_text(str(content), encoding="utf-8")
+
+        service.batch_ingest_recommended_files(run_id, "r1", pack=pack, path=docs_dir, max_files=5)
+        service.draft_evidence_packet(run_id, "r1", pack=pack)
+        assumptions = AssumptionSummary(summary=list(scenario["assumptions"]), suggested_actors=intake.suggested_entities)
+        service.approve_revision(run_id, "r1", assumptions)
+        simulation = service.simulate_revision(run_id, "r1", pack=pack)
+
+        top_label = str(simulation["branches"][0]["label"])
+        top_root_labels.add(top_label.split(" (", 1)[0])
+
+    assert len(top_root_labels) >= 2
+
+
 def test_supply_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
     root = tmp_path / ".forecast"
     corpus_db = tmp_path / "corpus.db"
@@ -476,6 +565,37 @@ def test_pandemic_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path
 
     top_root_labels: set[str] = set()
     for scenario in [item for item in SCENARIOS if item["domain"] == "pandemic-response"]:
+        pack = registry.resolve(str(scenario["domain"]))
+        run_id = str(scenario["run_id"])
+        service.start_run(run_id, pack.slug())
+        intake = IntakeDraft.model_validate(scenario["intake"])
+        service.save_intake_draft(run_id, "r1", intake)
+
+        docs_dir = tmp_path / run_id
+        docs_dir.mkdir()
+        for filename, content in dict(scenario["docs"]).items():
+            (docs_dir / filename).write_text(str(content), encoding="utf-8")
+
+        service.batch_ingest_recommended_files(run_id, "r1", pack=pack, path=docs_dir, max_files=5)
+        service.draft_evidence_packet(run_id, "r1", pack=pack)
+        assumptions = AssumptionSummary(summary=list(scenario["assumptions"]), suggested_actors=intake.suggested_entities)
+        service.approve_revision(run_id, "r1", assumptions)
+        simulation = service.simulate_revision(run_id, "r1", pack=pack)
+
+        top_label = str(simulation["branches"][0]["label"])
+        top_root_labels.add(top_label.split(" (", 1)[0])
+
+    assert len(top_root_labels) >= 2
+
+
+def test_market_smoke_campaign_uses_more_than_one_root_strategy(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    corpus_db = tmp_path / "corpus.db"
+    registry = build_default_registry()
+    service = WorkflowService(RunRepository(root), corpus_registry=CorpusRegistry(corpus_db), domain_registry=registry)
+
+    top_root_labels: set[str] = set()
+    for scenario in [item for item in SCENARIOS if item["domain"] == "market-shock"]:
         pack = registry.resolve(str(scenario["domain"]))
         run_id = str(scenario["run_id"])
         service.start_run(run_id, pack.slug())

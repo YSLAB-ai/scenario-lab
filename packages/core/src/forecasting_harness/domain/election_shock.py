@@ -55,6 +55,7 @@ class ElectionShockPack(DomainPack):
         return {
             "coalition_fragility": "float",
             "donor_confidence": "float",
+            "governing_math_pressure": "float",
             "message_discipline": "float",
             "poll_margin": "float",
             "turnout_energy": "float",
@@ -108,15 +109,40 @@ class ElectionShockPack(DomainPack):
         coalition_fragility += 0.08 * count_term_matches(text, ["undecided voters", "swing voters"])
         coalition_fragility = bounded(coalition_fragility)
 
+        governing_math_pressure = 0.18
+        governing_math_pressure += 0.14 * count_term_matches(
+            text,
+            [
+                "hung parliament",
+                "fragmented parliament",
+                "no outright majority",
+                "no single party",
+                "govern alone",
+                "confidence-and-supply",
+                "confidence and supply",
+                "coalition bargaining",
+                "coalition talks",
+                "coalition negotiations",
+                "government of national unity",
+                "traffic-light coalition",
+            ],
+        )
+        governing_math_pressure += 0.08 * count_term_matches(
+            text,
+            ["statement of intent", "support pact", "governing arrangement", "parliamentary arrangement"],
+        )
+        governing_math_pressure = bounded(governing_math_pressure)
+
         return apply_manifest_state_overlays(
             text=text,
             slug=self.slug(),
             field_values={
-            "coalition_fragility": round(coalition_fragility, 3),
-            "donor_confidence": round(donor_confidence, 3),
-            "poll_margin": round(poll_margin, 3),
-            "turnout_energy": round(turnout_energy, 3),
-            "message_discipline": round(message_discipline, 3),
+                "coalition_fragility": round(coalition_fragility, 3),
+                "donor_confidence": round(donor_confidence, 3),
+                "governing_math_pressure": round(governing_math_pressure, 3),
+                "poll_margin": round(poll_margin, 3),
+                "turnout_energy": round(turnout_energy, 3),
+                "message_discipline": round(message_discipline, 3),
             },
         )
 
@@ -127,6 +153,7 @@ class ElectionShockPack(DomainPack):
         phase = getattr(state, "phase", None) or "trigger"
         coalition = numeric_field(state, "coalition_fragility", 0.34)
         donors = numeric_field(state, "donor_confidence", 0.48)
+        governing_math = numeric_field(state, "governing_math_pressure", 0.18)
         margin = numeric_field(state, "poll_margin", 0.0)
         turnout = numeric_field(state, "turnout_energy", 0.5)
         discipline = numeric_field(state, "message_discipline", 0.5)
@@ -172,8 +199,21 @@ class ElectionShockPack(DomainPack):
             return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         if phase == "coalition-shaping":
             actions = [
-                {"action_id": "targeted-deal", "label": "Targeted deal", "prior": bounded(0.16 + coalition * 0.18 + max(0.0, 0.45 - donors) * 0.1)},
-                {"action_id": "discipline-message", "label": "Discipline message", "prior": bounded(0.16 + discipline * 0.12)},
+                {
+                    "action_id": "targeted-deal",
+                    "label": "Targeted deal",
+                    "prior": bounded(
+                        0.16
+                        + coalition * 0.18
+                        + max(0.0, 0.45 - donors) * 0.1
+                        + governing_math * 0.22
+                    ),
+                },
+                {
+                    "action_id": "discipline-message",
+                    "label": "Discipline message",
+                    "prior": bounded(0.16 + discipline * 0.12 + max(0.0, 0.35 - governing_math) * 0.06),
+                },
             ]
             return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
         return []
@@ -182,6 +222,7 @@ class ElectionShockPack(DomainPack):
         action_id = action_context.get("action_id") or action_context.get("branch_id")
         coalition = numeric_field(state, "coalition_fragility", 0.34)
         donors = numeric_field(state, "donor_confidence", 0.48)
+        governing_math = numeric_field(state, "governing_math_pressure", 0.18)
         margin = numeric_field(state, "poll_margin", 0.0)
         turnout = numeric_field(state, "turnout_energy", 0.5)
         discipline = numeric_field(state, "message_discipline", 0.5)
@@ -308,16 +349,36 @@ class ElectionShockPack(DomainPack):
             ]
         if phase == "coalition-shaping" and action_id == "targeted-deal":
             return [
-                with_updates(
-                    state,
-                    phase="resolution",
-                    field_updates={
-                        "coalition_fragility": max(0.0, coalition - 0.08),
-                        "donor_confidence": donors + 0.04,
-                        "poll_margin": margin + 0.25,
-                        "message_discipline": discipline + 0.05,
-                    },
-                )
+                {
+                    "next_state": with_updates(
+                        state,
+                        phase="resolution",
+                        field_updates={
+                            "coalition_fragility": max(0.0, coalition - 0.12),
+                            "donor_confidence": donors + 0.05,
+                            "governing_math_pressure": max(0.0, governing_math - 0.28),
+                            "poll_margin": margin + 0.18,
+                            "message_discipline": discipline + 0.04,
+                        },
+                    ),
+                    "weight": 0.58 if governing_math >= 0.55 else 0.42,
+                    "outcome_id": "confidence-pact",
+                },
+                {
+                    "next_state": with_updates(
+                        state,
+                        phase="resolution",
+                        field_updates={
+                            "coalition_fragility": max(0.0, coalition - 0.16),
+                            "donor_confidence": donors + 0.08,
+                            "governing_math_pressure": max(0.0, governing_math - 0.34),
+                            "poll_margin": margin + 0.26,
+                            "message_discipline": discipline + 0.06,
+                        },
+                    ),
+                    "weight": 0.42 if governing_math >= 0.55 else 0.58,
+                    "outcome_id": "governing-coalition",
+                },
             ]
         if phase == "coalition-shaping" and action_id == "discipline-message":
             return [

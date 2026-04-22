@@ -59,6 +59,8 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - the CLI now supports `compile-revision-knowledge` and `compile-replay-knowledge` so compiler candidates can be generated and inspected explicitly
 - the CLI now supports `list-builtin-replay-cases` in addition to corpus and calibration summaries
 - the CLI now supports `run-builtin-replay-retuning`, which runs the full built-in replay corpus one domain at a time through the protected retuning loop
+- built-in replay retuning now prioritizes weaker domains first, rejects mixed-domain payloads, and treats inferred-field coverage as a first-class non-regression metric alongside top-branch, root-strategy, and evidence-source accuracy
+- the accepted domain deepening pass expanded replay-justified election coalition-arithmetic and market-fragility modeling, and the checked-in smoke campaign now includes dedicated `election-hung-parliament` and `market-bank-rescue` scenarios
 - the corpus now supports a persisted local semantic backend choice plus `rebuild-corpus-embeddings` for upgrading existing vector rows
 - the retrieval layer now supports optional local neural embeddings through the `semantic-local` extra while preserving the deterministic hashed baseline as a fallback
 
@@ -86,6 +88,7 @@ Detailed recent notes:
 - [2026-04-22-local-neural-embeddings-v1.md](docs/status/2026-04-22-local-neural-embeddings-v1.md)
 - [2026-04-22-probability-calibration-v1.md](docs/status/2026-04-22-probability-calibration-v1.md)
 - [2026-04-22-knowledge-compiler-v1.md](docs/status/2026-04-22-knowledge-compiler-v1.md)
+- [2026-04-22-domain-retuning-v1.md](docs/status/2026-04-22-domain-retuning-v1.md)
 
 ## Install
 

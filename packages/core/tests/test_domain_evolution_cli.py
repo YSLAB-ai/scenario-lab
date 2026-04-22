@@ -242,6 +242,62 @@ def test_run_replay_retuning_command_accepts_replay_case_json(tmp_path: Path) ->
     assert payload["evolution_summary"]["promotion_decision"] == "promoted"
 
 
+def test_run_replay_retuning_command_rejects_mixed_domain_payload(tmp_path: Path) -> None:
+    manifest_root = tmp_path / "knowledge" / "domains"
+    manifest_root.mkdir(parents=True)
+    (manifest_root / "company-action.json").write_text(
+        json.dumps({"slug": "company-action", "description": "test manifest"}),
+        encoding="utf-8",
+    )
+
+    company_case = ReplayCase(
+        run_id="openai-governance-retune",
+        domain_pack="company-action",
+        intake=IntakeDraft(
+            event_framing="Assess OpenAI strategy after a board-driven leadership crisis.",
+            focus_entities=["OpenAI"],
+            current_development="OpenAI faces leadership turnover, governance questions, and partner pressure.",
+            current_stage="trigger",
+            time_horizon="120d",
+        ),
+        assumptions=AssumptionSummary(summary=["The company will prioritize stakeholder reassurance."]),
+        documents={"company.md": "Leadership turnover creates board pressure."},
+    )
+    market_case = ReplayCase(
+        run_id="wrong-domain-case",
+        domain_pack="market-shock",
+        intake=IntakeDraft(
+            event_framing="Assess market stress after a bank failure.",
+            focus_entities=["Federal Reserve", "Banking System"],
+            current_development="A failed bank triggers funding stress and emergency support debate.",
+            current_stage="trigger",
+            time_horizon="21d",
+        ),
+        assumptions=AssumptionSummary(summary=["Authorities will act quickly."]),
+        documents={"market.md": "Support measures are debated after the failure."},
+    )
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "run-replay-retuning",
+            "--workspace-root",
+            str(tmp_path),
+            "--domain-pack",
+            "company-action",
+            "--replay-case-json",
+            company_case.model_dump_json(),
+            "--replay-case-json",
+            market_case.model_dump_json(),
+            "--no-branch",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ValueError)
+    assert "mixed-domain replay payload" in str(result.exception)
+
+
 def test_compile_revision_knowledge_command_records_idempotent_compiler_candidates(tmp_path: Path) -> None:
     root = tmp_path / ".forecast"
     pack = CompanyActionPack()
@@ -421,5 +477,6 @@ def test_run_builtin_replay_retuning_command_reports_multi_domain_summary(tmp_pa
     assert payload["case_count"] == 11
     assert payload["weak_domain_count"] == 0
     assert payload["domains"] == ["market-shock", "regulatory-enforcement"]
+    assert payload["prioritized_domains"] == ["regulatory-enforcement", "market-shock"]
     assert payload["generated_suggestion_count"] == 0
     assert set(payload["per_domain"]) == {"market-shock", "regulatory-enforcement"}

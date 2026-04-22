@@ -212,6 +212,20 @@ Date: 2026-04-22
   - `forecast-harness summarize-replay-calibration` -> `failure_type_counts = {}`
   - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
   - `forecast-harness run-builtin-replay-retuning --workspace-root /tmp/replay-retuning-phase4 --no-branch` can now walk the full 40-case corpus without generating weak-domain suggestions on the accepted calibration baseline
+- The domain-retuning pass on 2026-04-22 then further verified:
+  - `forecast-harness run-builtin-replay-retuning --workspace-root /tmp/phase7-retuning-verify-2 --no-branch` ->
+    - `domain_count = 7`
+    - `case_count = 40`
+    - `weak_domain_count = 0`
+    - `generated_suggestion_count = 0`
+    - `prioritized_domains = ["election-shock", "pandemic-response", "regulatory-enforcement", "interstate-crisis", "market-shock", "supply-chain-disruption", "company-action"]`
+  - `forecast-harness summarize-replay-calibration` still reports:
+    - `overall_top_branch_accuracy = 1.0`
+    - `overall_root_strategy_accuracy = 1.0`
+    - `overall_evidence_source_accuracy = 1.0`
+    - `average_inferred_field_coverage = 1.0`
+  - the protected retuning loop now rejects mixed-domain payloads and treats inferred-field coverage as a required non-regression metric
+  - the accepted deepening pass expanded replay-justified election coalition-arithmetic and market-fragility modeling, and the checked-in smoke campaign gained dedicated `election-hung-parliament` and `market-bank-rescue` regressions
 - The local neural embeddings pass on 2026-04-22 then further verified:
   - `forecast-harness rebuild-corpus-embeddings --corpus-db /tmp/local-neural-embeddings-v1.db` ->
     - `requested_backend = baseline`

@@ -54,6 +54,7 @@ class MarketShockPack(DomainPack):
     def extend_schema(self) -> dict[str, Any]:
         return {
             "contagion_risk": "float",
+            "institutional_fragility": "float",
             "liquidity_stress": "float",
             "policy_credibility": "float",
             "policy_optionality": "float",
@@ -93,6 +94,25 @@ class MarketShockPack(DomainPack):
         contagion_risk += 0.08 * count_term_matches(text, ["money market", "treasury market", "banks"])
         contagion_risk += 0.06 * count_term_matches(text, ["confidence crisis", "depositor confidence", "bank failures"])
 
+        institutional_fragility = 0.2
+        institutional_fragility += 0.14 * count_term_matches(
+            text,
+            [
+                "bank failure",
+                "confidence crisis",
+                "forced takeover",
+                "receivership",
+                "merger",
+                "guarantees",
+                "protect depositors",
+                "rescue package",
+            ],
+        )
+        institutional_fragility += 0.08 * count_term_matches(
+            text,
+            ["extraordinary liquidity support", "takeover", "transfer", "acquiring bank"],
+        )
+
         policy_optionality = 0.3
         policy_optionality += 0.12 * count_term_matches(
             text,
@@ -117,11 +137,12 @@ class MarketShockPack(DomainPack):
             text=text,
             slug=self.slug(),
             field_values={
-            "contagion_risk": round(bounded(contagion_risk), 3),
-            "liquidity_stress": round(bounded(liquidity_stress), 3),
-            "rate_pressure": round(bounded(rate_pressure), 3),
-            "policy_credibility": round(bounded(policy_credibility), 3),
-            "policy_optionality": round(bounded(policy_optionality), 3),
+                "contagion_risk": round(bounded(contagion_risk), 3),
+                "institutional_fragility": round(bounded(institutional_fragility), 3),
+                "liquidity_stress": round(bounded(liquidity_stress), 3),
+                "rate_pressure": round(bounded(rate_pressure), 3),
+                "policy_credibility": round(bounded(policy_credibility), 3),
+                "policy_optionality": round(bounded(policy_optionality), 3),
             },
         )
 
@@ -131,6 +152,7 @@ class MarketShockPack(DomainPack):
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
         phase = getattr(state, "phase", None) or "trigger"
         contagion = numeric_field(state, "contagion_risk", 0.35)
+        fragility = numeric_field(state, "institutional_fragility", 0.2)
         liquidity = numeric_field(state, "liquidity_stress", 0.45)
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
@@ -159,13 +181,20 @@ class MarketShockPack(DomainPack):
                 {
                     "action_id": "emergency-liquidity",
                     "label": "Emergency liquidity",
-                    "prior": bounded(0.14 + liquidity * 0.18 + contagion * 0.18 + optionality * 0.14 - backstop_signal * 0.04),
+                    "prior": bounded(
+                        0.14
+                        + liquidity * 0.18
+                        + contagion * 0.18
+                        + fragility * 0.08
+                        + optionality * 0.14
+                        - backstop_signal * 0.04
+                    ),
                     "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_optionality"]},
                 },
                 {
                     "action_id": "wait-and-see",
                     "label": "Wait and see",
-                    "prior": bounded(0.08 + max(0.0, credibility - 0.4) * 0.18 - contagion * 0.12),
+                    "prior": bounded(0.08 + max(0.0, credibility - 0.4) * 0.18 - contagion * 0.12 - fragility * 0.12),
                     "dependencies": {"fields": ["contagion_risk", "policy_credibility"]},
                 },
                 {
@@ -175,11 +204,20 @@ class MarketShockPack(DomainPack):
                         0.1
                         + liquidity * 0.12
                         + contagion * 0.16
+                        + fragility * 0.24
                         + credibility * 0.08
                         + optionality * 0.16
                         + backstop_signal * 0.14
                     ),
-                    "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_credibility", "policy_optionality"]},
+                    "dependencies": {
+                        "fields": [
+                            "contagion_risk",
+                            "institutional_fragility",
+                            "liquidity_stress",
+                            "policy_credibility",
+                            "policy_optionality",
+                        ]
+                    },
                 },
             ]
             return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
@@ -206,6 +244,7 @@ class MarketShockPack(DomainPack):
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
         action_id = action_context.get("action_id") or action_context.get("branch_id")
         contagion = numeric_field(state, "contagion_risk", 0.35)
+        fragility = numeric_field(state, "institutional_fragility", 0.2)
         liquidity = numeric_field(state, "liquidity_stress", 0.45)
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
@@ -265,12 +304,46 @@ class MarketShockPack(DomainPack):
                 )
             ]
         if phase == "trigger" and action_id == "coordinated-backstop":
+            if backstop_signal >= 2 or fragility >= 0.65:
+                return [
+                    {
+                        "next_state": with_updates(
+                            state,
+                            phase="policy-response",
+                            field_updates={
+                                "contagion_risk": max(0.0, contagion - 0.14),
+                                "institutional_fragility": max(0.0, fragility - 0.18),
+                                "liquidity_stress": max(0.0, liquidity - 0.16),
+                                "policy_credibility": credibility + 0.14,
+                                "policy_optionality": optionality + 0.1,
+                            },
+                        ),
+                        "weight": 0.52,
+                        "outcome_id": "rescue-merger",
+                    },
+                    {
+                        "next_state": with_updates(
+                            state,
+                            phase="liquidity-stabilization",
+                            field_updates={
+                                "contagion_risk": max(0.0, contagion - 0.12),
+                                "institutional_fragility": max(0.0, fragility - 0.12),
+                                "liquidity_stress": max(0.0, liquidity - 0.14),
+                                "policy_credibility": credibility + 0.12,
+                                "policy_optionality": optionality + 0.12,
+                            },
+                        ),
+                        "weight": 0.48,
+                        "outcome_id": "guarantee-package",
+                    },
+                ]
             return [
                 with_updates(
                     state,
                     phase="policy-response",
                     field_updates={
                         "contagion_risk": max(0.0, contagion - (0.14 if backstop_signal >= 2 else 0.1)),
+                        "institutional_fragility": max(0.0, fragility - 0.06),
                         "liquidity_stress": max(0.0, liquidity - (0.15 if backstop_signal >= 2 else 0.12)),
                         "policy_credibility": credibility + (0.14 if backstop_signal >= 2 else 0.12),
                         "policy_optionality": optionality + 0.08,
@@ -356,15 +429,18 @@ class MarketShockPack(DomainPack):
     def score_state(self, state: Any) -> dict[str, float]:
         phase = getattr(state, "phase", None) or "trigger"
         contagion = numeric_field(state, "contagion_risk", 0.35)
+        fragility = numeric_field(state, "institutional_fragility", 0.2)
         liquidity = numeric_field(state, "liquidity_stress", 0.45)
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
         optionality = numeric_field(state, "policy_optionality", 0.3)
         instability = {"trigger": 0.45, "repricing": 0.65, "policy-response": 0.4, "liquidity-stabilization": 0.3, "resolution": 0.15}[phase]
         return {
-            "escalation": bounded(instability + liquidity * 0.22 + contagion * 0.2 + max(0.0, rates - 0.5) * 0.18),
+            "escalation": bounded(
+                instability + liquidity * 0.22 + contagion * 0.2 + fragility * 0.14 + max(0.0, rates - 0.5) * 0.18
+            ),
             "negotiation": bounded(0.16 + credibility * 0.28 + optionality * 0.18 + max(0.0, 0.6 - liquidity) * 0.18),
-            "economic_stress": bounded(0.22 + liquidity * 0.4 + rates * 0.18 + contagion * 0.14),
+            "economic_stress": bounded(0.22 + liquidity * 0.4 + rates * 0.18 + contagion * 0.14 + fragility * 0.12),
         }
 
     def validate_state(self, state: Any) -> list[str]:
