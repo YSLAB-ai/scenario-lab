@@ -48,6 +48,9 @@ Date: 2026-04-21
   - `forecast-harness run-builtin-replay-suite`
   - `forecast-harness list-builtin-replay-cases`
   - `forecast-harness summarize-replay-calibration`
+- The repo now also includes a one-domain replay retuning loop through:
+  - `forecast-harness run-replay-retuning`
+  This runs replay on one domain, turns misses into idempotent self-detected suggestions, and feeds the existing domain-evolution pipeline.
 - The interstate replay slice inside that 18-case corpus now includes `philippines-china-shoal` and the historically anchored `taiwan-drills-2022` case, preserving full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
 - Six of the built-in replay cases now carry explicit source attribution and historical outcome notes.
 - Calibration summaries now expose structured `attention_items` and `failure_type_counts` in addition to per-domain composite scores.
@@ -330,7 +333,7 @@ Date: 2026-04-21
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
   - rule extraction / knowledge compiler
-- The replay suite infrastructure now exists and includes an 18-case built-in corpus with a source-attributed historical slice, but the repo still does not include a large curated historical replay library or an automatic retuning loop against those replay results.
+- The replay suite infrastructure now exists and includes an 18-case built-in corpus with a source-attributed historical slice, and the repo now supports one-domain automatic retuning from replay misses, but it still does not include a large curated historical replay library.
 - Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline does not yet synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
 
 ## Known Issues and Risks

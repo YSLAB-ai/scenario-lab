@@ -253,6 +253,7 @@ forecast-harness summarize-builtin-replay-corpus
 forecast-harness list-builtin-replay-cases
 forecast-harness run-builtin-replay-suite
 forecast-harness summarize-replay-calibration
+forecast-harness run-replay-retuning --domain-pack company-action --no-branch
 ```
 
 ## Adapters
@@ -280,6 +281,8 @@ Current boundary:
   - [2026-04-21-high-default-iterations.md](docs/status/2026-04-21-high-default-iterations.md)
 - Adapter runtime packaging:
   - [2026-04-21-adapter-runtime-v1.md](docs/status/2026-04-21-adapter-runtime-v1.md)
+- Replay retuning:
+  - [2026-04-21-replay-retuning-v1.md](docs/status/2026-04-21-replay-retuning-v1.md)
 - Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 

@@ -24,10 +24,18 @@ class EvolutionStorage:
         return self.root / "failed" / domain_slug / filename
 
     def append_suggestion(self, suggestion: DomainSuggestion) -> DomainSuggestion:
-        path = self._suggestions_path(suggestion.domain_slug)
-        self._ensure_parent(path)
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(suggestion.model_dump(mode="json"), sort_keys=True) + "\n")
+        existing = self.load_suggestions(suggestion.domain_slug)
+        updated = False
+        merged: list[DomainSuggestion] = []
+        for item in existing:
+            if item.suggestion_id == suggestion.suggestion_id:
+                merged.append(suggestion)
+                updated = True
+            else:
+                merged.append(item)
+        if not updated:
+            merged.append(suggestion)
+        self.save_suggestions(suggestion.domain_slug, merged)
         return suggestion
 
     def load_suggestions(self, domain_slug: str) -> list[DomainSuggestion]:

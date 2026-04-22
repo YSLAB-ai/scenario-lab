@@ -65,25 +65,45 @@ class DomainEvolutionService:
     def _replay_summary(self, domain_slug: str) -> dict[str, object]:
         cases = self._load_replay_cases(domain_slug)
         if not cases:
-            return {
-                "case_count": 0,
-                "top_branch_accuracy": 0.0,
-                "root_strategy_accuracy": 0.0,
-                "evidence_source_accuracy": 0.0,
-                "average_inferred_field_coverage": 0.0,
-                "domains_needing_attention": [],
-            }
+            return self._empty_replay_summary()
         result = run_replay_suite(cases)
+        return self._replay_summary_from_result(domain_slug, result)
+
+    def _empty_replay_summary(self) -> dict[str, object]:
+        return {
+            "case_count": 0,
+            "top_branch_accuracy": 0.0,
+            "root_strategy_accuracy": 0.0,
+            "evidence_source_accuracy": 0.0,
+            "average_inferred_field_coverage": 0.0,
+            "domains_needing_attention": [],
+        }
+
+    def _replay_summary_from_result(self, domain_slug: str, result: ReplaySuiteResult) -> dict[str, object]:
         calibration = summarize_calibration(result)
         domain_metrics = calibration.domain_breakdown.get(domain_slug, {})
         return {
-            "case_count": len(cases),
+            "case_count": len([item for item in result.results if item.domain_pack == domain_slug]),
             "top_branch_accuracy": float(domain_metrics.get("top_branch_accuracy", 0.0)),
             "root_strategy_accuracy": float(domain_metrics.get("root_strategy_accuracy", 0.0)),
             "evidence_source_accuracy": float(domain_metrics.get("evidence_source_accuracy", 0.0)),
             "average_inferred_field_coverage": float(domain_metrics.get("average_inferred_field_coverage", 0.0)),
             "domains_needing_attention": calibration.domains_needing_attention,
         }
+
+    def _replay_suite_for_domain(self, domain_slug: str, replay_cases: list[ReplayCase] | None = None) -> ReplaySuiteResult:
+        cases = replay_cases if replay_cases is not None else self._load_replay_cases(domain_slug)
+        if not cases:
+            return ReplaySuiteResult(
+                case_count=0,
+                top_branch_accuracy=0.0,
+                root_strategy_accuracy=0.0,
+                evidence_source_accuracy=0.0,
+                average_inferred_field_coverage=0.0,
+                domain_breakdown={},
+                results=[],
+            )
+        return run_replay_suite(cases)
 
     def record_suggestion(
         self,
@@ -261,6 +281,64 @@ class DomainEvolutionService:
             self.evolution_storage.append_suggestion(suggestion)
         return brief
 
+    def run_replay_retuning(
+        self,
+        domain_slug: str,
+        *,
+        replay_cases: list[ReplayCase | dict[str, object]] | None = None,
+        create_branch: bool = True,
+    ) -> dict[str, object]:
+        normalized_cases = (
+            [case if isinstance(case, ReplayCase) else ReplayCase.model_validate(case) for case in replay_cases]
+            if replay_cases is not None
+            else self._load_replay_cases(domain_slug)
+        )
+        if not normalized_cases:
+            summary = {
+                "domain_slug": domain_slug,
+                "case_count": 0,
+                "weak_case_count": 0,
+                "generated_suggestion_count": 0,
+                "calibration_summary": self._empty_replay_summary(),
+                "evolution_summary": None,
+            }
+            self.evolution_storage.write_report(domain_slug, "retuning-latest.json", summary)
+            return summary
+
+        before_suggestion_ids = {item.suggestion_id for item in self.evolution_storage.load_suggestions(domain_slug)}
+        replay_result = self._replay_suite_for_domain(domain_slug, normalized_cases)
+        calibration_summary = self._replay_summary_from_result(domain_slug, replay_result)
+        weakness = self.analyze_domain_weakness(domain_slug, replay_result=replay_result)
+        after_suggestions = self.evolution_storage.load_suggestions(domain_slug)
+        generated_suggestion_count = len(
+            [
+                item
+                for item in after_suggestions
+                if item.provenance == "self-detected" and item.suggestion_id not in before_suggestion_ids
+            ]
+        )
+
+        evolution_summary = None
+        if weakness.weak_cases:
+            evolution_summary = self.run_domain_evolution(
+                domain_slug,
+                create_branch=create_branch,
+                replay_cases=normalized_cases,
+                replay_result=replay_result,
+            )
+
+        summary = {
+            "domain_slug": domain_slug,
+            "case_count": len(normalized_cases),
+            "weak_case_count": len(weakness.weak_cases),
+            "generated_suggestion_count": generated_suggestion_count,
+            "calibration_summary": calibration_summary,
+            "weakness_brief": weakness.model_dump(mode="json"),
+            "evolution_summary": evolution_summary,
+        }
+        self.evolution_storage.write_report(domain_slug, "retuning-latest.json", summary)
+        return summary
+
     def synthesize_candidate(
         self,
         domain_slug: str,
@@ -350,21 +428,18 @@ class DomainEvolutionService:
             payload["latest_report"] = json.loads(latest_report.read_text(encoding="utf-8"))
         return payload
 
-    def run_domain_evolution(self, domain_slug: str, *, create_branch: bool = True) -> dict[str, object]:
+    def run_domain_evolution(
+        self,
+        domain_slug: str,
+        *,
+        create_branch: bool = True,
+        replay_cases: list[ReplayCase] | None = None,
+        replay_result: ReplaySuiteResult | None = None,
+    ) -> dict[str, object]:
         suggestions = self.evolution_storage.load_suggestions(domain_slug)
-        pre_metrics = self._replay_summary(domain_slug)
+        replay_result = replay_result or self._replay_suite_for_domain(domain_slug, replay_cases)
+        pre_metrics = self._replay_summary_from_result(domain_slug, replay_result)
         self.evolution_storage.write_baseline(domain_slug, "before.json", pre_metrics)
-
-        replay_cases = self._load_replay_cases(domain_slug)
-        replay_result = run_replay_suite(replay_cases) if replay_cases else ReplaySuiteResult(
-            case_count=0,
-            top_branch_accuracy=0.0,
-            root_strategy_accuracy=0.0,
-            evidence_source_accuracy=0.0,
-            average_inferred_field_coverage=0.0,
-            domain_breakdown={},
-            results=[],
-        )
         weakness = self.analyze_domain_weakness(domain_slug, replay_result=replay_result)
         suggestions = self.evolution_storage.load_suggestions(domain_slug)
         candidate = self.synthesize_candidate(domain_slug, suggestions=suggestions, weakness_brief=weakness)
@@ -382,7 +457,8 @@ class DomainEvolutionService:
         original_manifest = manifest_path.read_text(encoding="utf-8")
         try:
             self._write_manifest(domain_slug, candidate.updated_manifest)
-            post_metrics = self._replay_summary(domain_slug)
+            post_result = self._replay_suite_for_domain(domain_slug, replay_cases)
+            post_metrics = self._replay_summary_from_result(domain_slug, post_result)
             self.evolution_storage.write_baseline(domain_slug, "after.json", post_metrics)
             decision = self._promotion_decision(pre_metrics=pre_metrics, post_metrics=post_metrics, candidate=candidate)
             branch_name = None

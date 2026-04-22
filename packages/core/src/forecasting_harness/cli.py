@@ -330,6 +330,24 @@ def run_domain_evolution_command(
     print(json.dumps(summary))
 
 
+@app.command("run-replay-retuning")
+def run_replay_retuning_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: str = typer.Option(...),
+    input: Path | None = typer.Option(None),
+    no_branch: bool = typer.Option(False),
+) -> None:
+    replay_cases = None
+    if input is not None:
+        replay_cases = [ReplayCase.model_validate(item) for item in json.loads(input.read_text(encoding="utf-8"))]
+    summary = _evolution_service(workspace_root).run_replay_retuning(
+        domain_pack,
+        replay_cases=replay_cases,
+        create_branch=not no_branch,
+    )
+    print(json.dumps(summary))
+
+
 @app.command("summarize-domain-evolution")
 def summarize_domain_evolution_command(
     workspace_root: Path = typer.Option(Path(".")),
