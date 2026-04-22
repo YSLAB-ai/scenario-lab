@@ -18,7 +18,7 @@ This program is **done** only when all of these are true on accepted `main`:
 - [ ] Full suite passes on merged `main`.
 - [ ] Checked-in smoke campaign passes on merged `main`.
 - [ ] Built-in replay corpus reaches at least `40` cases with meaningful multi-domain coverage and green calibration.
-- [ ] Simulation output exposes calibrated branch probability fields or calibrated confidence buckets instead of raw ranking only.
+- [x] Simulation output exposes calibrated branch probability fields or calibrated confidence buckets instead of raw ranking only.
 - [ ] Spreadsheet ingestion and web-archive ingestion are implemented and documented.
 - [ ] Remaining file-backed bulk-edit workflow paths are replaced by structured CLI/runtime inputs.
 - [ ] Knowledge compiler / rule extraction exists and feeds reusable domain knowledge back into the repo-owned evolution path.
@@ -114,14 +114,14 @@ This program is **done** only when all of these are true on accepted `main`:
 - Test: `packages/core/tests/test_simulation.py`
 - Test: `packages/core/tests/test_replay.py`
 
-- [ ] Define a calibrated probability or confidence-bucket layer that uses replay outcomes rather than raw MCTS visits alone.
-- [ ] Add per-domain calibration summaries that can map branch confidence to replay-backed buckets.
-- [ ] Surface the calibrated value in:
+- [x] Define a calibrated probability or confidence-bucket layer that uses replay outcomes rather than raw MCTS visits alone.
+- [x] Add per-domain calibration summaries that can map branch confidence to replay-backed buckets.
+- [x] Surface the calibrated value in:
   - simulation payloads
   - revision summaries
   - generated reports
-- [ ] Keep the deterministic MCTS core intact; calibration must be a post-search layer, not a hidden stochastic rewrite.
-- [ ] Add tests proving the calibrated field exists and remains stable for replay-covered domains.
+- [x] Keep the deterministic MCTS core intact; calibration must be a post-search layer, not a hidden stochastic rewrite.
+- [x] Add tests proving the calibrated field exists and remains stable for replay-covered domains.
 
 ### Task 6: Build Knowledge Compiler / Rule Extraction V1
 

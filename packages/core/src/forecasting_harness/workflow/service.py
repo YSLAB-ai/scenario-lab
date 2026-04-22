@@ -18,6 +18,7 @@ from forecasting_harness.objectives import (
     objective_profile_by_name,
 )
 from forecasting_harness.query_api import summarize_scenario_families, summarize_top_branches
+from forecasting_harness.replay import apply_confidence_calibration, load_builtin_domain_confidence_profile
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine, detect_source_type, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.evidence import draft_evidence_packet as build_evidence_packet
@@ -766,6 +767,7 @@ class WorkflowService:
         *,
         pack: Any,
         iterations: int | None = None,
+        attach_calibration: bool = True,
     ) -> dict[str, object]:
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=True)
         assumptions = self.repository.load_revision_model(run_id, "assumptions", revision_id, AssumptionSummary, approved=True)
@@ -818,6 +820,12 @@ class WorkflowService:
 
         engine = SimulationEngine(pack, objective_profile)
         result = engine.run(state, reuse_context=reuse_context, iterations=iterations)
+        if attach_calibration:
+            result = apply_confidence_calibration(
+                result,
+                domain_pack=pack.slug(),
+                profile=load_builtin_domain_confidence_profile(pack.slug()),
+            )
         result["actor_utility_summary"] = _summarize_actor_preferences(state)
         result["aggregation_lens"] = _serialize_run_lens(objective_profile)
         result["recommended_run_lens"] = _serialize_run_lens(recommended_profile)

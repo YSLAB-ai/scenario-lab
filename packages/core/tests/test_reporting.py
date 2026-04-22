@@ -77,6 +77,9 @@ def test_render_report_includes_scenario_families_key_drivers_and_search_summary
                     "label": "Signal resolve",
                     "score": 0.8,
                     "confidence_signal": 0.55,
+                    "confidence_bucket": "medium",
+                    "calibrated_confidence": 0.667,
+                    "calibration_case_count": 3,
                     "terminal_phase": "settlement-stalemate",
                     "key_drivers": ["diplomatic_channel", "tension_index"],
                     "aggregate_score_breakdown": {
@@ -100,6 +103,9 @@ def test_render_report_includes_scenario_families_key_drivers_and_search_summary
                     "label": "Limited response",
                     "score": 0.2,
                     "confidence_signal": 0.25,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.333,
+                    "calibration_case_count": 2,
                     "terminal_phase": "limited-response",
                     "key_drivers": ["military_posture", "tension_index"],
                     "path": [{"label": "Limited response", "phase": "limited-response"}],
@@ -121,6 +127,7 @@ def test_render_report_includes_scenario_families_key_drivers_and_search_summary
     assert "United States: domestic_sensitivity=0.84, alliance_dependence=0.86" in report
     assert "Lens: domestic-politics-first" in report
     assert "system=0.42, actors=0.48, destabilization_penalty=-0.1" in report
+    assert "Calibrated confidence: medium (0.667 from 3 replay cases)" in report
 
 
 def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> None:
@@ -136,6 +143,9 @@ def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> Non
                     "label": "Limited response",
                     "score": 0.2,
                     "confidence_signal": 0.25,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.333,
+                    "calibration_case_count": 2,
                     "terminal_phase": "limited-response",
                     "key_drivers": ["military_posture", "tension_index"],
                     "aggregate_score_breakdown": {
@@ -152,6 +162,9 @@ def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> Non
                     "label": "Signal resolve",
                     "score": 0.8,
                     "confidence_signal": 0.55,
+                    "confidence_bucket": "medium",
+                    "calibrated_confidence": 0.667,
+                    "calibration_case_count": 3,
                     "terminal_phase": "settlement-stalemate",
                     "key_drivers": ["diplomatic_channel", "tension_index"],
                     "aggregate_score_breakdown": {
@@ -176,7 +189,7 @@ def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> Non
         unsupported_count=1,
     )
 
-    assert "- Signal resolve (0.8);" in report
+    assert "- Signal resolve (0.8); calibrated confidence: medium (0.667 from 3 replay cases);" in report
     assert "- Terminal phase: settlement-stalemate" in report
     assert "Signal resolve -> Confidence measures" in report
     assert "- united-states: domestic_sensitivity=0.84, alliance_dependence=0.86" in report
@@ -198,6 +211,9 @@ def test_render_report_prefers_explored_top_branch_over_unexplored_higher_score_
                     "visits": 0,
                     "prior": 0.9,
                     "confidence_signal": 0.0,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.333,
+                    "calibration_case_count": 2,
                     "terminal_phase": "settlement-stalemate",
                     "key_drivers": ["diplomatic_channel"],
                     "path": [{"label": "Unvisited branch", "phase": "signaling"}],
@@ -209,6 +225,9 @@ def test_render_report_prefers_explored_top_branch_over_unexplored_higher_score_
                     "visits": 10,
                     "prior": 0.2,
                     "confidence_signal": 0.55,
+                    "confidence_bucket": "medium",
+                    "calibrated_confidence": 0.667,
+                    "calibration_case_count": 3,
                     "terminal_phase": "limited-response",
                     "key_drivers": ["military_posture", "tension_index"],
                     "aggregate_score_breakdown": {
@@ -224,7 +243,7 @@ def test_render_report_prefers_explored_top_branch_over_unexplored_higher_score_
     )
 
     top_branches_section = report.split("## Top Branches", 1)[1].split("##", 1)[0]
-    assert "- Visited branch (0.5);" in report
+    assert "- Visited branch (0.5); calibrated confidence: medium (0.667 from 3 replay cases);" in report
     assert "- Terminal phase: limited-response" in report
     assert "Visited branch" in report
     assert top_branches_section.index("- Visited branch (0.5);") < top_branches_section.index("- Unvisited branch (0.9)")

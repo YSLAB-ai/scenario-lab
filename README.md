@@ -11,10 +11,10 @@ Verified on `main` on 2026-04-22:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `289 passed in 7.85s`
+  - `291 passed in 9.51s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `16 passed in 1.14s`
+  - `16 passed in 2.57s`
 
 ## Repository Layout
 
@@ -53,6 +53,7 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - the interstate replay slice now includes `philippines-china-shoal`
 - the built-in replay corpus now contains `40` cases, including `28` source-attributed historically anchored cases
 - replay calibration summaries now expose structured per-case attention items and aggregated failure-type counts
+- simulation payloads, revision summaries, and generated reports now expose replay-backed calibrated branch confidence buckets derived from the built-in replay corpus
 - the CLI now supports `list-builtin-replay-cases` in addition to corpus and calibration summaries
 - the CLI now supports `run-builtin-replay-retuning`, which runs the full built-in replay corpus one domain at a time through the protected retuning loop
 - the corpus now supports a persisted local semantic backend choice plus `rebuild-corpus-embeddings` for upgrading existing vector rows
@@ -80,6 +81,7 @@ Detailed recent notes:
 - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
 - [2026-04-21-replay-retuning-v2.md](docs/status/2026-04-21-replay-retuning-v2.md)
 - [2026-04-22-local-neural-embeddings-v1.md](docs/status/2026-04-22-local-neural-embeddings-v1.md)
+- [2026-04-22-probability-calibration-v1.md](docs/status/2026-04-22-probability-calibration-v1.md)
 
 ## Install
 
@@ -343,6 +345,5 @@ Current boundary:
 ## Current Gaps
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
-- The simulation engine still reports raw ranking rather than calibrated probability or confidence outputs.
 - Knowledge compiler / rule extraction, richer new-domain synthesis, and packaged Codex/Claude local integrations are still pending.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.

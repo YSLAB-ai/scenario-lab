@@ -9,6 +9,7 @@ from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.models import Actor, BehaviorProfile, BeliefField, BeliefState
 from forecasting_harness.models import ObjectiveProfile
+from forecasting_harness.replay import ConfidenceCalibrationBucket, DomainConfidenceCalibration, apply_confidence_calibration
 from forecasting_harness.simulation import SimulationEngine, scalarize_node_value
 from forecasting_harness.simulation.cache import should_reuse_node
 
@@ -155,6 +156,63 @@ def test_should_reuse_node_allows_reusable_partial_reruns() -> None:
     compatibility = {"changed_fields": ["morale"], "compatible": False, "reusable": True}
 
     assert should_reuse_node(node, compatibility) is True
+
+
+def test_apply_confidence_calibration_annotates_branches_with_replay_backed_bucket() -> None:
+    simulation = {
+        "search_mode": "mcts",
+        "branches": [
+            {
+                "branch_id": "signal",
+                "label": "Signal resolve",
+                "score": 0.8,
+                "confidence_signal": 0.72,
+                "raw_confidence_signal": 0.72,
+            }
+        ],
+    }
+    profile = DomainConfidenceCalibration(
+        domain_pack="interstate-crisis",
+        case_count=4,
+        baseline_accuracy=0.667,
+        buckets=[
+            ConfidenceCalibrationBucket(
+                bucket_id="low",
+                label="Low",
+                lower_bound=0.0,
+                upper_bound=0.34,
+                case_count=1,
+                observed_accuracy=0.0,
+                calibrated_confidence=0.333,
+            ),
+            ConfidenceCalibrationBucket(
+                bucket_id="medium",
+                label="Medium",
+                lower_bound=0.34,
+                upper_bound=0.67,
+                case_count=1,
+                observed_accuracy=1.0,
+                calibrated_confidence=0.667,
+            ),
+            ConfidenceCalibrationBucket(
+                bucket_id="high",
+                label="High",
+                lower_bound=0.67,
+                upper_bound=1.0,
+                case_count=2,
+                observed_accuracy=1.0,
+                calibrated_confidence=0.75,
+            ),
+        ],
+    )
+
+    calibrated = apply_confidence_calibration(simulation, domain_pack="interstate-crisis", profile=profile)
+
+    branch = calibrated["branches"][0]
+    assert branch["confidence_bucket"] == "high"
+    assert branch["calibrated_confidence"] == pytest.approx(0.75)
+    assert branch["calibration_case_count"] == 2
+    assert calibrated["confidence_calibration"]["profile"]["domain_pack"] == "interstate-crisis"
 
 
 def test_compare_belief_states_blocks_reuse_when_actor_behavior_profile_changes() -> None:

@@ -536,6 +536,7 @@ class SimulationEngine:
                 if metric_value > 0
             ][:3]
 
+        confidence_signal = round(node.visits / max(root_visits, 1), 3)
         return {
             "path": path,
             "terminal_phase": getattr(current_state, "phase", None),
@@ -543,7 +544,8 @@ class SimulationEngine:
             "terminal_actor_metrics": actor_metrics,
             "terminal_aggregate_score_breakdown": aggregate_score_breakdown,
             "key_drivers": key_drivers[:3],
-            "confidence_signal": round(node.visits / max(root_visits, 1), 3),
+            "confidence_signal": confidence_signal,
+            "raw_confidence_signal": confidence_signal,
         }
 
     def run(

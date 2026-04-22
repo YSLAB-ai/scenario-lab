@@ -732,8 +732,11 @@ def test_summarize_revision_returns_available_sections_and_top_branches(tmp_path
     assert summary.top_branches[0]["label"] == summarize_top_branches(
         json.loads((repository.run_dir("crisis-1") / "simulation" / "r1.approved.json").read_text(encoding="utf-8"))["branches"]
     )[0]["label"]
+    assert "calibrated_confidence" in summary.top_branches[0]
+    assert "confidence_bucket" in summary.top_branches[0]
     assert summary.scenario_families
     assert summary.scenario_families[0]["terminal_phase"]
+    assert "calibrated_confidence" in summary.scenario_families[0]
 
 
 def test_draft_conversation_turn_returns_intake_stage_when_revision_is_empty(tmp_path: Path) -> None:

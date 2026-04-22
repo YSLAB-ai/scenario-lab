@@ -11,6 +11,8 @@ from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.knowledge import load_builtin_replay_cases
 from forecasting_harness.replay import (
     CalibrationSummary,
+    ConfidenceCalibrationBucket,
+    DomainConfidenceCalibration,
     ReplayCase,
     ReplayCaseResult,
     ReplaySource,
@@ -253,6 +255,68 @@ def test_calibration_summary_surfaces_attention_items_for_missed_cases(tmp_path:
     assert summary.domains_needing_attention == ["company-action"]
 
 
+def test_summarize_calibration_includes_replay_backed_confidence_profiles() -> None:
+    result = ReplaySuiteResult(
+        case_count=3,
+        top_branch_accuracy=2 / 3,
+        root_strategy_accuracy=2 / 3,
+        evidence_source_accuracy=1.0,
+        average_inferred_field_coverage=1.0,
+        domain_breakdown={
+            "company-action": {
+                "count": 3,
+                "top_branch_accuracy": 2 / 3,
+                "root_strategy_accuracy": 2 / 3,
+                "evidence_source_accuracy": 1.0,
+                "average_inferred_field_coverage": 1.0,
+            }
+        },
+        results=[
+            ReplayCaseResult(
+                run_id="case-low",
+                domain_pack="company-action",
+                top_branch_match=True,
+                root_strategy_match=True,
+                evidence_source_match=True,
+                inferred_field_coverage=1.0,
+                top_branch_confidence_signal=0.2,
+            ),
+            ReplayCaseResult(
+                run_id="case-medium",
+                domain_pack="company-action",
+                top_branch_match=False,
+                root_strategy_match=False,
+                evidence_source_match=True,
+                inferred_field_coverage=1.0,
+                top_branch_confidence_signal=0.5,
+            ),
+            ReplayCaseResult(
+                run_id="case-fallback",
+                domain_pack="company-action",
+                top_branch_match=True,
+                root_strategy_match=True,
+                evidence_source_match=True,
+                inferred_field_coverage=1.0,
+                top_branch_confidence_signal=0.1,
+            ),
+        ],
+    )
+
+    summary = summarize_calibration(result)
+
+    profile = summary.domain_confidence_profiles["company-action"]
+    assert profile.case_count == 3
+    assert profile.baseline_accuracy == 0.6
+    buckets = {bucket.bucket_id: bucket for bucket in profile.buckets}
+    assert buckets["low"].case_count == 2
+    assert buckets["low"].calibrated_confidence == 0.75
+    assert buckets["medium"].case_count == 1
+    assert buckets["medium"].calibrated_confidence == 0.333
+    assert buckets["high"].case_count == 0
+    assert buckets["high"].fallback_used is True
+    assert buckets["high"].calibrated_confidence == profile.baseline_accuracy
+
+
 def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> None:
     runner = CliRunner()
 
@@ -343,6 +407,8 @@ def test_summarize_replay_calibration_command_accepts_replay_case_json(tmp_path:
     payload = CalibrationSummary.model_validate_json(result.stdout)
     assert payload.case_count == 2
     assert payload.domains_needing_attention == []
+    assert payload.domain_confidence_profiles["company-action"].case_count == 1
+    assert payload.domain_confidence_profiles["market-shock"].case_count == 1
 
 
 def test_builtin_interstate_replay_case_pins_actor_preference_differentiation() -> None:

@@ -14,6 +14,15 @@ def _format_metric_map(metrics: dict[str, object]) -> str:
     return ", ".join(parts) if parts else "none"
 
 
+def _format_calibrated_confidence(branch: dict[str, object]) -> str:
+    bucket = str(branch.get("confidence_bucket") or "unavailable")
+    confidence = float(branch.get("calibrated_confidence", 0.0) or 0.0)
+    case_count = int(branch.get("calibration_case_count", 0) or 0)
+    if case_count > 0:
+        return f"{bucket} ({confidence:.3f} from {case_count} replay cases)"
+    return f"{bucket} ({confidence:.3f})"
+
+
 def _actor_utility_lines(simulation: dict[str, object]) -> list[str]:
     actor_summary = simulation.get("actor_utility_summary", [])
     if not isinstance(actor_summary, list) or not actor_summary:
@@ -105,7 +114,10 @@ def render_report(
             breakdown_suffix = ""
             if isinstance(breakdown, dict) and breakdown:
                 breakdown_suffix = f"; breakdown: {_format_metric_map(breakdown)}"
-            lines.append(f"- {branch['label']} ({branch['score']}){breakdown_suffix}")
+            lines.append(
+                f"- {branch['label']} ({branch['score']}); calibrated confidence: "
+                f"{_format_calibrated_confidence(branch)}{breakdown_suffix}"
+            )
     else:
         lines.append("- No branches were generated.")
 
@@ -116,7 +128,7 @@ def render_report(
             lines.append(
                 f"- {family['terminal_phase']}: {family['branch_count']} branches, "
                 f"representative {family['representative_label']} ({family['best_score']}), "
-                f"drivers: {driver_text}"
+                f"drivers: {driver_text}, calibrated confidence: {_format_calibrated_confidence(family)}"
             )
 
     top_branch = _resolve_top_branch(branches, top_branches)
@@ -133,6 +145,7 @@ def render_report(
                 "## Top Branch Detail",
                 f"- Terminal phase: {terminal_phase}",
                 f"- Confidence signal: {top_branch.get('confidence_signal', 0.0)}",
+                f"- Calibrated confidence: {_format_calibrated_confidence(top_branch)}",
                 f"- Key drivers: {driver_text}",
             ]
         )

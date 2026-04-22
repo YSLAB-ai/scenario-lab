@@ -35,6 +35,14 @@ Date: 2026-04-22
   - results:
     - `273 passed in 5.18s`
     - `16 passed in 0.75s`
+- On 2026-04-22, the probability-calibration v1 pass then verified:
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m forecasting_harness.cli summarize-replay-calibration`
+  - results:
+    - `291 passed in 9.51s`
+    - `16 passed in 2.57s`
+    - `summarize-replay-calibration` returned `40` cases, `28` historically anchored cases, and replay-backed confidence profiles for all seven replay-covered built-in domains
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The repo now also supports domain-scoped self-improvement through:
@@ -66,6 +74,7 @@ Date: 2026-04-22
 - The interstate replay slice inside that 40-case corpus includes `philippines-china-shoal`, the historically anchored `taiwan-drills-2022`, `philippines-ayungin-2024`, and `red-sea-strikes-2024` cases, preserving full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
 - Twenty-eight of the built-in replay cases now carry explicit source attribution and historical outcome notes.
 - Calibration summaries now expose structured `attention_items` and `failure_type_counts` in addition to per-domain composite scores.
+- Simulation payloads, revision summaries, and generated reports now also expose replay-backed calibrated branch confidence through per-domain confidence buckets derived from the built-in replay corpus.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
@@ -369,7 +378,6 @@ Date: 2026-04-22
 ## Current Gaps
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
-- The simulation engine still reports raw ranking instead of calibrated probability or confidence outputs.
 - The system still does not implement a rule-extraction / knowledge compiler pass.
 - Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline still does not synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
 - Codex and Claude local integrations are still thin repository wrappers rather than fully packaged local runtimes.

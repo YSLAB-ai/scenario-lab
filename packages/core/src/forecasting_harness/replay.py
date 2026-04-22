@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 import tempfile
 from pathlib import Path
 
@@ -10,7 +11,6 @@ from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.models import BeliefState
 from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
-from forecasting_harness.workflow.service import WorkflowService
 
 
 class ReplaySource(BaseModel):
@@ -54,8 +54,27 @@ class ReplayCaseResult(BaseModel):
     inferred_fields: list[str] = Field(default_factory=list)
     expected_inferred_fields: list[str] = Field(default_factory=list)
     inferred_field_coverage: float = 0.0
+    top_branch_confidence_signal: float = 0.0
     node_count: int = 0
     transposition_hits: int = 0
+
+
+class ConfidenceCalibrationBucket(BaseModel):
+    bucket_id: str
+    label: str
+    lower_bound: float
+    upper_bound: float
+    case_count: int = 0
+    observed_accuracy: float = 0.0
+    calibrated_confidence: float = 0.0
+    fallback_used: bool = False
+
+
+class DomainConfidenceCalibration(BaseModel):
+    domain_pack: str
+    case_count: int = 0
+    baseline_accuracy: float = 0.0
+    buckets: list[ConfidenceCalibrationBucket] = Field(default_factory=list)
 
 
 class CalibrationAttentionItem(BaseModel):
@@ -96,6 +115,14 @@ class CalibrationSummary(BaseModel):
     weakest_domains: list[str] = Field(default_factory=list)
     domains_needing_attention: list[str] = Field(default_factory=list)
     domain_breakdown: dict[str, dict[str, float | int]] = Field(default_factory=dict)
+    domain_confidence_profiles: dict[str, DomainConfidenceCalibration] = Field(default_factory=dict)
+
+
+_CONFIDENCE_BUCKET_SPECS: tuple[tuple[str, str, float, float], ...] = (
+    ("low", "Low", 0.0, 0.34),
+    ("medium", "Medium", 0.34, 0.67),
+    ("high", "High", 0.67, 1.0),
+)
 
 
 def _safe_accuracy(values: list[bool | None]) -> float:
@@ -115,7 +142,151 @@ def _increment(mapping: dict[str, int], key: str) -> None:
     mapping[key] = mapping.get(key, 0) + 1
 
 
-def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult:
+def _bucket_id_for_signal(confidence_signal: float) -> str:
+    bounded_signal = max(0.0, min(1.0, float(confidence_signal)))
+    for bucket_id, _, lower_bound, upper_bound in _CONFIDENCE_BUCKET_SPECS:
+        if bucket_id == "high":
+            if lower_bound <= bounded_signal <= upper_bound:
+                return bucket_id
+            continue
+        if lower_bound <= bounded_signal < upper_bound:
+            return bucket_id
+    return "high"
+
+
+def _smoothed_confidence(match_count: int, case_count: int) -> float:
+    return round((match_count + 1) / (case_count + 2), 3) if case_count >= 0 else 0.0
+
+
+def _build_domain_confidence_profile(
+    domain_pack: str,
+    domain_results: list[ReplayCaseResult],
+) -> DomainConfidenceCalibration:
+    scored_results = [result for result in domain_results if result.top_branch_match is not None]
+    match_count = sum(1 for result in scored_results if result.top_branch_match)
+    baseline_accuracy = _smoothed_confidence(match_count, len(scored_results))
+    buckets: list[ConfidenceCalibrationBucket] = []
+
+    for bucket_id, label, lower_bound, upper_bound in _CONFIDENCE_BUCKET_SPECS:
+        bucket_results = [
+            result for result in scored_results if _bucket_id_for_signal(result.top_branch_confidence_signal) == bucket_id
+        ]
+        bucket_match_count = sum(1 for result in bucket_results if result.top_branch_match)
+        observed_accuracy = _safe_accuracy([result.top_branch_match for result in bucket_results])
+        fallback_used = len(bucket_results) == 0
+        calibrated_confidence = (
+            baseline_accuracy if fallback_used else _smoothed_confidence(bucket_match_count, len(bucket_results))
+        )
+        buckets.append(
+            ConfidenceCalibrationBucket(
+                bucket_id=bucket_id,
+                label=label,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                case_count=len(bucket_results),
+                observed_accuracy=observed_accuracy,
+                calibrated_confidence=calibrated_confidence,
+                fallback_used=fallback_used,
+            )
+        )
+
+    return DomainConfidenceCalibration(
+        domain_pack=domain_pack,
+        case_count=len(scored_results),
+        baseline_accuracy=baseline_accuracy,
+        buckets=buckets,
+    )
+
+
+def calibrate_confidence_signal(
+    confidence_signal: float,
+    profile: DomainConfidenceCalibration | None,
+) -> dict[str, object]:
+    bounded_signal = round(max(0.0, min(1.0, float(confidence_signal))), 3)
+    bucket_id = _bucket_id_for_signal(bounded_signal)
+    default_bucket_id, default_label, default_lower_bound, default_upper_bound = next(
+        spec for spec in _CONFIDENCE_BUCKET_SPECS if spec[0] == bucket_id
+    )
+    if profile is None:
+        return {
+            "confidence_bucket": default_bucket_id,
+            "confidence_bucket_label": default_label,
+            "calibrated_confidence": bounded_signal,
+            "calibration_case_count": 0,
+            "calibration_observed_accuracy": 0.0,
+            "calibration_fallback_used": True,
+        }
+
+    bucket = next((item for item in profile.buckets if item.bucket_id == bucket_id), None)
+    if bucket is None:
+        return {
+            "confidence_bucket": default_bucket_id,
+            "confidence_bucket_label": default_label,
+            "calibrated_confidence": profile.baseline_accuracy,
+            "calibration_case_count": 0,
+            "calibration_observed_accuracy": 0.0,
+            "calibration_fallback_used": True,
+        }
+
+    return {
+        "confidence_bucket": bucket.bucket_id,
+        "confidence_bucket_label": bucket.label,
+        "calibrated_confidence": bucket.calibrated_confidence,
+        "calibration_case_count": bucket.case_count,
+        "calibration_observed_accuracy": bucket.observed_accuracy,
+        "calibration_fallback_used": bucket.fallback_used,
+    }
+
+
+def apply_confidence_calibration(
+    simulation: dict[str, object],
+    *,
+    domain_pack: str,
+    profile: DomainConfidenceCalibration | None,
+) -> dict[str, object]:
+    branches = simulation.get("branches", [])
+    if not isinstance(branches, list):
+        return simulation
+
+    calibrated_branches: list[dict[str, object]] = []
+    for branch in branches:
+        if not isinstance(branch, dict):
+            calibrated_branches.append(branch)
+            continue
+        calibrated_branch = dict(branch)
+        confidence_signal = float(calibrated_branch.get("confidence_signal", 0.0) or 0.0)
+        calibrated_branch.update(calibrate_confidence_signal(confidence_signal, profile))
+        calibrated_branches.append(calibrated_branch)
+
+    updated = dict(simulation)
+    updated["branches"] = calibrated_branches
+    updated["confidence_calibration"] = {
+        "domain_pack": domain_pack,
+        "profile": profile.model_dump(mode="json") if profile is not None else None,
+    }
+    return updated
+
+
+@lru_cache(maxsize=32)
+def load_builtin_domain_confidence_profile(domain_pack: str) -> DomainConfidenceCalibration | None:
+    from forecasting_harness.knowledge.replays import load_builtin_replay_cases
+
+    cases = load_builtin_replay_cases(domain_packs=[domain_pack])
+    if not cases:
+        return None
+
+    summary = summarize_calibration(run_replay_suite(cases))
+    return summary.domain_confidence_profiles.get(domain_pack)
+
+
+def _run_single_case(
+    case: ReplayCase,
+    workspace_root: Path,
+    *,
+    attach_calibration: bool = False,
+) -> ReplayCaseResult:
+    from forecasting_harness.workflow.service import WorkflowService
+
     registry = build_default_registry()
     pack = registry.resolve(case.domain_pack)
     root = workspace_root / ".forecast"
@@ -132,13 +303,15 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
     service.batch_ingest_recommended_files(case.run_id, "r1", pack=pack, path=docs_dir, max_files=max(1, len(case.documents)))
     packet = service.draft_evidence_packet(case.run_id, "r1", pack=pack)
     service.approve_revision(case.run_id, "r1", case.assumptions)
-    simulation = service.simulate_revision(case.run_id, "r1", pack=pack)
+    simulation = service.simulate_revision(case.run_id, "r1", pack=pack, attach_calibration=attach_calibration)
     state = service.repository.load_revision_model(case.run_id, "belief-state", "r1", BeliefState, approved=True)
 
     top_branch = None
+    top_branch_confidence_signal = 0.0
     branches = simulation.get("branches", [])
     if isinstance(branches, list) and branches and isinstance(branches[0], dict):
         top_branch = branches[0].get("label")
+        top_branch_confidence_signal = float(branches[0].get("confidence_signal", 0.0) or 0.0)
         if not isinstance(top_branch, str):
             top_branch = None
     root_strategy = _root_strategy_for_label(top_branch)
@@ -189,19 +362,25 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
         inferred_fields=inferred_fields,
         expected_inferred_fields=sorted(case.expected_inferred_fields),
         inferred_field_coverage=inferred_field_coverage,
+        top_branch_confidence_signal=top_branch_confidence_signal,
         node_count=int(simulation.get("node_count", 0)),
         transposition_hits=int(simulation.get("transposition_hits", 0)),
     )
 
 
-def run_replay_suite(cases: list[ReplayCase], *, workspace_root: Path | None = None) -> ReplaySuiteResult:
+def run_replay_suite(
+    cases: list[ReplayCase],
+    *,
+    workspace_root: Path | None = None,
+    attach_calibration: bool = False,
+) -> ReplaySuiteResult:
     base_root = Path(workspace_root) if workspace_root is not None else Path(tempfile.mkdtemp(prefix="forecast-replay-"))
     base_root.mkdir(parents=True, exist_ok=True)
     results: list[ReplayCaseResult] = []
     for index, case in enumerate(cases, start=1):
         case_root = base_root / f"{index:02d}-{case.run_id}"
         case_root.mkdir(parents=True, exist_ok=True)
-        results.append(_run_single_case(case, case_root))
+        results.append(_run_single_case(case, case_root, attach_calibration=attach_calibration))
 
     domain_breakdown: dict[str, dict[str, float | int]] = {}
     for domain_pack in sorted({result.domain_pack for result in results}):
@@ -246,6 +425,7 @@ def _domain_composite_score(metrics: dict[str, float | int]) -> float:
 
 def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: float = 0.85) -> CalibrationSummary:
     enriched_breakdown: dict[str, dict[str, float | int]] = {}
+    domain_confidence_profiles: dict[str, DomainConfidenceCalibration] = {}
     weakest_domains: list[tuple[float, str]] = []
     strongest_domains: list[tuple[float, str]] = []
     domains_needing_attention: list[str] = []
@@ -257,6 +437,10 @@ def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: flo
         composite_score = _domain_composite_score(enriched_metrics)
         enriched_metrics["composite_score"] = composite_score
         enriched_breakdown[domain_pack] = enriched_metrics
+        domain_confidence_profiles[domain_pack] = _build_domain_confidence_profile(
+            domain_pack,
+            [replay_result for replay_result in result.results if replay_result.domain_pack == domain_pack],
+        )
         weakest_domains.append((composite_score, domain_pack))
         strongest_domains.append((composite_score, domain_pack))
 
@@ -319,4 +503,5 @@ def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: flo
         weakest_domains=weakest,
         domains_needing_attention=sorted(domains_needing_attention),
         domain_breakdown=enriched_breakdown,
+        domain_confidence_profiles=domain_confidence_profiles,
     )

@@ -35,6 +35,10 @@ def summarize_top_branches(
                 "branch_id": branch["branch_id"],
                 "label": branch["label"],
                 "score": _normalize_score(branch),
+                "confidence_signal": float(branch.get("confidence_signal", 0.0) or 0.0),
+                "confidence_bucket": str(branch.get("confidence_bucket") or ""),
+                "calibrated_confidence": float(branch.get("calibrated_confidence", 0.0) or 0.0),
+                "calibration_case_count": int(branch.get("calibration_case_count", 0) or 0),
             }
             for branch in top_branches
         ]
@@ -46,6 +50,10 @@ def summarize_top_branches(
             "score": _normalize_score(branch),
             "aggregate_score_breakdown": dict(branch.get("aggregate_score_breakdown", {})),
             "terminal_phase": branch.get("terminal_phase"),
+            "confidence_signal": float(branch.get("confidence_signal", 0.0) or 0.0),
+            "confidence_bucket": str(branch.get("confidence_bucket") or ""),
+            "calibrated_confidence": float(branch.get("calibrated_confidence", 0.0) or 0.0),
+            "calibration_case_count": int(branch.get("calibration_case_count", 0) or 0),
         }
         for branch in top_branches
     ]
@@ -89,6 +97,9 @@ def summarize_scenario_families(branches: list[dict[str, Any]], limit: int = 3) 
                 "best_score": float("-inf"),
                 "representative_label": "",
                 "confidence_signal": 0.0,
+                "confidence_bucket": "",
+                "calibrated_confidence": 0.0,
+                "calibration_case_count": 0,
             },
         )
         entry["branch_count"] += 1
@@ -100,6 +111,9 @@ def summarize_scenario_families(branches: list[dict[str, Any]], limit: int = 3) 
             entry["best_score"] = branch_score
             entry["representative_label"] = str(branch.get("label") or branch.get("branch_id") or "Scenario")
             entry["confidence_signal"] = float(branch.get("confidence_signal", 0.0) or 0.0)
+            entry["confidence_bucket"] = str(branch.get("confidence_bucket") or "")
+            entry["calibrated_confidence"] = float(branch.get("calibrated_confidence", 0.0) or 0.0)
+            entry["calibration_case_count"] = int(branch.get("calibration_case_count", 0) or 0)
 
     families = sorted(
         grouped.values(),
@@ -116,6 +130,9 @@ def summarize_scenario_families(branches: list[dict[str, Any]], limit: int = 3) 
             "representative_label": item["representative_label"],
             "key_drivers": item["key_drivers"],
             "confidence_signal": item["confidence_signal"],
+            "confidence_bucket": item["confidence_bucket"],
+            "calibrated_confidence": item["calibrated_confidence"],
+            "calibration_case_count": item["calibration_case_count"],
         }
         for item in families[:limit]
     ]
