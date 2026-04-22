@@ -61,6 +61,7 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - the CLI now supports `run-builtin-replay-retuning`, which runs the full built-in replay corpus one domain at a time through the protected retuning loop
 - built-in replay retuning now prioritizes weaker domains first, rejects mixed-domain payloads, and treats inferred-field coverage as a first-class non-regression metric alongside top-branch, root-strategy, and evidence-source accuracy
 - the accepted domain deepening pass expanded replay-justified election coalition-arithmetic and market-fragility modeling, and the checked-in smoke campaign now includes dedicated `election-hung-parliament` and `market-bank-rescue` scenarios
+- synthesized domains now render explicit pack-local Python methods for field inference, action priors, transition logic, and objective recommendation hooks, and the generated pack tests pin those synthesized behaviors instead of stopping at import success
 - the corpus now supports a persisted local semantic backend choice plus `rebuild-corpus-embeddings` for upgrading existing vector rows
 - the retrieval layer now supports optional local neural embeddings through the `semantic-local` extra while preserving the deterministic hashed baseline as a fallback
 
@@ -89,6 +90,7 @@ Detailed recent notes:
 - [2026-04-22-probability-calibration-v1.md](docs/status/2026-04-22-probability-calibration-v1.md)
 - [2026-04-22-knowledge-compiler-v1.md](docs/status/2026-04-22-knowledge-compiler-v1.md)
 - [2026-04-22-domain-retuning-v1.md](docs/status/2026-04-22-domain-retuning-v1.md)
+- [2026-04-22-domain-synthesis-v2.md](docs/status/2026-04-22-domain-synthesis-v2.md)
 
 ## Install
 
@@ -352,5 +354,5 @@ Current boundary:
 ## Current Gaps
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
-- Richer new-domain synthesis and packaged Codex/Claude local integrations are still pending.
+- Packaged Codex/Claude local integrations are still pending.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.

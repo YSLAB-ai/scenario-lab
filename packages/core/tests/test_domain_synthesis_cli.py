@@ -85,6 +85,16 @@ def test_synthesize_domain_command_accepts_direct_blueprint_flags(tmp_path: Path
             '["recall", "withdrawal"]',
             "--starter-source-json",
             '{"kind": "report", "description": "Incident reports"}',
+            "--field-inference-rule-json",
+            '{"severity": {"field_type": "float", "base": 0.2, "term_deltas": [{"terms": ["injuries"], "delta": 0.35}]}}',
+            "--field-inference-rule-json",
+            '{"recall_readiness": {"field_type": "float", "base": 0.3, "term_deltas": [{"terms": ["contingency plan"], "delta": 0.2}]}}',
+            "--action-template-json",
+            '{"stage": "trigger", "action_id": "announce-recall", "label": "Announce recall", "base_prior": 0.12, "field_weights": {"severity": 0.3, "recall_readiness": 0.2}, "next_stage": "response", "field_updates": {"recall_readiness": 0.1}, "outcomes": [{"outcome_id": "targeted-withdrawal", "next_stage": "response", "field_updates": {"recall_readiness": 0.1}}, {"outcome_id": "full-stop-sale", "next_stage": "response", "field_minimums": {"severity": 0.5}, "field_updates": {"recall_readiness": 0.2}}]}',
+            "--scoring-weight-json",
+            '{"escalation": {"severity": 0.5}, "negotiation": {"recall_readiness": 0.4}, "economic_stress": {"severity": 0.3}}',
+            "--objective-profile-rule-json",
+            '{"profile_name": "domestic-politics-first", "field_minimums": {"severity": 0.5}}',
             "--replay-seed-case-json",
             json.dumps(
                 {
@@ -111,4 +121,7 @@ def test_synthesize_domain_command_accepts_direct_blueprint_flags(tmp_path: Path
     payload = json.loads(result.stdout)
     assert payload["domain_slug"] == "product-recall"
     assert (tmp_path / "knowledge" / "domains" / "product-recall.json").exists()
-    assert (domain_dir / "product_recall.py").exists()
+    generated = (domain_dir / "product_recall.py").read_text(encoding="utf-8")
+    assert "def infer_pack_fields" in generated
+    assert "def sample_transition" in generated
+    assert "def recommend_objective_profile" in generated

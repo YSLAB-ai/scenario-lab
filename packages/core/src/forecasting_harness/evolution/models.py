@@ -53,6 +53,15 @@ class FieldInferenceRule(BaseModel):
     term_deltas: list[FieldRuleTermDelta] = Field(default_factory=list)
 
 
+class ActionTransitionOutcome(BaseModel):
+    outcome_id: str
+    next_stage: str
+    weight: float = 1.0
+    field_updates: dict[str, float | int | str | bool] = Field(default_factory=dict)
+    field_minimums: dict[str, float] = Field(default_factory=dict)
+    field_maximums: dict[str, float] = Field(default_factory=dict)
+
+
 class ActionTemplate(BaseModel):
     stage: str
     action_id: str
@@ -61,6 +70,13 @@ class ActionTemplate(BaseModel):
     field_weights: dict[str, float] = Field(default_factory=dict)
     next_stage: str
     field_updates: dict[str, float | int | str | bool] = Field(default_factory=dict)
+    outcomes: list[ActionTransitionOutcome] = Field(default_factory=list)
+
+
+class ObjectiveRecommendationRule(BaseModel):
+    profile_name: str
+    field_minimums: dict[str, float] = Field(default_factory=dict)
+    field_maximums: dict[str, float] = Field(default_factory=dict)
 
 
 class DomainBlueprint(BaseModel):
@@ -80,4 +96,5 @@ class DomainBlueprint(BaseModel):
     field_inference_rules: dict[str, FieldInferenceRule] = Field(default_factory=dict)
     action_templates: list[ActionTemplate] = Field(default_factory=list)
     scoring_weights: dict[str, dict[str, float]] = Field(default_factory=dict)
+    objective_profile_rules: list[ObjectiveRecommendationRule] = Field(default_factory=list)
     replay_seed_cases: list[dict[str, Any]] = Field(default_factory=list)

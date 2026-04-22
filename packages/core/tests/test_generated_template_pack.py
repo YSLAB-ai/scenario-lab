@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 
 from forecasting_harness.evolution.models import (
     ActionTemplate,
+    ActionTransitionOutcome,
     DomainBlueprint,
     FieldInferenceRule,
     FieldRuleTermDelta,
     FocusEntityRule,
+    ObjectiveRecommendationRule,
 )
-from forecasting_harness.models import BeliefField, BeliefState
+from forecasting_harness.models import Actor, BehaviorProfile, BeliefField, BeliefState
 
 
 def _field(value: object) -> BeliefField:
@@ -44,6 +46,21 @@ def test_generated_template_pack_infers_fields_and_transitions() -> None:
                     field_weights={"severity": 0.3, "recall_readiness": 0.2},
                     next_stage="response",
                     field_updates={"recall_readiness": 0.1},
+                    outcomes=[
+                        ActionTransitionOutcome(
+                            outcome_id="targeted-withdrawal",
+                            next_stage="response",
+                            weight=0.7,
+                            field_updates={"recall_readiness": 0.1},
+                        ),
+                        ActionTransitionOutcome(
+                            outcome_id="full-stop-sale",
+                            next_stage="response",
+                            weight=0.3,
+                            field_minimums={"severity": 0.5},
+                            field_updates={"recall_readiness": 0.2},
+                        ),
+                    ],
                 ),
             ],
             field_inference_rules={
@@ -63,6 +80,12 @@ def test_generated_template_pack_infers_fields_and_transitions() -> None:
                 "negotiation": {"recall_readiness": 0.4},
                 "economic_stress": {"severity": 0.3},
             },
+            objective_profile_rules=[
+                ObjectiveRecommendationRule(
+                    profile_name="domestic-politics-first",
+                    field_minimums={"severity": 0.5},
+                )
+            ],
         )
 
     pack = ProductRecallPack()
@@ -80,7 +103,13 @@ def test_generated_template_pack_infers_fields_and_transitions() -> None:
         revision_id="r1",
         domain_pack="product-recall",
         interaction_model=InteractionModel.EVENT_DRIVEN,
-        actors=[],
+        actors=[
+            Actor(
+                actor_id="acme",
+                name="Acme",
+                behavior_profile=BehaviorProfile(domestic_sensitivity=0.9),
+            )
+        ],
         fields={
             "event_framing": _field("Safety injuries reported"),
             "severity": _field(inferred["severity"]),
@@ -97,8 +126,12 @@ def test_generated_template_pack_infers_fields_and_transitions() -> None:
 
     actions = pack.propose_actions(state)
     assert actions
-    transition = pack.sample_transition(state, actions[0])[0]
-    next_state = transition["next_state"] if isinstance(transition, dict) else transition
+    transitions = pack.sample_transition(state, actions[0])
+    assert [item["outcome_id"] for item in transitions] == ["targeted-withdrawal", "full-stop-sale"]
+    next_state = transitions[0]["next_state"] if isinstance(transitions[0], dict) else transitions[0]
     assert next_state.phase == "response"
     assert pack.score_state(next_state)
-
+    assert pack.recommend_objective_profile(
+        type("Intake", (), {"event_framing": "Assess recall"})(),
+        state,
+    ).name == "domestic-politics-first"

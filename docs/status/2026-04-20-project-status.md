@@ -252,6 +252,18 @@ Date: 2026-04-22
   - a branch-promotion smoke flow in a temporary git repo:
     - branch created: `codex/domain-synthesis-product-recall-20260421`
     - head commit message: `feat: synthesize product-recall domain`
+- The richer domain-synthesis pass on 2026-04-22 then further verified:
+  - synthesized packs now render explicit generated methods for:
+    - `infer_pack_fields`
+    - `propose_actions`
+    - `sample_transition`
+    - `recommend_objective_profile`
+  - generated pack tests now pin synthesized runtime behavior instead of stopping at import success
+  - targeted synthesis verification:
+    - `PYTHONPATH=packages/core/src ../../.venv/bin/python -m pytest packages/core/tests/test_generated_template_pack.py packages/core/tests/test_domain_synthesis_service.py packages/core/tests/test_domain_synthesis_cli.py -q` -> `5 passed`
+  - the protected review-branch gate remains intact:
+    - synthesized branch names still use `codex/domain-synthesis-<slug>-<YYYYMMDD>`
+    - branch-mode synthesis still commits `feat: synthesize <slug> domain`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
@@ -404,7 +416,6 @@ Date: 2026-04-22
 ## Current Gaps
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
-- Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline still does not synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
 - Codex and Claude local integrations are still thin repository wrappers rather than fully packaged local runtimes.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.
 

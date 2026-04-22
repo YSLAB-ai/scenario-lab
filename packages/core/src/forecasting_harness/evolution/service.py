@@ -217,22 +217,116 @@ class DomainEvolutionService:
     def _render_pack_file(self, blueprint: DomainBlueprint) -> str:
         payload = pprint.pformat(blueprint.model_dump(mode="python"), sort_dicts=True, width=100)
         return (
+            "from typing import Any\n\n"
             "from forecasting_harness.domain.generated_template import GeneratedTemplatePack\n"
             "from forecasting_harness.evolution.models import DomainBlueprint\n\n\n"
             f"class {blueprint.class_name}(GeneratedTemplatePack):\n"
-            f"    BLUEPRINT = DomainBlueprint.model_validate({payload})\n"
+            f"    BLUEPRINT = DomainBlueprint.model_validate({payload})\n\n"
+            "    def infer_pack_fields(self, intake: Any, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:\n"
+            "        return self._infer_pack_fields_from_blueprint(intake, assumptions, approved_evidence_items)\n\n"
+            "    def propose_actions(self, state: Any) -> list[dict[str, Any]]:\n"
+            "        return self._propose_actions_from_blueprint(state)\n\n"
+            "    def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:\n"
+            "        return self._sample_transition_from_blueprint(state, action_context)\n\n"
+            "    def recommend_objective_profile(self, intake: Any, state: Any):\n"
+            "        return self._recommend_objective_profile_from_blueprint(intake, state)\n"
         )
 
     def _render_pack_test(self, blueprint: DomainBlueprint) -> str:
         module_name = blueprint.slug.replace("-", "_")
+        focus_count = max(
+            blueprint.focus_entity_rule.min_count,
+            blueprint.focus_entity_rule.exact_count or blueprint.focus_entity_rule.min_count,
+        )
+        field_setup = "\n".join(
+            f"            {field_name!r}: _field(inferred[{field_name!r}]),"
+            for field_name in blueprint.field_schema
+        )
+        sample_text = self._synthesis_sample_text(blueprint)
+        first_action = blueprint.action_templates[0] if blueprint.action_templates else None
+        first_action_assert = (
+            f"    assert actions[0]['action_id'] == {first_action.action_id!r}\n"
+            if first_action is not None
+            else ""
+        )
+        first_outcome_id = (
+            first_action.outcomes[0].outcome_id
+            if first_action is not None and first_action.outcomes
+            else "outcome-0"
+        )
+        first_next_stage = (
+            first_action.outcomes[0].next_stage
+            if first_action is not None and first_action.outcomes
+            else (first_action.next_stage if first_action is not None else blueprint.canonical_stages[-1])
+        )
+        objective_assertion = (
+            "\n"
+            "    assert pack.recommend_objective_profile(\n"
+            "        intake=type('Intake', (), {'event_framing': 'Assess scenario evolution'})(),\n"
+            "        state=state,\n"
+            f"    ).name == {blueprint.objective_profile_rules[0].profile_name!r}\n"
+            if blueprint.objective_profile_rules
+            else ""
+        )
         return (
+            "from datetime import datetime, timezone\n\n"
+            "from forecasting_harness.models import BeliefField, BeliefState\n"
             "from forecasting_harness.workflow.models import IntakeDraft\n\n\n"
+            "def _field(value: object) -> BeliefField:\n"
+            "    return BeliefField(\n"
+            "        value=value,\n"
+            "        normalized_value=value,\n"
+            "        status='observed',\n"
+            "        confidence=1.0,\n"
+            "        last_updated_at=datetime(2026, 4, 22, 12, 0, tzinfo=timezone.utc),\n"
+            "    )\n\n\n"
+            f"def test_{module_name}_pack_synthesizes_runtime_behavior() -> None:\n"
+            f"    from forecasting_harness.domain.{module_name} import {blueprint.class_name}\n"
+            "    from forecasting_harness.domain.base import InteractionModel\n\n"
+            f"    pack = {blueprint.class_name}()\n"
+            "    inferred = pack.infer_pack_fields(\n"
+            "        intake=type(\n"
+            "            'Intake',\n"
+            "            (),\n"
+            f"            {{'event_framing': {sample_text['event_framing']!r}, 'current_development': {sample_text['current_development']!r}, 'known_constraints': [], 'known_unknowns': []}},\n"
+            "        )(),\n"
+            "        assumptions=type('Assumptions', (), {'summary': []})(),\n"
+            "        approved_evidence_items=[],\n"
+            "    )\n\n"
+            "    state = BeliefState(\n"
+            "        run_id='run-1',\n"
+            "        revision_id='r1',\n"
+            f"        domain_pack={blueprint.slug!r},\n"
+            "        interaction_model=InteractionModel.EVENT_DRIVEN,\n"
+            "        actors=[],\n"
+            "        fields={\n"
+            f"{field_setup}\n"
+            "        },\n"
+            "        objectives={},\n"
+            "        capabilities={},\n"
+            "        constraints={},\n"
+            "        unknowns=[],\n"
+            f"        current_epoch={blueprint.canonical_stages[0]!r},\n"
+            "        horizon='30d',\n"
+            f"        phase={blueprint.canonical_stages[0]!r},\n"
+            "    )\n\n"
+            "    actions = pack.propose_actions(state)\n"
+            "    assert actions\n"
+            f"{first_action_assert}"
+            "    transitions = pack.sample_transition(state, actions[0])\n"
+            "    assert transitions\n"
+            f"    assert transitions[0].get('outcome_id', 'outcome-0') == {first_outcome_id!r}\n"
+            "    next_state = transitions[0]['next_state'] if isinstance(transitions[0], dict) else transitions[0]\n"
+            f"    assert next_state.phase == {first_next_stage!r}\n"
+            "    scores = pack.score_state(next_state)\n"
+            "    assert {'escalation', 'negotiation', 'economic_stress'} <= set(scores)\n"
+            f"{objective_assertion}\n"
             f"def test_{module_name}_pack_imports_and_validates() -> None:\n"
             f"    from forecasting_harness.domain.{module_name} import {blueprint.class_name}\n\n"
             f"    pack = {blueprint.class_name}()\n"
             "    intake = IntakeDraft(\n"
             "        event_framing='Assess scenario evolution',\n"
-            f"        focus_entities={['Entity A'] * max(blueprint.focus_entity_rule.min_count, blueprint.focus_entity_rule.exact_count or blueprint.focus_entity_rule.min_count)},\n"
+            f"        focus_entities={['Entity A'] * focus_count},\n"
             f"        current_development='A material development occurred',\n"
             f"        current_stage={blueprint.canonical_stages!r}[0],\n"
             "        time_horizon='30d',\n"
@@ -241,6 +335,18 @@ class DomainEvolutionService:
             f"    assert pack.slug() == {blueprint.slug!r}\n"
             "    assert pack.validate_intake(intake) == []\n"
         )
+
+    def _synthesis_sample_text(self, blueprint: DomainBlueprint) -> dict[str, str]:
+        event_terms: list[str] = []
+        for rule in blueprint.field_inference_rules.values():
+            for term_rule in rule.term_deltas:
+                if term_rule.terms:
+                    event_terms.append(term_rule.terms[0])
+        event_text = " ".join(dict.fromkeys(event_terms)) or "A material development occurred"
+        return {
+            "event_framing": event_text,
+            "current_development": event_text,
+        }
 
     def _update_registry(self, blueprint: DomainBlueprint) -> None:
         registry_path = self._registry_path()

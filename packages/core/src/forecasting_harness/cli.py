@@ -319,6 +319,7 @@ def _domain_blueprint_from_flags(
     field_inference_rule_json: list[str] | None,
     action_template_json: list[str] | None,
     scoring_weight_json: list[str] | None,
+    objective_profile_rule_json: list[str] | None,
     replay_seed_case_json: list[str] | None,
 ) -> DomainBlueprint:
     canonical_stages = canonical_stage or []
@@ -345,6 +346,7 @@ def _domain_blueprint_from_flags(
         "field_inference_rules": {},
         "action_templates": [],
         "scoring_weights": {},
+        "objective_profile_rules": [],
         "replay_seed_cases": [],
     }
 
@@ -395,6 +397,14 @@ def _domain_blueprint_from_flags(
         if not isinstance(payload, dict):
             raise ValueError("scoring_weight_json must contain a JSON object")
         scoring_weights.update(payload)
+
+    objective_profile_rules = blueprint_payload["objective_profile_rules"]
+    assert isinstance(objective_profile_rules, list)
+    for raw_value in objective_profile_rule_json or []:
+        payload = _load_json_payload(raw_value, param_hint="objective_profile_rule_json")
+        if not isinstance(payload, dict):
+            raise ValueError("objective_profile_rule_json must contain a JSON object")
+        objective_profile_rules.append(payload)
 
     replay_seed_cases = blueprint_payload["replay_seed_cases"]
     assert isinstance(replay_seed_cases, list)
@@ -603,6 +613,7 @@ def synthesize_domain_command(
     field_inference_rule_json: list[str] | None = typer.Option(None, "--field-inference-rule-json"),
     action_template_json: list[str] | None = typer.Option(None, "--action-template-json"),
     scoring_weight_json: list[str] | None = typer.Option(None, "--scoring-weight-json"),
+    objective_profile_rule_json: list[str] | None = typer.Option(None, "--objective-profile-rule-json"),
     replay_seed_case_json: list[str] | None = typer.Option(None, "--replay-seed-case-json"),
     no_branch: bool = typer.Option(False),
 ) -> None:
@@ -625,6 +636,7 @@ def synthesize_domain_command(
             field_inference_rule_json=field_inference_rule_json,
             action_template_json=action_template_json,
             scoring_weight_json=scoring_weight_json,
+            objective_profile_rule_json=objective_profile_rule_json,
             replay_seed_case_json=replay_seed_case_json,
         )
     except ValueError as exc:

@@ -170,14 +170,14 @@ This program is **done** only when all of these are true on accepted `main`:
 - Modify: domain synthesis tests
 - Test: `packages/core/tests/test_domain_synthesis_cli.py`
 
-- [ ] Extend domain synthesis so generated domains can include richer bespoke Python behavior for:
+- [x] Extend domain synthesis so generated domains can include richer bespoke Python behavior for:
   - state inference
   - action priors
   - transition logic
   - objective recommendation hooks
-- [ ] Keep generated packs protected from core-algorithm changes.
-- [ ] Ensure generated tests pin the synthesized behavior instead of only checking import success.
-- [ ] Preserve the existing branch-only review gate for promoted synthesized domains.
+- [x] Keep generated packs protected from core-algorithm changes.
+- [x] Ensure generated tests pin the synthesized behavior instead of only checking import success.
+- [x] Preserve the existing branch-only review gate for promoted synthesized domains.
 
 ### Task 9: Package Codex And Claude Local Integrations
 

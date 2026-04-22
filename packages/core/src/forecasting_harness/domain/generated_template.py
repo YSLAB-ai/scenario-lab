@@ -13,7 +13,13 @@ from forecasting_harness.domain.template_utils import (
     state_signal_text,
     with_updates,
 )
-from forecasting_harness.evolution.models import ActionTemplate, DomainBlueprint, FieldInferenceRule, FieldRuleTermDelta
+from forecasting_harness.evolution.models import (
+    ActionTemplate,
+    ActionTransitionOutcome,
+    DomainBlueprint,
+    FieldInferenceRule,
+    FieldRuleTermDelta,
+)
 
 
 class GeneratedTemplatePack(DomainPack):
@@ -53,6 +59,14 @@ class GeneratedTemplatePack(DomainPack):
         return dict(self.BLUEPRINT.field_schema)
 
     def infer_pack_fields(self, intake: Any, assumptions: Any, approved_evidence_items: list[Any]) -> dict[str, Any]:
+        return self._infer_pack_fields_from_blueprint(intake, assumptions, approved_evidence_items)
+
+    def _infer_pack_fields_from_blueprint(
+        self,
+        intake: Any,
+        assumptions: Any,
+        approved_evidence_items: list[Any],
+    ) -> dict[str, Any]:
         evidence_passages = [passage for item in approved_evidence_items for passage in getattr(item, "raw_passages", [])]
         text = compose_signal_text(
             getattr(intake, "event_framing", ""),
@@ -95,6 +109,9 @@ class GeneratedTemplatePack(DomainPack):
         return getattr(state, "phase", None) == self.BLUEPRINT.canonical_stages[-1]
 
     def propose_actions(self, state: Any) -> list[dict[str, Any]]:
+        return self._propose_actions_from_blueprint(state)
+
+    def _propose_actions_from_blueprint(self, state: Any) -> list[dict[str, Any]]:
         stage = getattr(state, "phase", None) or self.BLUEPRINT.canonical_stages[0]
         actions: list[dict[str, Any]] = []
         for template in self.BLUEPRINT.action_templates:
@@ -114,10 +131,28 @@ class GeneratedTemplatePack(DomainPack):
         return apply_manifest_action_biases(text=state_signal_text(state), actions=actions, slug=self.slug())
 
     def sample_transition(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
+        return self._sample_transition_from_blueprint(state, action_context)
+
+    def _sample_transition_from_blueprint(self, state: Any, action_context: dict[str, Any]) -> list[Any]:
         action_id = action_context.get("action_id") or action_context.get("branch_id")
         for template in self.BLUEPRINT.action_templates:
             if template.action_id != action_id:
                 continue
+            if template.outcomes:
+                outcomes: list[dict[str, Any]] = []
+                for outcome in template.outcomes:
+                    if not self._outcome_matches(state, outcome):
+                        continue
+                    updates = self._merge_field_updates(state, outcome.field_updates)
+                    outcomes.append(
+                        {
+                            "next_state": with_updates(state, phase=outcome.next_stage, field_updates=updates),
+                            "weight": outcome.weight,
+                            "outcome_id": outcome.outcome_id,
+                        }
+                    )
+                if outcomes:
+                    return outcomes
             updates: dict[str, Any] = {}
             for field_name, value in template.field_updates.items():
                 current = getattr(state, "fields", {}).get(field_name)
@@ -131,6 +166,32 @@ class GeneratedTemplatePack(DomainPack):
             return [with_updates(state, phase=template.next_stage, field_updates=updates)]
         return [state]
 
+    def _merge_field_updates(
+        self,
+        state: Any,
+        field_updates: dict[str, float | int | str | bool],
+    ) -> dict[str, Any]:
+        updates: dict[str, Any] = {}
+        for field_name, value in field_updates.items():
+            current = getattr(state, "fields", {}).get(field_name)
+            if isinstance(value, (int, float)) and current is not None and isinstance(current.normalized_value, (int, float)):
+                if isinstance(current.normalized_value, int):
+                    updates[field_name] = int(current.normalized_value + value)
+                else:
+                    updates[field_name] = bounded(float(current.normalized_value) + float(value))
+            else:
+                updates[field_name] = value
+        return updates
+
+    def _outcome_matches(self, state: Any, outcome: ActionTransitionOutcome) -> bool:
+        for field_name, minimum in outcome.field_minimums.items():
+            if numeric_field(state, field_name, 0.0) < minimum:
+                return False
+        for field_name, maximum in outcome.field_maximums.items():
+            if numeric_field(state, field_name, 0.0) > maximum:
+                return False
+        return True
+
     def score_state(self, state: Any) -> dict[str, float]:
         scores: dict[str, float] = {}
         for metric_name in ("escalation", "negotiation", "economic_stress"):
@@ -140,6 +201,26 @@ class GeneratedTemplatePack(DomainPack):
                 total += numeric_field(state, field_name, 0.0) * weight
             scores[metric_name] = bounded(total)
         return scores or {"escalation": 0.0, "negotiation": 0.0, "economic_stress": 0.0}
+
+    def recommend_objective_profile(self, intake: Any, state: Any):
+        return self._recommend_objective_profile_from_blueprint(intake, state)
+
+    def _recommend_objective_profile_from_blueprint(self, intake: Any, state: Any):
+        from forecasting_harness.objectives import objective_profile_by_name
+
+        for rule in self.BLUEPRINT.objective_profile_rules:
+            if self._objective_rule_matches(state, rule):
+                return objective_profile_by_name(rule.profile_name)
+        return super().recommend_objective_profile(intake, state)
+
+    def _objective_rule_matches(self, state: Any, rule: Any) -> bool:
+        for field_name, minimum in rule.field_minimums.items():
+            if numeric_field(state, field_name, 0.0) < minimum:
+                return False
+        for field_name, maximum in rule.field_maximums.items():
+            if numeric_field(state, field_name, 0.0) > maximum:
+                return False
+        return True
 
     def validate_state(self, state: Any) -> list[str]:
         phase = getattr(state, "phase", None) or ""
