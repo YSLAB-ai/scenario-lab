@@ -21,7 +21,7 @@ This program is **done** only when all of these are true on accepted `main`:
 - [x] Simulation output exposes calibrated branch probability fields or calibrated confidence buckets instead of raw ranking only.
 - [ ] Spreadsheet ingestion and web-archive ingestion are implemented and documented.
 - [ ] Remaining file-backed bulk-edit workflow paths are replaced by structured CLI/runtime inputs.
-- [ ] Knowledge compiler / rule extraction exists and feeds reusable domain knowledge back into the repo-owned evolution path.
+- [x] Knowledge compiler / rule extraction exists and feeds reusable domain knowledge back into the repo-owned evolution path.
 - [ ] New-domain synthesis can generate richer bespoke Python behavior than the current template-only starter.
 - [ ] Codex and Claude local integrations are packaged enough to run the end-to-end workflow through repo-owned installable bundles, not just thin skill docs.
 - [ ] `packages/core/.venv` and the documented local verification flow use Python `>=3.12`.
@@ -132,15 +132,15 @@ This program is **done** only when all of these are true on accepted `main`:
 - Modify: `packages/core/src/forecasting_harness/cli.py`
 - Test: new compiler-focused tests under `packages/core/tests/`
 
-- [ ] Add a deterministic rule-extraction pass that turns approved evidence or replay misses into candidate:
+- [x] Add a deterministic rule-extraction pass that turns approved evidence or replay misses into candidate:
   - evidence categories
   - semantic aliases
   - manifest state terms
   - manifest action biases
-- [ ] Route those candidates into the existing protected domain-evolution path instead of mutating packs directly.
-- [ ] Add CLI visibility so the compiler can be run explicitly and its candidates can be inspected.
-- [ ] Verify idempotence so rerunning the compiler on the same material does not duplicate suggestions.
-- [ ] Record the compiler boundary in docs: it proposes reusable knowledge, it does not rewrite the core algorithm.
+- [x] Route those candidates into the existing protected domain-evolution path instead of mutating packs directly.
+- [x] Add CLI visibility so the compiler can be run explicitly and its candidates can be inspected.
+- [x] Verify idempotence so rerunning the compiler on the same material does not duplicate suggestions.
+- [x] Record the compiler boundary in docs: it proposes reusable knowledge, it does not rewrite the core algorithm.
 
 ### Task 7: Deepen Domain Packs And Retuning Loop
 

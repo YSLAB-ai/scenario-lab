@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-SuggestionProvenance = Literal["user", "self-detected"]
+SuggestionProvenance = Literal["user", "self-detected", "compiler"]
 SuggestionCategory = Literal["state-field", "action-bias", "evidence-category", "semantic-alias", "replay-gap"]
 SuggestionStatus = Literal["pending", "accepted", "rejected", "promoted"]
 

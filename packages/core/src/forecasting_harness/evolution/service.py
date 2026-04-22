@@ -10,6 +10,13 @@ from pathlib import Path
 from forecasting_harness.domain.template_utils import tokenize_text
 from forecasting_harness.evolution.models import DomainBlueprint, DomainEvolutionCandidate, DomainSuggestion, DomainWeaknessBrief
 from forecasting_harness.evolution.storage import EvolutionStorage
+from forecasting_harness.knowledge.compiler import (
+    CompiledKnowledgeCandidate,
+    KnowledgeCompilerResult,
+    compile_replay_miss_knowledge,
+    suggestion_from_compiled_candidate,
+)
+from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.knowledge import load_builtin_replay_cases
 from forecasting_harness.replay import ReplayCase, ReplaySuiteResult, run_replay_suite, summarize_calibration
 
@@ -129,6 +136,32 @@ class DomainEvolutionService:
             status="pending",
         )
         return self.evolution_storage.append_suggestion(suggestion)
+
+    def record_compiler_candidates(
+        self,
+        domain_slug: str,
+        *,
+        candidates: list[CompiledKnowledgeCandidate],
+    ) -> dict[str, object]:
+        before_ids = {item.suggestion_id for item in self.evolution_storage.load_suggestions(domain_slug)}
+        timestamp = datetime.now(timezone.utc)
+        stored: list[DomainSuggestion] = []
+        for candidate in candidates:
+            suggestion = suggestion_from_compiled_candidate(
+                domain_slug=domain_slug,
+                candidate=candidate,
+                timestamp=timestamp,
+            )
+            stored.append(self.evolution_storage.append_suggestion(suggestion))
+        after = self.evolution_storage.load_suggestions(domain_slug)
+        new_ids = sorted({item.suggestion_id for item in after}.difference(before_ids))
+        return {
+            "domain_slug": domain_slug,
+            "candidate_count": len(candidates),
+            "recorded_count": len(new_ids),
+            "recorded_suggestion_ids": new_ids,
+            "candidates": [candidate.model_dump(mode="json") for candidate in candidates],
+        }
 
     def synthesize_domain(self, blueprint: DomainBlueprint, *, create_branch: bool = True) -> dict[str, object]:
         slug = blueprint.slug
@@ -263,24 +296,30 @@ class DomainEvolutionService:
             weak_cases=weak_cases,
             suggested_targets=suggested_targets,
         )
-
-        for result in domain_results:
-            if result.root_strategy_match is not False or not result.expected_root_strategy:
-                continue
-            terms = self._extract_terms(" ".join(result.evidence_sources + [result.expected_root_strategy]))
-            suggestion = DomainSuggestion(
-                suggestion_id=f"self-{domain_slug}-{result.run_id}",
-                timestamp=datetime.now(timezone.utc),
-                domain_slug=domain_slug,
-                provenance="self-detected",
-                category="action-bias",
-                target=result.expected_root_strategy.lower().replace(" ", "-"),
-                text=f"Replay miss for {result.run_id}: bias toward {result.expected_root_strategy}.",
-                terms=terms,
-                status="pending",
-            )
-            self.evolution_storage.append_suggestion(suggestion)
         return brief
+
+    def compile_replay_knowledge(
+        self,
+        domain_slug: str,
+        *,
+        replay_result: ReplaySuiteResult,
+    ) -> dict[str, object]:
+        try:
+            manifest = load_domain_manifest(domain_slug, root_override=self.manifest_root)
+        except FileNotFoundError:
+            manifest = load_domain_manifest(domain_slug)
+        compiled = compile_replay_miss_knowledge(
+            domain_slug=domain_slug,
+            manifest=manifest,
+            replay_result=replay_result,
+        )
+        record_summary = self.record_compiler_candidates(domain_slug, candidates=compiled.candidates)
+        return {
+            "domain_slug": domain_slug,
+            "source_kind": compiled.source_kind,
+            "candidate_count": compiled.candidate_count,
+            **record_summary,
+        }
 
     def run_replay_retuning(
         self,
@@ -309,15 +348,10 @@ class DomainEvolutionService:
         before_suggestion_ids = {item.suggestion_id for item in self.evolution_storage.load_suggestions(domain_slug)}
         replay_result = self._replay_suite_for_domain(domain_slug, normalized_cases)
         calibration_summary = self._replay_summary_from_result(domain_slug, replay_result)
+        compiler_summary = self.compile_replay_knowledge(domain_slug, replay_result=replay_result)
         weakness = self.analyze_domain_weakness(domain_slug, replay_result=replay_result)
         after_suggestions = self.evolution_storage.load_suggestions(domain_slug)
-        generated_suggestion_count = len(
-            [
-                item
-                for item in after_suggestions
-                if item.provenance == "self-detected" and item.suggestion_id not in before_suggestion_ids
-            ]
-        )
+        generated_suggestion_count = len({item.suggestion_id for item in after_suggestions}.difference(before_suggestion_ids))
 
         evolution_summary = None
         if weakness.weak_cases:
@@ -334,6 +368,7 @@ class DomainEvolutionService:
             "weak_case_count": len(weakness.weak_cases),
             "generated_suggestion_count": generated_suggestion_count,
             "calibration_summary": calibration_summary,
+            "compiler_summary": compiler_summary,
             "weakness_brief": weakness.model_dump(mode="json"),
             "evolution_summary": evolution_summary,
         }

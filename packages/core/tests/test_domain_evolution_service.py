@@ -58,15 +58,20 @@ def test_analyze_domain_weakness_returns_brief_for_missed_cases(tmp_path: Path) 
     assert brief.domain_slug == "company-action"
     assert brief.reasons
     stored = storage.load_suggestions("company-action")
-    assert stored
-    assert stored[0].provenance == "self-detected"
+    assert stored == []
 
 
-def test_analyze_domain_weakness_is_idempotent_for_self_detected_replay_suggestions(tmp_path: Path) -> None:
+def test_compile_replay_knowledge_is_idempotent_for_compiler_replay_suggestions(tmp_path: Path) -> None:
+    manifest_root = tmp_path / "knowledge" / "domains"
+    manifest_root.mkdir(parents=True)
+    (manifest_root / "company-action.json").write_text(
+        json.dumps({"slug": "company-action", "description": "test manifest", "key_state_fields": ["board_cohesion"]}),
+        encoding="utf-8",
+    )
     storage = EvolutionStorage(tmp_path / "knowledge" / "evolution")
     service = DomainEvolutionService(
         evolution_storage=storage,
-        manifest_root=tmp_path / "knowledge" / "domains",
+        manifest_root=manifest_root,
     )
     replay_result = ReplaySuiteResult(
         case_count=1,
@@ -105,12 +110,13 @@ def test_analyze_domain_weakness_is_idempotent_for_self_detected_replay_suggesti
         ],
     )
 
-    service.analyze_domain_weakness("company-action", replay_result=replay_result)
-    service.analyze_domain_weakness("company-action", replay_result=replay_result)
+    service.compile_replay_knowledge("company-action", replay_result=replay_result)
+    service.compile_replay_knowledge("company-action", replay_result=replay_result)
 
     stored = storage.load_suggestions("company-action")
-    assert len(stored) == 1
-    assert stored[0].suggestion_id == "self-company-action-boeing-post-reporting"
+    assert len(stored) >= 1
+    assert len({item.suggestion_id for item in stored}) == len(stored)
+    assert all(item.provenance == "compiler" for item in stored)
 
 
 def test_run_replay_retuning_returns_structured_summary_for_missed_case(tmp_path: Path) -> None:

@@ -10,6 +10,7 @@ from forecasting_harness.compatibility import compare_belief_states
 from forecasting_harness.domain.base import DomainPack
 from forecasting_harness.domain.registry import DomainPackRegistry, build_default_registry
 from forecasting_harness.domain.template_utils import normalize_text, term_match_score
+from forecasting_harness.knowledge.compiler import KnowledgeCompilerResult, compile_approved_evidence_knowledge
 from forecasting_harness.knowledge.manifests import load_domain_manifest
 from forecasting_harness.models import BeliefState
 from forecasting_harness.objectives import (
@@ -863,6 +864,35 @@ class WorkflowService:
         self.repository.write_revision_markdown(run_id, revision_id, "report.md", content)
         self.repository.append_event(run_id, "report-generated", {"revision_id": revision_id})
         return content
+
+    def compile_revision_knowledge(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        pack: Any,
+        manifest_root: Path | None = None,
+    ) -> KnowledgeCompilerResult:
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=True)
+        assumptions = self.repository.load_revision_model(run_id, "assumptions", revision_id, AssumptionSummary, approved=True)
+        evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=True)
+        state = compile_belief_state(
+            run_id=run_id,
+            revision_id=revision_id,
+            pack=pack,
+            intake=intake,
+            assumptions=assumptions,
+            approved_evidence_ids=[item.evidence_id for item in evidence.items],
+            approved_evidence_items=evidence.items,
+        )
+        manifest = load_domain_manifest(pack.slug(), root_override=manifest_root)
+        return compile_approved_evidence_knowledge(
+            domain_slug=pack.slug(),
+            manifest=manifest,
+            evidence_packet=evidence,
+            state=state,
+            pack=pack,
+        )
 
     def draft_conversation_turn(
         self,

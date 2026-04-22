@@ -491,6 +491,58 @@ def run_domain_evolution_command(
     print(json.dumps(summary))
 
 
+@app.command("compile-revision-knowledge")
+def compile_revision_knowledge_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option(...),
+) -> None:
+    repo = RunRepository(root)
+    run = repo.load_run_record(run_id)
+    pack = _pack_for_slug(run.domain_pack)
+    manifest_root = workspace_root / "knowledge" / "domains"
+    compiled = _service(root).compile_revision_knowledge(
+        run_id,
+        revision_id,
+        pack=pack,
+        manifest_root=manifest_root if manifest_root.exists() else None,
+    )
+    recorded = _evolution_service(workspace_root).record_compiler_candidates(
+        run.domain_pack,
+        candidates=compiled.candidates,
+    )
+    print(
+        json.dumps(
+            {
+                "domain_slug": run.domain_pack,
+                "source_kind": compiled.source_kind,
+                "candidate_count": compiled.candidate_count,
+                **recorded,
+            }
+        )
+    )
+
+
+@app.command("compile-replay-knowledge")
+def compile_replay_knowledge_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: str = typer.Option(...),
+    replay_case_json: list[str] | None = typer.Option(None, "--replay-case-json"),
+) -> None:
+    try:
+        replay_cases = _replay_cases_from_payloads(replay_case_json=replay_case_json)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="replay_case_json") from exc
+    service = _evolution_service(workspace_root)
+    replay_result = service._replay_suite_for_domain(
+        domain_pack,
+        [case if isinstance(case, ReplayCase) else ReplayCase.model_validate(case) for case in replay_cases] if replay_cases is not None else None,
+    )
+    summary = service.compile_replay_knowledge(domain_pack, replay_result=replay_result)
+    print(json.dumps(summary))
+
+
 @app.command("run-replay-retuning")
 def run_replay_retuning_command(
     workspace_root: Path = typer.Option(Path(".")),
