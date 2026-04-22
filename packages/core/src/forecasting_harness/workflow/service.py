@@ -985,6 +985,13 @@ class WorkflowService:
                     required_options=["corpus_db"] if self.corpus_registry is not None else [],
                 )
             )
+            actions.append(
+                self._adapter_action(
+                    "forecast-harness save-evidence-draft",
+                    "Save evidence draft",
+                    "Persist a hand-edited evidence packet directly without going through a file-backed JSON handoff.",
+                )
+            )
             return ConversationTurn(
                 run_id=run_id,
                 revision_id=revision_id,
@@ -1026,6 +1033,7 @@ class WorkflowService:
         domain_pack: str | None = None,
         candidate_path: Path | None = None,
         intake: IntakeDraft | None = None,
+        evidence: EvidencePacket | None = None,
         assumptions: AssumptionSummary | None = None,
         keep_evidence_ids: list[str] | None = None,
         query_text: str | None = None,
@@ -1050,6 +1058,16 @@ class WorkflowService:
                 parent_revision_id=parent_revision_id,
             )
             action_result = {"saved": True, "section": "intake", "revision_id": revision_id}
+        elif action == "save-evidence-draft":
+            if evidence is None:
+                raise ValueError("evidence is required for save-evidence-draft")
+            self.save_evidence_draft(
+                run_id=run_id,
+                revision_id=revision_id,
+                packet=evidence,
+                parent_revision_id=parent_revision_id,
+            )
+            action_result = {"saved": True, "section": "evidence", "revision_id": revision_id}
         elif action == "batch-ingest-recommended":
             if candidate_path is None:
                 raise ValueError("candidate_path is required for batch-ingest-recommended")

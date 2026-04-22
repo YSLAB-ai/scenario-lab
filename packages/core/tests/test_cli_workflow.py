@@ -1237,6 +1237,112 @@ def test_curate_evidence_draft_command_filters_existing_packet(tmp_path: Path) -
     assert [item.evidence_id for item in stored.items] == ["r1-ev-2"]
 
 
+def test_save_evidence_draft_command_accepts_inline_item_json(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "save-evidence-draft",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--item-json",
+            json.dumps(
+                {
+                    "evidence_id": "r1-ev-1",
+                    "source_id": "doc-1",
+                    "source_title": "Doc 1",
+                    "reason": "Relevant context",
+                    "raw_passages": ["A directly supplied passage."],
+                }
+            ),
+        ],
+    )
+
+    assert result.exit_code == 0
+    stored = RunRepository(root).load_revision_model("crisis-1", "evidence", "r1", EvidencePacket, approved=False)
+    assert stored.revision_id == "r1"
+    assert [item.evidence_id for item in stored.items] == ["r1-ev-1"]
+    assert stored.items[0].raw_passages == ["A directly supplied passage."]
+
+
+def test_run_adapter_action_save_evidence_draft_accepts_inline_item_json(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    assert runner.invoke(
+        app,
+        ["run-adapter-action", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--action", "start-run", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "save-intake-draft",
+            "--event-framing",
+            "Assess escalation",
+            "--focus-entity",
+            "Japan",
+            "--focus-entity",
+            "China",
+            "--current-development",
+            "Naval transit through the Taiwan Strait",
+            "--current-stage",
+            "trigger",
+            "--time-horizon",
+            "30d",
+        ],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "save-evidence-draft",
+            "--item-json",
+            json.dumps(
+                {
+                    "evidence_id": "r1-ev-1",
+                    "source_id": "doc-1",
+                    "source_title": "Doc 1",
+                    "reason": "Relevant context",
+                }
+            ),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["executed_action"] == "save-evidence-draft"
+    assert payload["turn"]["stage"] == "approval"
+    stored = RunRepository(root).load_revision_model("crisis-1", "evidence", "r1", EvidencePacket, approved=False)
+    assert [item.evidence_id for item in stored.items] == ["r1-ev-1"]
+
+
 def test_begin_revision_update_command_copies_parent_artifacts(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

@@ -30,6 +30,7 @@ from forecasting_harness.workflow.models import (
     AdapterRuntimeActionName,
     AssumptionSummary,
     EvidencePacket,
+    EvidencePacketItem,
     IntakeDraft,
     RunRecord,
 )
@@ -40,6 +41,7 @@ app = Typer(no_args_is_help=True)
 _ADAPTER_RUNTIME_ACTIONS = {
     "start-run",
     "save-intake-draft",
+    "save-evidence-draft",
     "batch-ingest-recommended",
     "draft-evidence-packet",
     "curate-evidence-draft",
@@ -247,6 +249,20 @@ def _assumptions_from_flags(
         suggested_actors=suggested_actors or [],
         objective_profile_name=normalize_selected_objective_profile_name(objective_profile_name),
     )
+
+
+def _evidence_packet_from_flags(
+    *,
+    revision_id: str,
+    item_json: list[str] | None,
+) -> EvidencePacket:
+    items: list[EvidencePacketItem] = []
+    for raw_item in item_json or []:
+        try:
+            items.append(EvidencePacketItem.model_validate_json(raw_item))
+        except Exception as exc:  # pragma: no cover - surfaced through CLI validation
+            raise ValueError(f"invalid evidence item JSON: {exc}") from exc
+    return EvidencePacket(revision_id=revision_id, items=items)
 
 
 def _register_ingested_document(registry: CorpusRegistry, path: Path, *, source_id: str | None, title: str | None, published_at: str | None, tags: dict[str, str]) -> dict[str, object]:
@@ -529,10 +545,17 @@ def save_evidence_draft(
     root: Path = typer.Option(Path(".forecast")),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
-    input: Path = typer.Option(...),
+    input: Path | None = typer.Option(None),
+    item_json: list[str] | None = typer.Option(None),
     parent_revision_id: str | None = typer.Option(None),
 ) -> None:
-    payload = EvidencePacket.model_validate_json(input.read_text(encoding="utf-8"))
+    if input is not None:
+        payload = EvidencePacket.model_validate_json(input.read_text(encoding="utf-8"))
+    else:
+        try:
+            payload = _evidence_packet_from_flags(revision_id=revision_id, item_json=item_json)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="item_json") from exc
     _service(root).save_evidence_draft(
         run_id=run_id,
         revision_id=revision_id,
@@ -664,6 +687,7 @@ def run_adapter_action(
     domain_pack: str | None = typer.Option(None),
     parent_revision_id: str | None = typer.Option(None),
     input: Path | None = typer.Option(None),
+    item_json: list[str] | None = typer.Option(None),
     event_framing: str | None = typer.Option(None),
     focus_entity: list[str] | None = typer.Option(None),
     current_development: str | None = typer.Option(None),
@@ -687,6 +711,7 @@ def run_adapter_action(
 
     intake_payload: IntakeDraft | None = None
     assumptions_payload: AssumptionSummary | None = None
+    evidence_payload: EvidencePacket | None = None
 
     if action == "save-intake-draft":
         if input is not None:
@@ -703,6 +728,14 @@ def run_adapter_action(
                 suggested_entities=suggested_entity,
                 pack_fields=pack_field,
             )
+    elif action == "save-evidence-draft":
+        if input is not None:
+            evidence_payload = EvidencePacket.model_validate_json(input.read_text(encoding="utf-8"))
+        else:
+            try:
+                evidence_payload = _evidence_packet_from_flags(revision_id=revision_id, item_json=item_json)
+            except ValueError as exc:
+                raise typer.BadParameter(str(exc), param_hint="item_json") from exc
     elif action == "approve-revision":
         try:
             if input is not None:
@@ -725,6 +758,7 @@ def run_adapter_action(
             domain_pack=domain_pack,
             candidate_path=candidate_path,
             intake=intake_payload,
+            evidence=evidence_payload,
             assumptions=assumptions_payload,
             keep_evidence_ids=keep_evidence_id,
             query_text=query_text,

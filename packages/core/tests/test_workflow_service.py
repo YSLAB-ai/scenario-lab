@@ -790,6 +790,7 @@ def test_draft_conversation_turn_embeds_native_adapter_payloads_for_evidence_sta
     assert [action.command for action in turn.actions] == [
         "forecast-harness batch-ingest-recommended",
         "forecast-harness draft-evidence-packet",
+        "forecast-harness save-evidence-draft",
     ]
     assert turn.context["intake_guidance"]["domain_pack"] == "interstate-crisis"
     assert "force posture" in turn.context["retrieval_plan"]["target_evidence_categories"]

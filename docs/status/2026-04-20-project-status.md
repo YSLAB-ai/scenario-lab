@@ -85,6 +85,7 @@ Date: 2026-04-21
 - The workflow now exposes concrete ingest tasks for missing evidence categories.
 - The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
 - The workflow now also exposes a packaged adapter runtime through `forecast-harness run-adapter-action`, which executes one approved workflow mutation and immediately returns the next deterministic conversation turn.
+- The packaged runtime and standalone CLI now both support direct structured evidence replacement through `save-evidence-draft --item-json ...` and `run-adapter-action --action save-evidence-draft --item-json ...`, removing the last evidence-packet file handoff from the core workflow path.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
@@ -323,7 +324,7 @@ Date: 2026-04-21
 ## Current Gaps
 
 - The current analyst workflow now has a packaged deterministic adapter runtime at the core and CLI layer, but the Codex and Claude integrations are still thin local scaffolding rather than marketplace-distributed plugin runtimes.
-- Evidence replacement and some bulk-edit workflows still rely on file-backed JSON inputs.
+- Some broader bulk-edit workflows still rely on file-backed JSON inputs, but direct evidence-packet replacement no longer does.
 - The simulation engine is now deterministic MCTS, but it does not yet implement:
   - calibrated real-world probabilities
 - The built-in domain packs are templates rather than mature validated models.

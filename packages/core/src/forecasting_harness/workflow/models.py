@@ -10,6 +10,7 @@ ConversationStage = Literal["intake", "evidence", "approval", "simulation", "rep
 AdapterRuntimeActionName = Literal[
     "start-run",
     "save-intake-draft",
+    "save-evidence-draft",
     "batch-ingest-recommended",
     "draft-evidence-packet",
     "curate-evidence-draft",

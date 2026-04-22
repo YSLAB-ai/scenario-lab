@@ -175,6 +175,17 @@ forecast-harness run-adapter-action \
   --keep-evidence-id ev-2
 ```
 
+If you need to replace the evidence packet directly instead of curating the drafted ids in place:
+
+```bash
+forecast-harness run-adapter-action \
+  --root "$RUN_ROOT" \
+  --run-id china-taiwan-1 \
+  --revision-id r1 \
+  --action save-evidence-draft \
+  --item-json '{"evidence_id":"r1-ev-1","source_id":"doc-1","source_title":"Doc 1","reason":"Analyst-selected evidence"}'
+```
+
 ### 7. Inspect the approval packet
 
 This branch’s main review surface appears here:
@@ -283,6 +294,8 @@ Current boundary:
   - [2026-04-21-adapter-runtime-v1.md](docs/status/2026-04-21-adapter-runtime-v1.md)
 - Replay retuning:
   - [2026-04-21-replay-retuning-v1.md](docs/status/2026-04-21-replay-retuning-v1.md)
+- Direct evidence runtime editing:
+  - [2026-04-21-evidence-runtime-v1.md](docs/status/2026-04-21-evidence-runtime-v1.md)
 - Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 
@@ -290,4 +303,4 @@ Current boundary:
 
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The replay corpus is still modest rather than broad.
-- Some evidence replacement and bulk-edit paths remain file-backed.
+- Some broader bulk-edit workflows remain file-backed, but direct evidence-packet replacement is now available through structured CLI/runtime inputs.

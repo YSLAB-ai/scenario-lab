@@ -30,4 +30,6 @@
    - when the runtime returns evidence-stage `ingestion_recommendations`, prefer `--action batch-ingest-recommended` before `--action draft-evidence-packet`
    - after approval, keep using `run-adapter-action` to reach simulation, report review, and `begin-revision-update`
 6. Use `forecast-harness draft-conversation-turn` only for inspection, recovery, or debugging when you need to query the current stage without executing a mutation.
-7. Use `forecast-harness save-evidence-draft` only when the adapter needs to replace the drafted packet from a file rather than curating the existing draft in place.
+7. If the adapter needs to replace the drafted packet instead of curating the existing draft in place, use either:
+   - `forecast-harness run-adapter-action --root <root> --run-id <run> --revision-id <rev> --action save-evidence-draft --item-json '<item-json>'`
+   - or `forecast-harness save-evidence-draft --root <root> --run-id <run> --revision-id <rev> --item-json '<item-json>'`
