@@ -9,7 +9,7 @@ Date: 2026-04-22
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
-- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), thin Codex and Claude adapter scaffolding plus a shared packaged adapter runtime, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution and synthesis package under `packages/core/src/forecasting_harness/evolution/`.
+- The repository includes typed state and objective models, artifact storage, retrieval scaffolding, query helpers, a simulation engine, eight domain packs (`company-action`, `election-shock`, `generic-event`, `interstate-crisis`, `market-shock`, `pandemic-response`, `regulatory-enforcement`, and `supply-chain-disruption`), repo-owned local Codex and Claude adapter bundles around the shared packaged runtime, a reusable workflow package under `packages/core/src/forecasting_harness/workflow/`, and a repo-owned domain evolution and synthesis package under `packages/core/src/forecasting_harness/evolution/`.
 - Domain packs are now discovered through a registry instead of hardcoded CLI branching.
 - The workflow now supports generic intake fields with compatibility aliases:
   - `focus_entities`
@@ -20,7 +20,7 @@ Date: 2026-04-22
 - The corpus now supports document metadata plus citation-friendly chunk rows in the local SQLite/FTS registry.
 - The corpus now also stores local semantic vectors per chunk in the same SQLite database.
 - The corpus now also supports a persisted local semantic backend preference, so a corpus can be upgraded from the deterministic hashed baseline to a local neural backend without changing the rest of the workflow stack.
-- The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into the corpus.
+- The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, `.xlsx` spreadsheets, saved web pages / archives (`.html`, `.htm`, `.webarchive`, `.mhtml`, `.mht`, `.eml`), and text-extractable `PDF` files into the corpus.
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
 - The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
 - The retrieval layer now also supports optional local neural embeddings through the `semantic-local` extra plus `forecast-harness rebuild-corpus-embeddings`.
@@ -28,25 +28,25 @@ Date: 2026-04-22
 - Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
 - Actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so domain packs inherit actor-aware behavior even when they do not implement custom hooks.
 - The shared actor-aware default now explicitly depends on `score_state()` exposing `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present.
-- On 2026-04-22, the local verification baseline was rebuilt in the root `.venv` with `/Users/yiwen/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3` (`Python 3.12.13`), then verified with:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pip install -e 'packages/core[dev]'`
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+- On 2026-04-22, the local verification baseline was rebuilt in `packages/core/.venv` with `/Users/yiwen/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3` (`Python 3.12.13`), then verified with:
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pip install -e 'packages/core[dev]'`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - results:
     - `273 passed in 5.18s`
     - `16 passed in 0.75s`
 - On 2026-04-22, the probability-calibration v1 pass then verified:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m forecasting_harness.cli summarize-replay-calibration`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli summarize-replay-calibration`
   - results:
     - `291 passed in 9.51s`
     - `16 passed in 2.57s`
     - `summarize-replay-calibration` returned `40` cases, `28` historically anchored cases, and replay-backed confidence profiles for all seven replay-covered built-in domains
 - On 2026-04-22, the knowledge-compiler v1 pass then verified:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m forecasting_harness.cli run-builtin-replay-retuning --workspace-root /tmp/phase6-compiler-retune --no-branch`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-builtin-replay-retuning --workspace-root /tmp/phase6-compiler-retune --no-branch`
   - results:
     - `296 passed in 9.96s`
     - `16 passed in 2.84s`
@@ -260,10 +260,17 @@ Date: 2026-04-22
     - `recommend_objective_profile`
   - generated pack tests now pin synthesized runtime behavior instead of stopping at import success
   - targeted synthesis verification:
-    - `PYTHONPATH=packages/core/src ../../.venv/bin/python -m pytest packages/core/tests/test_generated_template_pack.py packages/core/tests/test_domain_synthesis_service.py packages/core/tests/test_domain_synthesis_cli.py -q` -> `5 passed`
+    - `PYTHONPATH=packages/core/src ../../packages/core/.venv/bin/python -m pytest packages/core/tests/test_generated_template_pack.py packages/core/tests/test_domain_synthesis_service.py packages/core/tests/test_domain_synthesis_cli.py -q` -> `5 passed`
   - the protected review-branch gate remains intact:
     - synthesized branch names still use `codex/domain-synthesis-<slug>-<YYYYMMDD>`
     - branch-mode synthesis still commits `feat: synthesize <slug> domain`
+- The final repo-completion closeout on 2026-04-22 then verified:
+  - `packages/core/.venv/bin/python --version` -> `Python 3.12.13`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q` -> `313 passed in 11.75s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q` -> `20 passed in 3.35s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli summarize-replay-calibration` -> `case_count = 40`, `historically_anchored_case_count = 28`, all overall replay metrics `1.0`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-builtin-replay-retuning --workspace-root /tmp/repo-completion-phase10-retuning --no-branch` -> `domain_count = 7`, `case_count = 40`, `weak_domain_count = 0`, `generated_suggestion_count = 0`
+  - final note: `docs/status/2026-04-22-repo-completion-final.md`
 - That same pass verified these top branches on the realistic smoke campaign:
   - `Election debate collapse` -> `Message reset (reset holds)`
   - `Market rate shock` -> `Emergency liquidity`
@@ -419,12 +426,10 @@ Date: 2026-04-22
 
 ## Current Gaps
 
-- Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.
 
 ## Known Issues and Risks
 
-- The clean package install and CLI workflow run were verified separately with `/usr/local/bin/python3.13`.
 - Local git identity is currently configured as:
   - `user.name = Codex`
   - `user.email = codex@example.com`

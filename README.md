@@ -10,11 +10,11 @@ Local-first forecasting harness for scenario analysis. The repo contains a share
 Verified on `main` on 2026-04-22:
 
 - Full suite:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `296 passed in 9.96s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q`
+  - `313 passed in 11.75s`
 - Checked-in smoke campaign:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `16 passed in 2.84s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `20 passed in 3.35s`
 
 ## Repository Layout
 
@@ -27,7 +27,7 @@ Verified on `main` on 2026-04-22:
 - [knowledge/replays](knowledge/replays)
   Built-in replay corpus used for regression and calibration checks.
 - [adapters](adapters)
-  Thin Codex and Claude scaffolding that point at the shared packaged adapter runtime.
+  Repo-owned local Codex and Claude bundles that install and smoke-test against the shared packaged adapter runtime.
 - [docs/status](docs/status)
   Verified status notes and branch-specific pass summaries.
 - `.forecast/`
@@ -94,12 +94,12 @@ Detailed recent notes:
 
 ## Install
 
-From the repo root, use any Python 3.12+ interpreter:
+From the repo root, use any Python 3.12+ interpreter to build the checked-in local verification environment under `packages/core/.venv`:
 
 ```bash
 PYTHON=/path/to/python3.12
-"$PYTHON" -m venv .venv
-source .venv/bin/activate
+"$PYTHON" -m venv packages/core/.venv
+source packages/core/.venv/bin/activate
 pip install -e 'packages/core[dev]'
 ```
 
@@ -292,25 +292,25 @@ Future ingests into that same corpus will reuse the stored backend preference au
 Full suite:
 
 ```bash
-PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q
 ```
 
 Checked-in smoke campaign:
 
 ```bash
-PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q
 ```
 
 Built-in replay and calibration checks:
 
 ```bash
-forecast-harness summarize-builtin-replay-corpus
-forecast-harness list-builtin-replay-cases
-forecast-harness run-builtin-replay-suite
-forecast-harness summarize-replay-calibration
-forecast-harness run-replay-retuning --domain-pack company-action --no-branch
-forecast-harness run-builtin-replay-retuning --workspace-root /tmp/replay-retuning --no-branch
-forecast-harness rebuild-corpus-embeddings --corpus-db .forecast/corpus.db --semantic-backend neural
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli summarize-builtin-replay-corpus
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli list-builtin-replay-cases
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-builtin-replay-suite
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli summarize-replay-calibration
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-replay-retuning --domain-pack company-action --no-branch
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-builtin-replay-retuning --workspace-root /tmp/replay-retuning --no-branch
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli rebuild-corpus-embeddings --corpus-db .forecast/corpus.db --semantic-backend neural
 ```
 
 ## Adapters
@@ -354,10 +354,11 @@ Current boundary:
   - [2026-04-21-evidence-runtime-v1.md](docs/status/2026-04-21-evidence-runtime-v1.md)
 - Local adapter packaging:
   - [2026-04-22-adapter-packaging-v2.md](docs/status/2026-04-22-adapter-packaging-v2.md)
+- Final repo-completion closeout:
+  - [2026-04-22-repo-completion-final.md](docs/status/2026-04-22-repo-completion-final.md)
 - Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 
 ## Current Gaps
 
-- Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.

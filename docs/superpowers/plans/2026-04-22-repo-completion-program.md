@@ -14,17 +14,17 @@
 
 This program is **done** only when all of these are true on accepted `main`:
 
-- [ ] `README.md` and `docs/status/2026-04-20-project-status.md` no longer list any open gaps except the explicitly deferred OCR note.
-- [ ] Full suite passes on merged `main`.
-- [ ] Checked-in smoke campaign passes on merged `main`.
-- [ ] Built-in replay corpus reaches at least `40` cases with meaningful multi-domain coverage and green calibration.
+- [x] `README.md` and `docs/status/2026-04-20-project-status.md` no longer list any open gaps except the explicitly deferred OCR note.
+- [x] Full suite passes on merged `main`.
+- [x] Checked-in smoke campaign passes on merged `main`.
+- [x] Built-in replay corpus reaches at least `40` cases with meaningful multi-domain coverage and green calibration.
 - [x] Simulation output exposes calibrated branch probability fields or calibrated confidence buckets instead of raw ranking only.
-- [ ] Spreadsheet ingestion and web-archive ingestion are implemented and documented.
-- [ ] Remaining file-backed bulk-edit workflow paths are replaced by structured CLI/runtime inputs.
+- [x] Spreadsheet ingestion and web-archive ingestion are implemented and documented.
+- [x] Remaining file-backed bulk-edit workflow paths are replaced by structured CLI/runtime inputs.
 - [x] Knowledge compiler / rule extraction exists and feeds reusable domain knowledge back into the repo-owned evolution path.
-- [ ] New-domain synthesis can generate richer bespoke Python behavior than the current template-only starter.
-- [ ] Codex and Claude local integrations are packaged enough to run the end-to-end workflow through repo-owned installable bundles, not just thin skill docs.
-- [ ] `packages/core/.venv` and the documented local verification flow use Python `>=3.12`.
+- [x] New-domain synthesis can generate richer bespoke Python behavior than the current template-only starter.
+- [x] Codex and Claude local integrations are packaged enough to run the end-to-end workflow through repo-owned installable bundles, not just thin skill docs.
+- [x] `packages/core/.venv` and the documented local verification flow use Python `>=3.12`.
 
 ## Out Of Scope For This Program
 
@@ -207,21 +207,21 @@ This program is **done** only when all of these are true on accepted `main`:
 - Modify: `docs/status/2026-04-20-project-status.md`
 - Create: final completion status note for the program
 
-- [ ] Remove or rewrite every accepted gap line that the program closed.
-- [ ] Leave only the explicitly deferred OCR note if it still remains deferred.
-- [ ] Re-run:
+- [x] Remove or rewrite every accepted gap line that the program closed.
+- [x] Leave only the explicitly deferred OCR note if it still remains deferred.
+- [x] Re-run:
   - full suite
   - smoke campaign
   - built-in replay calibration
   - built-in replay retuning
-- [ ] Record exact command outputs in the final status note.
-- [ ] Stop opening new roadmap items unless a failing test or verified gap blocks one of the fixed completion criteria above.
+- [x] Record exact command outputs in the final status note.
+- [x] Stop opening new roadmap items unless a failing test or verified gap blocks one of the fixed completion criteria above.
 
 ---
 
 ## Execution Rules For This Program
 
-- [ ] Never start a later phase while an earlier phase is still red.
-- [ ] Merge after every green phase; do not let the whole program accumulate on one long-lived branch.
-- [ ] Update the accepted docs at the end of each phase so “what’s left” always matches the frozen completion criteria.
-- [ ] If a new issue appears that is not required by the fixed completion criteria, record it as deferred instead of expanding this program.
+- [x] Never start a later phase while an earlier phase is still red.
+- [x] Merge after every green phase; do not let the whole program accumulate on one long-lived branch.
+- [x] Update the accepted docs at the end of each phase so “what’s left” always matches the frozen completion criteria.
+- [x] If a new issue appears that is not required by the fixed completion criteria, record it as deferred instead of expanding this program.
