@@ -1,4 +1,10 @@
-from forecasting_harness.retrieval.ingest import IngestedChunk, IngestedDocument, detect_source_type, ingest_file
+from forecasting_harness.retrieval.ingest import (
+    IngestedChunk,
+    IngestedDocument,
+    detect_source_type,
+    ingest_directory,
+    ingest_file,
+)
 from forecasting_harness.retrieval.registry import CorpusRegistry
 from forecasting_harness.retrieval.search import RetrievalQuery, SearchEngine
 from forecasting_harness.retrieval.semantic import (
@@ -17,5 +23,6 @@ __all__ = [
     "IngestedChunk",
     "IngestedDocument",
     "detect_source_type",
+    "ingest_directory",
     "ingest_file",
 ]

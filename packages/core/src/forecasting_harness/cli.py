@@ -24,7 +24,7 @@ from forecasting_harness.objectives import (
     normalize_selected_objective_profile_name,
 )
 from forecasting_harness.replay import ReplayCase, run_replay_suite, summarize_calibration
-from forecasting_harness.retrieval import CorpusRegistry, detect_source_type, ingest_file
+from forecasting_harness.retrieval import CorpusRegistry, ingest_directory, ingest_file
 from forecasting_harness.simulation.engine import SimulationEngine
 from forecasting_harness.workflow.models import (
     AdapterRuntimeActionName,
@@ -424,31 +424,7 @@ def ingest_directory_command(
     tag: list[str] | None = typer.Option(None),
 ) -> None:
     registry = CorpusRegistry(corpus_db)
-    tags = _parse_tags(tag)
-    ingested = 0
-    skipped = 0
-    failed = 0
-    for candidate in sorted(path.iterdir()):
-        if not candidate.is_file():
-            continue
-        try:
-            detect_source_type(candidate)
-        except ValueError:
-            skipped += 1
-            continue
-        try:
-            _register_ingested_document(
-                registry,
-                candidate,
-                source_id=None,
-                title=None,
-                published_at=published_at,
-                tags=tags,
-            )
-            ingested += 1
-        except Exception:
-            failed += 1
-    print(json.dumps({"ingested": ingested, "skipped": skipped, "failed": failed}))
+    print(json.dumps(ingest_directory(registry, path, published_at=published_at, tags=_parse_tags(tag))))
 
 
 @app.command("list-corpus-sources")

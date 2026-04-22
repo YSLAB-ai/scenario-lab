@@ -1,4 +1,5 @@
 import json
+import zipfile
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -7,6 +8,60 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.cli import app
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
 from forecasting_harness.workflow.models import AssumptionSummary, EvidencePacket, IntakeDraft
+
+
+def _write_minimal_xlsx(path: Path) -> None:
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "[Content_Types].xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>
+""",
+        )
+        archive.writestr(
+            "_rels/.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml"/>
+</Relationships>
+""",
+        )
+        archive.writestr(
+            "xl/workbook.xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Signals" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>
+""",
+        )
+        archive.writestr(
+            "xl/_rels/workbook.xml.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="/xl/worksheets/sheet1.xml"/>
+</Relationships>
+""",
+        )
+        archive.writestr(
+            "xl/worksheets/sheet1.xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="1">
+      <c r="A1" t="inlineStr"><is><t>Overview</t></is></c>
+      <c r="B1" t="inlineStr"><is><t>Taiwan Strait warning</t></is></c>
+    </row>
+  </sheetData>
+</worksheet>
+""",
+        )
 
 
 def test_list_domain_packs() -> None:
@@ -1449,12 +1504,44 @@ def test_ingest_file_command_registers_a_searchable_source(tmp_path: Path) -> No
     assert [hit["source_id"] for hit in hits] == [payload["source_id"]]
 
 
+def test_ingest_file_command_registers_xlsx_sources(tmp_path: Path) -> None:
+    source = tmp_path / "signals.xlsx"
+    _write_minimal_xlsx(source)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ingest-file",
+            "--corpus-db",
+            str(tmp_path / "corpus.db"),
+            "--path",
+            str(source),
+            "--tag",
+            "domain=interstate-crisis",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["source_type"] == "spreadsheet"
+    assert payload["chunk_count"] == 1
+
+    hits = SearchEngine(CorpusRegistry(tmp_path / "corpus.db")).search(
+        RetrievalQuery(text="Taiwan Strait warning", filters={"domain": "interstate-crisis"})
+    )
+    assert [hit["source_id"] for hit in hits] == [payload["source_id"]]
+
+
 def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: Path) -> None:
     corpus_db = tmp_path / "corpus.db"
     source_dir = tmp_path / "corpus"
     source_dir.mkdir()
     (source_dir / "signals.md").write_text("# Overview\nWarning.\n", encoding="utf-8")
-    (source_dir / "posture.json").write_text('{"actors": ["Japan", "China"]}', encoding="utf-8")
+    (source_dir / "saved.html").write_text(
+        "<html><head><title>Saved Page</title></head><body><h1>Overview</h1><p>Warning.</p></body></html>",
+        encoding="utf-8",
+    )
+    _write_minimal_xlsx(source_dir / "signals.xlsx")
     (source_dir / "ignore.zip").write_text("not supported", encoding="utf-8")
 
     result = CliRunner().invoke(
@@ -1472,7 +1559,7 @@ def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: P
 
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
-    assert payload["ingested"] == 2
+    assert payload["ingested"] == 3
     assert payload["skipped"] == 1
 
 

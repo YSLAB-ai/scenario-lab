@@ -65,6 +65,16 @@ Recent correctness fixes included in `main`:
 - behavior-profile changes now block unsafe warm-start reuse
 - report and query summaries preserve the engine’s explored-before-unexplored branch ordering
 
+### Phase 2 ingestion additions
+
+This branch extends corpus ingestion with a bounded set of saved-document formats:
+
+- `ingest-file` and `ingest-directory` now accept `.xlsx` spreadsheets, plain `.html`/`.htm` pages, and archived saved pages in `.webarchive`, `.mhtml`, `.mht`, and `.eml` containers.
+- Spreadsheet ingestion keeps stable row-level anchors using sheet and cell ranges, for example `sheet:Signals!A1:B1`.
+- HTML and archive ingestion preserves parsed page metadata when available, including title and a normalized `YYYY-MM-DD` published date.
+- HTML chunking is intentionally limited to text-bearing block content such as headings, paragraphs, lists, and similar block elements.
+- Archive support is bounded to files that expose a main HTML body or web-archive main resource; OCR and image-only page extraction remain out of scope.
+
 Detailed recent notes:
 - [2026-04-21-actor-utility-pass.md](docs/status/2026-04-21-actor-utility-pass.md)
 - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)

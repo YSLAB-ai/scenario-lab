@@ -1,4 +1,5 @@
 import json
+import zipfile
 from pathlib import Path
 import sqlite3
 
@@ -9,6 +10,7 @@ from typer.testing import CliRunner
 
 from forecasting_harness.cli import app
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
+from forecasting_harness.retrieval.ingest import ingest_file
 from forecasting_harness.retrieval.semantic import deserialize_vector
 
 
@@ -31,6 +33,60 @@ def _register_markdown_source(
         tags=tags or {"domain": "conflict", "actor": "state-a"},
         chunks=[{"chunk_id": "1", "location": location, "content": content}],
     )
+
+
+def _write_minimal_xlsx(path: Path) -> None:
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(
+            "[Content_Types].xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>
+""",
+        )
+        archive.writestr(
+            "_rels/.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="/xl/workbook.xml"/>
+</Relationships>
+""",
+        )
+        archive.writestr(
+            "xl/workbook.xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="Signals" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>
+""",
+        )
+        archive.writestr(
+            "xl/_rels/workbook.xml.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="/xl/worksheets/sheet1.xml"/>
+</Relationships>
+""",
+        )
+        archive.writestr(
+            "xl/worksheets/sheet1.xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>
+    <row r="1">
+      <c r="A1" t="inlineStr"><is><t>Overview</t></is></c>
+      <c r="B1" t="inlineStr"><is><t>Inventory shortage</t></is></c>
+    </row>
+  </sheetData>
+</worksheet>
+""",
+        )
 
 
 def test_registry_registers_documents_and_returns_chunk_hits(tmp_path: Path):
@@ -111,6 +167,67 @@ def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
     assert registry.search_chunks("state-a") == []
     assert registry.search_chunks("(") == []
     assert registry.search_chunks("-") == []
+
+
+def test_search_engine_finds_ingested_spreadsheet_and_web_archive_chunks(tmp_path: Path) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+
+    xlsx_path = tmp_path / "signals.xlsx"
+    _write_minimal_xlsx(xlsx_path)
+    spreadsheet_document = ingest_file(xlsx_path)
+    registry.register_document(
+        source_id=spreadsheet_document.source_id,
+        title=spreadsheet_document.title,
+        source_type=spreadsheet_document.source_type,
+        path=spreadsheet_document.path,
+        published_at=spreadsheet_document.published_at,
+        tags={"domain": "supply-chain-disruption"},
+        chunks=[chunk.__dict__ for chunk in spreadsheet_document.chunks],
+    )
+
+    html_path = tmp_path / "saved.webarchive"
+    html_path.write_bytes(
+        b"""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+  <key>WebMainResource</key>
+  <dict>
+    <key>WebResourceData</key>
+    <data>PCFkb2N0eXBlIGh0bWw+CjxodG1sPgo8aGVhZD4KICA8dGl0bGU+QXJjaGl2ZWQgUGFnZTwvdGl0bGU+CjwvaGVhZD4KPGJvZHk+CiAgPGgxPlNpZ25hbHM8L2gxPgogIDxwPkNoaWVmIGV4ZWN1dGl2ZSByZXNwb25zZSBzdGFiaWxpemVkIHF1aWNrbHkuPC9wPgo8L2JvZHk+CjwvaHRtbD4K</data>
+    <key>WebResourceMIMEType</key>
+    <string>text/html</string>
+    <key>WebResourceTextEncodingName</key>
+    <string>utf-8</string>
+    <key>WebResourceURL</key>
+    <string>https://example.com/archived-page</string>
+  </dict>
+</dict>
+</plist>
+"""
+    )
+    archive_document = ingest_file(html_path)
+    registry.register_document(
+        source_id=archive_document.source_id,
+        title=archive_document.title,
+        source_type=archive_document.source_type,
+        path=archive_document.path,
+        published_at=archive_document.published_at,
+        tags={"domain": "company-action"},
+        chunks=[chunk.__dict__ for chunk in archive_document.chunks],
+    )
+
+    spreadsheet_hits = SearchEngine(registry).search(
+        RetrievalQuery(text="Inventory shortage", filters={"domain": "supply-chain-disruption"})
+    )
+    semantic_hits = SearchEngine(registry).search(
+        RetrievalQuery(text="ceo response", filters={"domain": "company-action"})
+    )
+
+    assert spreadsheet_hits[0]["source_type"] == "spreadsheet"
+    assert spreadsheet_hits[0]["location"] == "sheet:Signals!A1:B1"
+    assert semantic_hits[0]["source_type"] == "web-archive"
+    assert semantic_hits[0]["semantic_score"] > 0
 
 
 def test_registry_search_chunks_raises_for_malformed_schema(tmp_path: Path):
