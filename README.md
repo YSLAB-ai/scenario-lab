@@ -12,7 +12,7 @@ Verified on this branch on 2026-04-21:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - `252 passed in 2.58s`
+  - `254 passed in 2.61s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - `16 passed in 0.67s`
@@ -41,12 +41,13 @@ Verified on this branch on 2026-04-21:
 This review branch adds actor-utility and run-lens behavior on top of the existing workflow core:
 
 - belief-state compilation now infers actor utility preference fields from approved evidence and case framing
+- actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so new and existing domains inherit actor-aware behavior even without custom pack code
 - approval packets now surface `actor_preferences` and `recommended_run_lens`
 - simulation aggregation now includes actor impacts and aggregate-score breakdowns
 - reports now expose actor-utility and aggregation-lens summaries
 - focal-actor aggregation now uses an explicit `focal_weight` instead of a hidden multiplier
 - destabilization penalty now tracks the worst negative actor utility outcome instead of reusing a static actor trait
-- actor-utility hooks now extend beyond `interstate-crisis`, including `company-action` and `pandemic-response`
+- domain-specific actor-utility hooks still exist where they add value, including `interstate-crisis`, `company-action`, and `pandemic-response`
 - `interstate-crisis` now uses a modestly higher default search budget (`32` iterations) so actor-centered replay cases do not collapse onto one visited root branch
 - the interstate replay slice now includes `philippines-china-shoal`
 

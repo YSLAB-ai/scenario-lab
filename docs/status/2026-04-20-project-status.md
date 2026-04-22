@@ -26,6 +26,7 @@ Date: 2026-04-21
 - The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
+- Actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so domain packs inherit actor-aware behavior even when they do not implement custom hooks.
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The repo now also supports domain-scoped self-improvement through:
@@ -52,7 +53,7 @@ Date: 2026-04-21
 - Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
 - Focal-actor aggregation now uses an explicit `focal_weight` field instead of a hidden multiplier.
 - Destabilization penalty now tracks the worst negative actor utility outcome in a branch instead of reusing a static actor trait.
-- `company-action` and `pandemic-response` now implement actor-utility hooks through both `recommend_objective_profile()` and `score_actor_impacts()`.
+- `company-action` and `pandemic-response` now implement domain-specific actor-utility hooks through both `recommend_objective_profile()` and `score_actor_impacts()`, while untouched packs such as `market-shock` and `regulatory-enforcement` inherit the new shared actor-aware defaults.
 - The interstate-crisis pack now infers `alliance_pressure`, `mediation_window`, and `geographic_flashpoint` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The company-action pack now infers `board_cohesion` and `operational_stability` from approved evidence and uses them inside action priors, transitions, and scoring.
 - The market-shock pack now infers `contagion_risk` and `policy_optionality` from approved evidence and uses them inside action priors, transitions, and scoring.
@@ -79,7 +80,7 @@ Date: 2026-04-21
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `252 passed in 2.58s`
+  - Result: `254 passed in 2.61s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`

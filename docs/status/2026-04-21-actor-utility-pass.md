@@ -78,6 +78,7 @@ Date: 2026-04-21
   - making focal weighting explicit through `focal_weight`
   - redefining destabilization as the worst negative actor utility score
   - raising the default `interstate-crisis` search budget from `18` to `32` iterations so the shoal replay no longer collapses onto a single visited root branch
+- The latest generalization pass moved actor-aware defaults into the shared `DomainPack` base layer, so untouched packs like `market-shock` and `regulatory-enforcement` now inherit actor-impact scoring and run-lens recommendation without custom pack code.
 - The final branch fixes also verified that:
   - actor `behavior_profile` changes now block warm-start reuse
   - the recommended run lens becomes the default when no explicit lens is selected
@@ -113,7 +114,7 @@ Date: 2026-04-21
   - `Supplier flooding` -> `Reserve logistics`
 - Required full-suite verification passed:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `252 passed in 2.58s`
+  - Result: `254 passed in 2.61s`
 
 ## Remaining Gaps
 

@@ -368,3 +368,117 @@ def test_pandemic_response_pack_scores_actor_impacts_from_response_state() -> No
     assert actor_impacts["national-government"]["negotiation_openness"] < 0.4
     assert actor_impacts["public-health-system"]["alliance_dependence"] > 0.6
     assert actor_impacts["public-health-system"]["coercive_bias"] < 0.1
+
+
+def test_market_shock_pack_uses_generic_actor_utility_defaults() -> None:
+    from forecasting_harness.domain.market_shock import MarketShockPack
+
+    pack = MarketShockPack()
+    intake = IntakeDraft(
+        event_framing="Assess whether central bank credibility or market stability dominates the next move.",
+        focus_entities=["Federal Reserve", "Treasury Market"],
+        current_development="Funding stress rises while policymakers face credibility pressure and rapid repricing.",
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+    state = _state(
+        "market-shock",
+        "trigger",
+        {
+            "contagion_risk": _field(0.74),
+            "liquidity_stress": _field(0.81),
+            "policy_credibility": _field(0.33),
+            "policy_optionality": _field(0.46),
+            "rate_pressure": _field(0.79),
+        },
+    ).model_copy(
+        update={
+            "actors": [
+                Actor(
+                    actor_id="federal-reserve",
+                    name="Federal Reserve",
+                    behavior_profile=BehaviorProfile(
+                        domestic_sensitivity=0.88,
+                        reputational_sensitivity=0.84,
+                        negotiation_openness=0.36,
+                    ),
+                ),
+                Actor(
+                    actor_id="treasury-market",
+                    name="Treasury Market",
+                    behavior_profile=BehaviorProfile(
+                        domestic_sensitivity=0.42,
+                        economic_pain_tolerance=0.28,
+                        negotiation_openness=0.52,
+                    ),
+                ),
+            ]
+        }
+    )
+
+    profile = pack.recommend_objective_profile(intake, state)
+    actor_impacts = pack.score_actor_impacts(state)
+
+    assert profile.name == "domestic-politics-first"
+    assert profile.aggregation_mode == "focal-actor"
+    assert profile.focal_actor_id == "federal-reserve"
+    assert set(actor_impacts) == {"federal-reserve", "treasury-market"}
+    assert actor_impacts["federal-reserve"]["domestic_sensitivity"] > actor_impacts["treasury-market"]["domestic_sensitivity"]
+    assert actor_impacts["federal-reserve"]["reputational_sensitivity"] > 0.75
+
+
+def test_regulatory_enforcement_pack_uses_generic_actor_utility_defaults() -> None:
+    from forecasting_harness.domain.regulatory_enforcement import RegulatoryEnforcementPack
+
+    pack = RegulatoryEnforcementPack()
+    intake = IntakeDraft(
+        event_framing="Assess whether agency credibility or settlement stability drives the next enforcement move.",
+        focus_entities=["Agency", "Target Company"],
+        current_development="The agency faces political scrutiny while the company weighs settlement against contesting findings.",
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+    state = _state(
+        "regulatory-enforcement",
+        "trigger",
+        {
+            "compliance_posture": _field("mixed"),
+            "enforcement_momentum": _field(0.76),
+            "litigation_readiness": _field(0.62),
+            "public_attention": _field(0.8),
+            "remedy_severity": _field(0.71),
+        },
+    ).model_copy(
+        update={
+            "actors": [
+                Actor(
+                    actor_id="agency",
+                    name="Agency",
+                    behavior_profile=BehaviorProfile(
+                        domestic_sensitivity=0.83,
+                        reputational_sensitivity=0.79,
+                        negotiation_openness=0.41,
+                    ),
+                ),
+                Actor(
+                    actor_id="target-company",
+                    name="Target Company",
+                    behavior_profile=BehaviorProfile(
+                        domestic_sensitivity=0.56,
+                        economic_pain_tolerance=0.34,
+                        negotiation_openness=0.58,
+                    ),
+                ),
+            ]
+        }
+    )
+
+    profile = pack.recommend_objective_profile(intake, state)
+    actor_impacts = pack.score_actor_impacts(state)
+
+    assert profile.name == "domestic-politics-first"
+    assert profile.aggregation_mode == "focal-actor"
+    assert profile.focal_actor_id == "agency"
+    assert set(actor_impacts) == {"agency", "target-company"}
+    assert actor_impacts["agency"]["domestic_sensitivity"] > actor_impacts["target-company"]["domestic_sensitivity"]
+    assert actor_impacts["agency"]["reputational_sensitivity"] > 0.7
