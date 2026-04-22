@@ -102,7 +102,7 @@ Date: 2026-04-22
   - `forecast-harness rebuild-corpus-embeddings`
   which can rebuild an existing corpus with the chosen local embedding backend and persist that preference in the corpus DB.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
-- The latest full-suite verification in this worktree on 2026-04-21 ran:
+- A prior full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
   - Result: `273 passed in 5.28s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:

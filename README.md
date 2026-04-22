@@ -11,10 +11,10 @@ Verified on `main` on 2026-04-22:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `273 passed in 5.28s`
+  - `273 passed in 5.18s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `16 passed in 0.63s`
+  - `16 passed in 0.75s`
 
 ## Repository Layout
 
