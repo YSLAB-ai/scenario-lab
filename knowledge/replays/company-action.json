@@ -98,5 +98,70 @@
       "operational_stability",
       "regulatory_pressure"
     ]
+  },
+  {
+    "run_id": "openai-governance-crisis-2023",
+    "domain_pack": "company-action",
+    "case_title": "OpenAI governance crisis and board reset",
+    "time_anchor": "2023-11",
+    "historical_outcome": "OpenAI reversed the abrupt leadership change, restored Sam Altman as CEO, and moved toward a governance reset with a new initial board.",
+    "sources": [
+      {
+        "title": "OpenAI announces leadership transition",
+        "publisher": "OpenAI",
+        "url": "https://openai.com/blog/openai-announces-leadership-transition/"
+      },
+      {
+        "title": "Sam Altman returns as CEO, OpenAI has a new initial board",
+        "publisher": "OpenAI",
+        "url": "https://openai.com/index/sam-altman-returns-as-ceo-openai-has-a-new-initial-board/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess OpenAI strategy after the November 2023 board crisis and leadership reversal.",
+      "focus_entities": [
+        "OpenAI"
+      ],
+      "current_development": "OpenAI faces abrupt board-driven leadership turnover, governance questions, partner pressure, and a need to reassure employees and customers.",
+      "current_stage": "trigger",
+      "time_horizon": "120d",
+      "known_constraints": [
+        "Leadership credibility and partner confidence must be restored quickly",
+        "Governance changes are under scrutiny"
+      ],
+      "known_unknowns": [
+        "Whether governance reforms will stabilize stakeholder confidence"
+      ],
+      "suggested_entities": [
+        "Board",
+        "Enterprise Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The company will prioritize governance stabilization and stakeholder reassurance over radical strategic change"
+      ],
+      "suggested_actors": [
+        "Board",
+        "Enterprise Customers"
+      ]
+    },
+    "documents": {
+      "leadership-transition.md": "OpenAI announced a leadership transition in November 2023 after the board removed Sam Altman and named an interim CEO.",
+      "board-reset.md": "OpenAI later returned Sam Altman as CEO, installed a new initial board, and said it would strengthen corporate governance."
+    },
+    "expected_top_branch": "Stakeholder reset",
+    "expected_root_strategy": "Stakeholder reset",
+    "expected_evidence_sources": [
+      "board-reset",
+      "leadership-transition"
+    ],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
   }
 ]

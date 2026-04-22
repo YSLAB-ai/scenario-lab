@@ -43,10 +43,13 @@ Date: 2026-04-21
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
 - Belief-state compilation now also infers actor utility preference fields from approved evidence and case framing, including `domestic_sensitivity`, `economic_pain_tolerance`, `negotiation_openness`, `reputational_sensitivity`, `alliance_dependence`, and `coercive_bias`.
-- The repo now also includes a built-in 12-case replay library plus deterministic calibration reporting through:
+- The repo now also includes a built-in 18-case replay library plus deterministic calibration reporting through:
   - `forecast-harness run-builtin-replay-suite`
+  - `forecast-harness list-builtin-replay-cases`
   - `forecast-harness summarize-replay-calibration`
-- The interstate replay slice inside that 12-case corpus now includes `philippines-china-shoal`, a preference-differentiated shoal crisis case that preserves full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
+- The interstate replay slice inside that 18-case corpus now includes `philippines-china-shoal` and the historically anchored `taiwan-drills-2022` case, preserving full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
+- Six of the built-in replay cases now carry explicit source attribution and historical outcome notes.
+- Calibration summaries now expose structured `attention_items` and `failure_type_counts` in addition to per-domain composite scores.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
 - Simulation payloads and generated reports now also expose actor-utility summaries, selected and recommended aggregation-lens summaries, branch-level actor impacts, and top-branch aggregate score breakdowns.
@@ -133,6 +136,13 @@ Date: 2026-04-21
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `top_branch_accuracy = 1.0`
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `root_strategy_accuracy = 1.0`
   - `forecast-harness summarize-replay-calibration` reports `pandemic-response` with `average_inferred_field_coverage = 1.0`
+- The replay calibration v2 pass on 2026-04-21 then further verified:
+  - `forecast-harness summarize-builtin-replay-corpus` -> `case_count = 18`
+  - `forecast-harness summarize-builtin-replay-corpus` -> `anchored_case_count = 6`
+  - `forecast-harness list-builtin-replay-cases` returned `18` structured catalog entries
+  - `forecast-harness summarize-replay-calibration` -> `historically_anchored_case_count = 6`
+  - `forecast-harness summarize-replay-calibration` -> `failure_type_counts = {}`
+  - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
 - The domain evolution pass on 2026-04-21 also verified:
   - a no-branch CLI smoke flow in a temporary workspace:
     - `record-domain-suggestion`
@@ -311,7 +321,7 @@ Date: 2026-04-21
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
   - rule extraction / knowledge compiler
-- The replay suite infrastructure now exists, but the repo does not yet include a large curated historical replay library or a closed-loop calibration process that retunes model behavior against those replay results.
+- The replay suite infrastructure now exists and includes an 18-case built-in corpus with a source-attributed historical slice, but the repo still does not include a large curated historical replay library or an automatic retuning loop against those replay results.
 - Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline does not yet synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
 
 ## Known Issues and Risks

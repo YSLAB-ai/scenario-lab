@@ -13,9 +13,19 @@ from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
 from forecasting_harness.workflow.service import WorkflowService
 
 
+class ReplaySource(BaseModel):
+    title: str
+    publisher: str
+    url: str
+
+
 class ReplayCase(BaseModel):
     run_id: str
     domain_pack: str
+    case_title: str | None = None
+    time_anchor: str | None = None
+    historical_outcome: str | None = None
+    sources: list[ReplaySource] = Field(default_factory=list)
     intake: IntakeDraft
     assumptions: AssumptionSummary
     documents: dict[str, str] = Field(default_factory=dict)
@@ -28,6 +38,10 @@ class ReplayCase(BaseModel):
 class ReplayCaseResult(BaseModel):
     run_id: str
     domain_pack: str
+    case_title: str | None = None
+    time_anchor: str | None = None
+    historical_outcome: str | None = None
+    source_count: int = 0
     top_branch: str | None = None
     expected_top_branch: str | None = None
     top_branch_match: bool | None = None
@@ -44,6 +58,21 @@ class ReplayCaseResult(BaseModel):
     transposition_hits: int = 0
 
 
+class CalibrationAttentionItem(BaseModel):
+    run_id: str
+    domain_pack: str
+    case_title: str | None = None
+    mismatch_types: list[str] = Field(default_factory=list)
+    expected_top_branch: str | None = None
+    actual_top_branch: str | None = None
+    expected_root_strategy: str | None = None
+    actual_root_strategy: str | None = None
+    expected_evidence_sources: list[str] = Field(default_factory=list)
+    actual_evidence_sources: list[str] = Field(default_factory=list)
+    missing_inferred_fields: list[str] = Field(default_factory=list)
+    inferred_field_coverage: float = 0.0
+
+
 class ReplaySuiteResult(BaseModel):
     case_count: int
     top_branch_accuracy: float
@@ -56,10 +85,13 @@ class ReplaySuiteResult(BaseModel):
 
 class CalibrationSummary(BaseModel):
     case_count: int
+    historically_anchored_case_count: int = 0
     overall_top_branch_accuracy: float
     overall_root_strategy_accuracy: float
     overall_evidence_source_accuracy: float
     average_inferred_field_coverage: float
+    failure_type_counts: dict[str, int] = Field(default_factory=dict)
+    attention_items: list[CalibrationAttentionItem] = Field(default_factory=list)
     strongest_domains: list[str] = Field(default_factory=list)
     weakest_domains: list[str] = Field(default_factory=list)
     domains_needing_attention: list[str] = Field(default_factory=list)
@@ -77,6 +109,10 @@ def _root_strategy_for_label(label: str | None) -> str | None:
     if not label:
         return None
     return label.split(" (", 1)[0].strip() or None
+
+
+def _increment(mapping: dict[str, int], key: str) -> None:
+    mapping[key] = mapping.get(key, 0) + 1
 
 
 def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult:
@@ -113,7 +149,11 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
     )
 
     if case.expected_inferred_fields:
-        covered = sum(1 for field_name in case.expected_inferred_fields if state.fields[field_name].status == "inferred")
+        covered = sum(
+            1
+            for field_name in case.expected_inferred_fields
+            if field_name in state.fields and state.fields[field_name].status == "inferred"
+        )
         inferred_field_coverage = round(covered / len(case.expected_inferred_fields), 3)
     else:
         inferred_field_coverage = 0.0
@@ -133,6 +173,10 @@ def _run_single_case(case: ReplayCase, workspace_root: Path) -> ReplayCaseResult
     return ReplayCaseResult(
         run_id=case.run_id,
         domain_pack=case.domain_pack,
+        case_title=case.case_title,
+        time_anchor=case.time_anchor,
+        historical_outcome=case.historical_outcome,
+        source_count=len(case.sources),
         top_branch=top_branch,
         expected_top_branch=case.expected_top_branch,
         top_branch_match=top_branch_match,
@@ -205,6 +249,8 @@ def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: flo
     weakest_domains: list[tuple[float, str]] = []
     strongest_domains: list[tuple[float, str]] = []
     domains_needing_attention: list[str] = []
+    failure_type_counts: dict[str, int] = {}
+    attention_items: list[CalibrationAttentionItem] = []
 
     for domain_pack, metrics in sorted(result.domain_breakdown.items()):
         enriched_metrics = dict(metrics)
@@ -221,15 +267,54 @@ def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: flo
         ):
             domains_needing_attention.append(domain_pack)
 
+    for replay_result in result.results:
+        mismatch_types: list[str] = []
+        if replay_result.top_branch_match is False:
+            mismatch_types.append("top_branch_mismatch")
+        if replay_result.root_strategy_match is False:
+            mismatch_types.append("root_strategy_mismatch")
+        if replay_result.evidence_source_match is False:
+            mismatch_types.append("evidence_source_mismatch")
+        missing_inferred_fields = sorted(
+            set(replay_result.expected_inferred_fields).difference(replay_result.inferred_fields)
+        )
+        if missing_inferred_fields:
+            mismatch_types.append("inferred_field_gap")
+        if not mismatch_types:
+            continue
+
+        for mismatch in mismatch_types:
+            _increment(failure_type_counts, mismatch)
+
+        attention_items.append(
+            CalibrationAttentionItem(
+                run_id=replay_result.run_id,
+                domain_pack=replay_result.domain_pack,
+                case_title=replay_result.case_title,
+                mismatch_types=mismatch_types,
+                expected_top_branch=replay_result.expected_top_branch,
+                actual_top_branch=replay_result.top_branch,
+                expected_root_strategy=replay_result.expected_root_strategy,
+                actual_root_strategy=replay_result.root_strategy,
+                expected_evidence_sources=replay_result.expected_evidence_sources,
+                actual_evidence_sources=replay_result.evidence_sources,
+                missing_inferred_fields=missing_inferred_fields,
+                inferred_field_coverage=replay_result.inferred_field_coverage,
+            )
+        )
+
     strongest = [domain for _, domain in sorted(strongest_domains, key=lambda item: (-item[0], item[1]))]
     weakest = [domain for _, domain in sorted(weakest_domains, key=lambda item: (item[0], item[1]))]
 
     return CalibrationSummary(
         case_count=result.case_count,
+        historically_anchored_case_count=sum(1 for case in result.results if case.source_count > 0),
         overall_top_branch_accuracy=result.top_branch_accuracy,
         overall_root_strategy_accuracy=result.root_strategy_accuracy,
         overall_evidence_source_accuracy=result.evidence_source_accuracy,
         average_inferred_field_coverage=result.average_inferred_field_coverage,
+        failure_type_counts=failure_type_counts,
+        attention_items=attention_items,
         strongest_domains=strongest,
         weakest_domains=weakest,
         domains_needing_attention=sorted(domains_needing_attention),

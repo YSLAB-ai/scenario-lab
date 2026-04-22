@@ -13,7 +13,11 @@ from forecasting_harness.evolution.storage import EvolutionStorage
 from forecasting_harness.domain.generic_event import GenericEventPack
 from forecasting_harness.domain.interstate_crisis import InterstateCrisisPack
 from forecasting_harness.domain.registry import build_default_registry
-from forecasting_harness.knowledge import load_builtin_replay_cases, summarize_builtin_replay_corpus
+from forecasting_harness.knowledge import (
+    list_builtin_replay_cases,
+    load_builtin_replay_cases,
+    summarize_builtin_replay_corpus,
+)
 from forecasting_harness.models import BeliefState, ObjectiveProfile
 from forecasting_harness.objectives import (
     default_objective_profile,
@@ -405,6 +409,11 @@ def run_builtin_replay_suite_command() -> None:
 @app.command("summarize-builtin-replay-corpus")
 def summarize_builtin_replay_corpus_command() -> None:
     print(summarize_builtin_replay_corpus().model_dump_json())
+
+
+@app.command("list-builtin-replay-cases")
+def list_builtin_replay_cases_command() -> None:
+    print(json.dumps([item.model_dump(mode="json") for item in list_builtin_replay_cases()]))
 
 
 @app.command("summarize-replay-calibration")

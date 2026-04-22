@@ -5,9 +5,9 @@ Local-first forecasting harness for scenario analysis. The repo contains a share
 ## Repo State
 
 - `main` is the accepted baseline branch.
-- The actor-utility and run-lens work described here is intended to be the accepted baseline after merge.
+- This README describes the accepted `main` state, including the actor-utility defaults and replay calibration improvements merged on 2026-04-21.
 
-Verified on this branch on 2026-04-21:
+Verified on `main` on 2026-04-21:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
@@ -35,9 +35,9 @@ Verified on this branch on 2026-04-21:
 - `.worktrees/`
   Local git worktrees for development branches. These are workspace management, not product code.
 
-## What This Branch Adds
+## Current Capabilities
 
-This repo state adds actor-utility and run-lens behavior on top of the existing workflow core:
+This repo state includes actor-utility and replay-calibration behavior on top of the existing workflow core:
 
 - belief-state compilation now infers actor utility preference fields from approved evidence and case framing
 - actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so new and existing domains inherit actor-aware behavior even without custom pack code
@@ -51,16 +51,20 @@ This repo state adds actor-utility and run-lens behavior on top of the existing 
 - the shared actor-aware default now explicitly requires `score_state()` to provide `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present
 - `interstate-crisis` now uses a modestly higher default search budget (`32` iterations) so actor-centered replay cases do not collapse onto one visited root branch
 - the interstate replay slice now includes `philippines-china-shoal`
+- the built-in replay corpus now contains `18` cases, including `6` source-attributed historically anchored cases
+- replay calibration summaries now expose structured per-case attention items and aggregated failure-type counts
+- the CLI now supports `list-builtin-replay-cases` in addition to corpus and calibration summaries
 
-This branch also includes correctness fixes that matter for review:
+Recent correctness fixes included in `main`:
 
 - the recommended run lens becomes the default when no explicit lens is selected
 - `US`, `U.S.`, and `United States` now persist as the same canonical actor id
 - behavior-profile changes now block unsafe warm-start reuse
 - report and query summaries preserve the engine’s explored-before-unexplored branch ordering
 
-Detailed branch note:
+Detailed recent notes:
 - [2026-04-21-actor-utility-pass.md](docs/status/2026-04-21-actor-utility-pass.md)
+- [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
 
 ## Install
 
@@ -220,6 +224,7 @@ Built-in replay and calibration checks:
 
 ```bash
 forecast-harness summarize-builtin-replay-corpus
+forecast-harness list-builtin-replay-cases
 forecast-harness run-builtin-replay-suite
 forecast-harness summarize-replay-calibration
 ```
@@ -241,14 +246,16 @@ Current boundary:
 
 ## Detailed Status Notes
 
-- Branch-specific actor-utility pass:
+- Actor-utility pass:
   - [2026-04-21-actor-utility-pass.md](docs/status/2026-04-21-actor-utility-pass.md)
-- Broader repo status on this branch:
+- Replay calibration expansion:
+  - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
+- Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 
 ## Current Gaps
 
 - The Codex and Claude integrations are still scaffolding, not a packaged runtime.
 - The built-in domain packs are templates, not mature validated forecasting models.
-- The replay corpus is still small.
+- The replay corpus is still modest rather than broad.
 - Some evidence replacement and bulk-edit paths remain file-backed.

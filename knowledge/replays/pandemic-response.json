@@ -64,5 +64,71 @@
       "transmission_pressure",
       "vaccine_readiness"
     ]
+  },
+  {
+    "run_id": "omicron-boosters-2021",
+    "domain_pack": "pandemic-response",
+    "case_title": "Early U.S. Omicron wave and booster push",
+    "time_anchor": "2021-12",
+    "historical_outcome": "U.S. health authorities emphasized booster uptake and layered prevention measures during the early Omicron wave rather than returning immediately to nationwide lockdowns.",
+    "sources": [
+      {
+        "title": "CDC Expands COVID-19 Booster Recommendations",
+        "publisher": "Centers for Disease Control and Prevention",
+        "url": "https://archive.cdc.gov/www_cdc_gov/media/releases/2021/s1129-booster-recommendations.html"
+      },
+      {
+        "title": "SARS-CoV-2 B.1.1.529 (Omicron) Variant — United States, December 1–8, 2021",
+        "publisher": "CDC MMWR",
+        "url": "https://www.cdc.gov/mmwr/volumes/70/wr/mm7050e1.htm"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess U.S. response choices during the early Omicron wave in late 2021.",
+      "focus_entities": [
+        "U.S. Government",
+        "Public Health System"
+      ],
+      "current_development": "Officials faced early Omicron spread, urged boosters, and recommended layered prevention measures to slow transmission and protect hospitals.",
+      "current_stage": "trigger",
+      "time_horizon": "90d",
+      "known_constraints": [
+        "Public fatigue weakens appetite for broad shutdowns",
+        "Transmission risk is rising before the full severity picture is clear"
+      ],
+      "known_unknowns": [
+        "How quickly booster uptake and layered prevention can offset hospital strain"
+      ],
+      "suggested_entities": [
+        "Hospitals",
+        "State Health Agencies"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Officials will emphasize boosters and layered mitigation rather than immediate nationwide lockdowns"
+      ],
+      "suggested_actors": [
+        "Hospitals",
+        "State Health Agencies"
+      ]
+    },
+    "documents": {
+      "cdc-booster.md": "CDC expanded booster recommendations in late November 2021 and tied them to concerns about the emerging Omicron variant.",
+      "omicron-mmwr.md": "CDC said concurrent prevention strategies, including vaccination, masking, ventilation, testing, quarantine, and isolation, were recommended to slow Omicron transmission."
+    },
+    "expected_top_branch": "Targeted guidance",
+    "expected_root_strategy": "Targeted guidance",
+    "expected_evidence_sources": [
+      "cdc-booster"
+    ],
+    "expected_inferred_fields": [
+      "hospital_strain",
+      "policy_alignment",
+      "public_compliance",
+      "testing_capacity",
+      "transmission_pressure",
+      "vaccine_readiness"
+    ]
   }
 ]

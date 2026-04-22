@@ -49,5 +49,71 @@
       "public_attention",
       "remedy_severity"
     ]
+  },
+  {
+    "run_id": "binance-settlement-2023",
+    "domain_pack": "regulatory-enforcement",
+    "case_title": "Binance U.S. settlement and monitorship",
+    "time_anchor": "2023-11",
+    "historical_outcome": "Binance accepted a large U.S. settlement, a multi-year monitorship, and major compliance undertakings rather than choosing an all-out adversarial fight.",
+    "sources": [
+      {
+        "title": "Binance and CEO Plead Guilty to Federal Charges in $4B Resolution",
+        "publisher": "U.S. Department of Justice",
+        "url": "https://www.justice.gov/opa/pr/binance-and-ceo-plead-guilty-federal-charges-4b-resolution"
+      },
+      {
+        "title": "U.S. Treasury Announces Largest Settlements in History with World's Largest Virtual Currency Exchange Binance",
+        "publisher": "U.S. Department of the Treasury",
+        "url": "https://home.treasury.gov/news/press-releases/jy1925"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Binance strategy after the November 2023 U.S. criminal and regulatory settlement.",
+      "focus_entities": [
+        "Binance",
+        "U.S. Regulators"
+      ],
+      "current_development": "Binance pleaded guilty, its CEO resigned, U.S. authorities imposed a monitor and large penalties, and the company needs to remediate compliance failures.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "The company must preserve operations while meeting remediation obligations",
+        "Compliance and sanctions controls are under direct official scrutiny"
+      ],
+      "known_unknowns": [
+        "Whether remediation will satisfy monitors and regulators quickly"
+      ],
+      "suggested_entities": [
+        "Independent Monitor",
+        "External Counsel"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Binance will favor remediation and negotiated compliance over a prolonged adversarial fight"
+      ],
+      "suggested_actors": [
+        "Independent Monitor",
+        "External Counsel"
+      ]
+    },
+    "documents": {
+      "doj-resolution.md": "The Justice Department said Binance and its CEO pleaded guilty, agreed to over 4 billion dollars in penalties, and committed to compliance remediation.",
+      "treasury-resolution.md": "Treasury said the settlement imposed a multi-year monitorship and significant compliance undertakings."
+    },
+    "expected_top_branch": "Internal remediation",
+    "expected_root_strategy": "Internal remediation",
+    "expected_evidence_sources": [
+      "doj-resolution",
+      "treasury-resolution"
+    ],
+    "expected_inferred_fields": [
+      "compliance_posture",
+      "enforcement_momentum",
+      "litigation_readiness",
+      "public_attention",
+      "remedy_severity"
+    ]
   }
 ]

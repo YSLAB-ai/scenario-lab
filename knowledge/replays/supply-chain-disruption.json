@@ -100,5 +100,69 @@
       "supplier_concentration",
       "transport_reliability"
     ]
+  },
+  {
+    "run_id": "baltimore-port-closure-2024",
+    "domain_pack": "supply-chain-disruption",
+    "case_title": "Francis Scott Key Bridge collapse and Baltimore port closure",
+    "time_anchor": "2024-03",
+    "historical_outcome": "Authorities and shippers first relied on safety restrictions, rerouting, and staged channel restoration to keep freight moving after the bridge collapse blocked Baltimore port access.",
+    "sources": [
+      {
+        "title": "Port of Baltimore Safety Zone – Francis Scott Key Bridge Marine Casualty",
+        "publisher": "U.S. Coast Guard",
+        "url": "https://homeport.uscg.mil/Lists/Content/Attachments/89471/MSIB%20036-24%20COTP%20Maryland-NCR%20Safety%20Zone%20Key%20Bridge.pdf"
+      },
+      {
+        "title": "Governor Moore Announces the Full Reopening of the Port of Baltimore",
+        "publisher": "Office of Governor Wes Moore",
+        "url": "https://governor.maryland.gov/news/press/pages/governor-moore-announces-the-full-reopening-of-the-port-of-baltimore.aspx"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess East Coast supply-chain responses after the March 2024 Francis Scott Key Bridge collapse closes Baltimore port access.",
+      "focus_entities": [
+        "Port of Baltimore",
+        "East Coast Shippers"
+      ],
+      "current_development": "The Francis Scott Key Bridge collapse triggered a safety zone, blocked port access, and forced emergency rerouting across freight networks.",
+      "current_stage": "trigger",
+      "time_horizon": "60d",
+      "known_constraints": [
+        "Port access is constrained until the channel is cleared",
+        "Shippers must preserve deliveries with alternate routing"
+      ],
+      "known_unknowns": [
+        "How quickly shipping channels can reopen safely"
+      ],
+      "suggested_entities": [
+        "Logistics Partners",
+        "Alternate Ports"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Operators will prioritize rerouting and reserve logistics before attempting larger network redesigns"
+      ],
+      "suggested_actors": [
+        "Logistics Partners",
+        "Alternate Ports"
+      ]
+    },
+    "documents": {
+      "safety-zone.md": "After the Key Bridge collapse, the Coast Guard established a safety zone and vessel movements were restricted around the Port of Baltimore.",
+      "port-recovery.md": "Maryland later described a coordinated effort to clear the shipping channel and restore port operations after the collapse."
+    },
+    "expected_top_branch": "Reserve logistics",
+    "expected_root_strategy": "Reserve logistics",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "customer_penalty_pressure",
+      "disruption_mode",
+      "inventory_cover_days",
+      "substitution_flexibility",
+      "supplier_concentration",
+      "transport_reliability"
+    ]
   }
 ]

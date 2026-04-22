@@ -49,5 +49,71 @@
       "policy_optionality",
       "rate_pressure"
     ]
+  },
+  {
+    "run_id": "svb-btfp-2023",
+    "domain_pack": "market-shock",
+    "case_title": "Silicon Valley Bank failure and emergency backstop",
+    "time_anchor": "2023-03",
+    "historical_outcome": "U.S. authorities protected depositors and launched emergency liquidity backstops to contain contagion and preserve confidence in the banking system.",
+    "sources": [
+      {
+        "title": "Joint Statement by the Department of the Treasury, Federal Reserve, and FDIC",
+        "publisher": "U.S. Department of the Treasury",
+        "url": "https://home.treasury.gov/news/press-releases/jy1337"
+      },
+      {
+        "title": "The Federal Reserve's Response to the 2023 Banking Turmoil: The Bank Term Funding Program",
+        "publisher": "Federal Reserve Board",
+        "url": "https://www.federalreserve.gov/econres/feds/the-federal-reserves-response-to-the-2023-banking-turmoil-the-bank-term-funding-program.htm"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess market scenarios after the March 2023 Silicon Valley Bank failure and emergency U.S. backstop actions.",
+      "focus_entities": [
+        "Federal Reserve",
+        "U.S. Banking System"
+      ],
+      "current_development": "After Silicon Valley Bank failed, U.S. authorities protected depositors and launched the Bank Term Funding Program to backstop liquidity and stabilize confidence.",
+      "current_stage": "trigger",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "Financial stability and depositor confidence must be preserved",
+        "Authorities also need to preserve policy credibility"
+      ],
+      "known_unknowns": [
+        "Whether contagion will spread to other regional banks"
+      ],
+      "suggested_entities": [
+        "Treasury",
+        "FDIC"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Authorities will prioritize market functioning and depositor confidence over short-term moral-hazard concerns"
+      ],
+      "suggested_actors": [
+        "Treasury",
+        "FDIC"
+      ]
+    },
+    "documents": {
+      "joint-statement.md": "Treasury, the Federal Reserve, and the FDIC took decisive actions to strengthen confidence, fully protect depositors, and preserve credit access after Silicon Valley Bank failed.",
+      "btfp.md": "The Federal Reserve established the Bank Term Funding Program to provide liquidity and help banks meet depositor needs during the 2023 banking turmoil."
+    },
+    "expected_top_branch": "Emergency liquidity",
+    "expected_root_strategy": "Emergency liquidity",
+    "expected_evidence_sources": [
+      "btfp",
+      "joint-statement"
+    ],
+    "expected_inferred_fields": [
+      "contagion_risk",
+      "liquidity_stress",
+      "policy_credibility",
+      "policy_optionality",
+      "rate_pressure"
+    ]
   }
 ]

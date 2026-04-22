@@ -9,7 +9,15 @@ from forecasting_harness.artifacts import RunRepository
 from forecasting_harness.cli import app
 from forecasting_harness.domain.registry import build_default_registry
 from forecasting_harness.knowledge import load_builtin_replay_cases
-from forecasting_harness.replay import ReplayCase, ReplayCaseResult, ReplaySuiteResult, run_replay_suite
+from forecasting_harness.replay import (
+    CalibrationSummary,
+    ReplayCase,
+    ReplayCaseResult,
+    ReplaySource,
+    ReplaySuiteResult,
+    run_replay_suite,
+    summarize_calibration,
+)
 from forecasting_harness.retrieval import CorpusRegistry
 from forecasting_harness.workflow.models import AssumptionSummary, IntakeDraft
 from forecasting_harness.workflow.service import WorkflowService
@@ -19,6 +27,12 @@ def _replay_case() -> ReplayCase:
     return ReplayCase(
         run_id="apple-transition",
         domain_pack="company-action",
+        case_title="Apple succession stress test",
+        time_anchor="synthetic",
+        historical_outcome="Stakeholder reset preserved the core franchise while the board stabilized leadership messaging.",
+        sources=[
+            ReplaySource(title="Internal scenario source", publisher="repo", url="https://example.invalid/apple-1"),
+        ],
         intake=IntakeDraft(
             event_framing="Assess Apple strategy after a sudden CEO transition during product delays and margin pressure.",
             focus_entities=["Apple"],
@@ -209,6 +223,34 @@ def test_run_replay_suite_reports_accuracy_and_field_coverage(tmp_path: Path) ->
     }
     assert result.domain_breakdown["election-shock"]["count"] == 1
     assert result.domain_breakdown["supply-chain-disruption"]["root_strategy_accuracy"] == 1.0
+
+
+def test_calibration_summary_surfaces_attention_items_for_missed_cases(tmp_path: Path) -> None:
+    case = _replay_case().model_copy(
+        update={
+            "expected_top_branch": "Contain message",
+            "expected_root_strategy": "Contain message",
+            "expected_evidence_sources": ["apple-succession"],
+            "expected_inferred_fields": ["board_cohesion", "brand_sentiment", "missing_field"],
+        }
+    )
+
+    result = run_replay_suite([case], workspace_root=tmp_path)
+    summary = summarize_calibration(result, attention_threshold=0.99)
+
+    assert isinstance(summary, CalibrationSummary)
+    assert len(summary.attention_items) == 1
+    attention = summary.attention_items[0]
+    assert attention.run_id == "apple-transition"
+    assert set(attention.mismatch_types) == {
+        "top_branch_mismatch",
+        "root_strategy_mismatch",
+        "evidence_source_mismatch",
+        "inferred_field_gap",
+    }
+    assert attention.missing_inferred_fields == ["missing_field"]
+    assert summary.failure_type_counts["top_branch_mismatch"] == 1
+    assert summary.domains_needing_attention == ["company-action"]
 
 
 def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> None:

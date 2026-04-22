@@ -157,5 +157,72 @@
       "military_posture",
       "tension_index"
     ]
+  },
+  {
+    "run_id": "taiwan-drills-2022",
+    "domain_pack": "interstate-crisis",
+    "case_title": "PLA drills around Taiwan after August 2022 congressional visit",
+    "time_anchor": "2022-08",
+    "historical_outcome": "China answered the visit with large military drills and coercive signaling around Taiwan while outside powers emphasized restraint and regional stability rather than direct military entry.",
+    "sources": [
+      {
+        "title": "China's countermeasures to Pelosi's Taiwan visit justified: military spokesperson",
+        "publisher": "Xinhua / Chinese Ministry of National Defense reporting",
+        "url": "https://english.news.cn/20220808/b6118baf5cad49bc858b8d6e8175eeeb/c.html"
+      },
+      {
+        "title": "Minister Jaushieh Joseph Wu's interview with CNN",
+        "publisher": "Ministry of Foreign Affairs, Republic of China (Taiwan)",
+        "url": "https://en.mofa.gov.tw/News_Content.aspx?n=1575&s=98301"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess 21-day crisis dynamics after large PLA military drills around Taiwan in August 2022.",
+      "focus_entities": [
+        "China",
+        "Taiwan"
+      ],
+      "current_development": "China launches large military drills around Taiwan after a high-profile U.S. congressional visit, while Taipei raises readiness and outside powers call for restraint.",
+      "current_stage": "trigger",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "All sides want to avoid immediate great-power war",
+        "Commercial shipping and regional stability are under pressure"
+      ],
+      "known_unknowns": [
+        "Whether the drills evolve into a longer coercive access-pressure campaign"
+      ],
+      "suggested_entities": [
+        "United States",
+        "Japan"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Beijing wants to show resolve and deterrent capability without triggering immediate major-war escalation"
+      ],
+      "suggested_actors": [
+        "United States",
+        "Japan"
+      ]
+    },
+    "documents": {
+      "pla-drills.md": "China announced major military drills around Taiwan after a high-profile congressional visit and said the actions were a resolute response.",
+      "restraint-calls.md": "Taiwan raised readiness while the United States and regional partners urged restraint and stability in the Taiwan Strait."
+    },
+    "expected_top_branch": "Alliance consultation (coordinated signaling)",
+    "expected_root_strategy": "Alliance consultation",
+    "expected_evidence_sources": [
+      "restraint-calls"
+    ],
+    "expected_inferred_fields": [
+      "alliance_pressure",
+      "diplomatic_channel",
+      "geographic_flashpoint",
+      "leader_style",
+      "mediation_window",
+      "military_posture",
+      "tension_index"
+    ]
   }
 ]
