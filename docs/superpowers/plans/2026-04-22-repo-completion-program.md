@@ -57,11 +57,11 @@ This program is **done** only when all of these are true on accepted `main`:
 - Test: `packages/core/tests/test_retrieval.py`
 - Test: `packages/core/tests/test_cli_workflow.py`
 
-- [ ] Add `.xlsx` spreadsheet ingestion for text-bearing sheets and stable cell-location chunking.
-- [ ] Add HTML / web-archive ingestion for saved pages with preserved source metadata and chunk locations.
-- [ ] Add CLI coverage so both formats flow through `ingest-file` and `ingest-directory`.
-- [ ] Add retrieval tests showing those ingested chunks are searchable through the existing lexical + semantic path.
-- [ ] Document the new source types and their limits in `README.md`.
+- [x] Add `.xlsx` spreadsheet ingestion for text-bearing sheets and stable cell-location chunking.
+- [x] Add HTML / web-archive ingestion for saved pages with preserved source metadata and chunk locations.
+- [x] Add CLI coverage so both formats flow through `ingest-file` and `ingest-directory`.
+- [x] Add retrieval tests showing those ingested chunks are searchable through the existing lexical + semantic path.
+- [x] Document the new source types and their limits in `README.md`.
 
 ### Task 3: Remove Remaining File-Backed Bulk-Edit Workflow Paths
 
