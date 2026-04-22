@@ -1,4 +1,5 @@
 import json
+import plistlib
 import zipfile
 from pathlib import Path
 
@@ -62,6 +63,31 @@ def _write_minimal_xlsx(path: Path) -> None:
 </worksheet>
 """,
         )
+
+
+def _write_minimal_webarchive(path: Path) -> None:
+    plistlib.dump(
+        {
+            "WebMainResource": {
+                "WebResourceData": b"""<!doctype html>
+<html>
+  <head>
+    <title>Archived Page</title>
+    <meta name="published_time" content="2026-04-19">
+  </head>
+  <body>
+    <h1>Signals</h1>
+    <p>Chief executive response stabilized quickly.</p>
+  </body>
+</html>
+""",
+                "WebResourceMIMEType": "text/html",
+                "WebResourceTextEncodingName": "utf-8",
+                "WebResourceURL": "https://example.com/archived-page",
+            }
+        },
+        path.open("wb"),
+    )
 
 
 def test_list_domain_packs() -> None:
@@ -1532,6 +1558,34 @@ def test_ingest_file_command_registers_xlsx_sources(tmp_path: Path) -> None:
     assert [hit["source_id"] for hit in hits] == [payload["source_id"]]
 
 
+def test_ingest_file_command_registers_web_archive_sources(tmp_path: Path) -> None:
+    source = tmp_path / "archived.webarchive"
+    _write_minimal_webarchive(source)
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ingest-file",
+            "--corpus-db",
+            str(tmp_path / "corpus.db"),
+            "--path",
+            str(source),
+            "--tag",
+            "domain=company-action",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["source_type"] == "web-archive"
+    assert payload["chunk_count"] == 1
+
+    hits = SearchEngine(CorpusRegistry(tmp_path / "corpus.db")).search(
+        RetrievalQuery(text="Chief executive response", filters={"domain": "company-action"})
+    )
+    assert [hit["source_id"] for hit in hits] == [payload["source_id"]]
+
+
 def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: Path) -> None:
     corpus_db = tmp_path / "corpus.db"
     source_dir = tmp_path / "corpus"
@@ -1542,6 +1596,7 @@ def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: P
         encoding="utf-8",
     )
     _write_minimal_xlsx(source_dir / "signals.xlsx")
+    _write_minimal_webarchive(source_dir / "archived.webarchive")
     (source_dir / "ignore.zip").write_text("not supported", encoding="utf-8")
 
     result = CliRunner().invoke(
@@ -1559,7 +1614,7 @@ def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: P
 
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
-    assert payload["ingested"] == 3
+    assert payload["ingested"] == 4
     assert payload["skipped"] == 1
 
 

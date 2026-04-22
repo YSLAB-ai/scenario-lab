@@ -360,7 +360,6 @@ Date: 2026-04-22
 
 ## Current Gaps
 
-- Spreadsheet ingestion and web-archive ingestion are still missing.
 - Some broader bulk-edit workflows still rely on file-backed JSON inputs instead of structured CLI/runtime inputs end to end.
 - The simulation engine still reports raw ranking instead of calibrated probability or confidence outputs.
 - The built-in replay corpus is still at `22` cases rather than the frozen `40`-case target.
