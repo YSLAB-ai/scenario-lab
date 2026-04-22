@@ -1879,6 +1879,22 @@ def test_revision_record_tracks_lifecycle_timestamps(tmp_path: Path) -> None:
     assert revision.simulated_at is not None
 
 
+def test_simulate_revision_accepts_iteration_override(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    pack = InterstateCrisisPack()
+    intake, evidence, assumptions = _make_revision_inputs("r1")
+
+    service.start_run(run_id="crisis-1", domain_pack=pack.slug())
+    service.save_intake_draft("crisis-1", "r1", intake)
+    service.save_evidence_draft("crisis-1", "r1", evidence)
+    service.approve_revision("crisis-1", "r1", assumptions)
+
+    result = service.simulate_revision("crisis-1", "r1", pack=pack, iterations=250)
+
+    assert result["iterations"] == 250
+
+
 def test_revision_record_preserves_parent_revision_id(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     service = WorkflowService(repository)

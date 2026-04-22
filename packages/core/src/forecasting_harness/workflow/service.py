@@ -734,7 +734,14 @@ class WorkflowService:
         self.repository.append_event(run_id, "revision-approved", {"revision_id": revision_id})
         return run
 
-    def simulate_revision(self, run_id: str, revision_id: str, *, pack: Any) -> dict[str, object]:
+    def simulate_revision(
+        self,
+        run_id: str,
+        revision_id: str,
+        *,
+        pack: Any,
+        iterations: int | None = None,
+    ) -> dict[str, object]:
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=True)
         assumptions = self.repository.load_revision_model(run_id, "assumptions", revision_id, AssumptionSummary, approved=True)
         evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=True)
@@ -785,7 +792,7 @@ class WorkflowService:
             }
 
         engine = SimulationEngine(pack, objective_profile)
-        result = engine.run(state, reuse_context=reuse_context)
+        result = engine.run(state, reuse_context=reuse_context, iterations=iterations)
         result["actor_utility_summary"] = _summarize_actor_preferences(state)
         result["aggregation_lens"] = _serialize_run_lens(objective_profile)
         result["recommended_run_lens"] = _serialize_run_lens(recommended_profile)

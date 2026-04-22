@@ -37,6 +37,7 @@ Date: 2026-04-21
   - `forecast-harness synthesize-domain`
 - The CLI now supports direct structured input for intake drafts and approvals, in-place evidence curation, and revision updates from approved parents.
 - The CLI now supports `draft-conversation-turn` so the adapter path can query the next user-facing prompt after each workflow mutation.
+- The user-facing `forecast-harness simulate` command now defaults to `10000` MCTS iterations and accepts `--iterations` to override the runtime budget per run.
 - Revision lineage is now persisted as first-class metadata under `revisions/<revision>.json`.
 - The simulation engine now performs deterministic multi-step MCTS over `BeliefState` and preserves top-level `branches` for workflow compatibility.
 - The simulation engine now supports dependency-aware warm-start subtree reuse across compatible child revisions.
@@ -229,9 +230,9 @@ Date: 2026-04-21
   - the same payload returned `recommended_command = forecast-harness batch-ingest-recommended`
   - the payload included ordered `actions` for `batch-ingest-recommended` and `draft-evidence-packet`
   - the payload embedded `intake_guidance`, `retrieval_plan`, `ingestion_plan`, and `ingestion_recommendations`
-- A fresh-install simulation smoke test on 2026-04-20 also verified:
+- A fresh-install simulation smoke test on 2026-04-21 also verified:
   - `simulation/r1.approved.json` contained `search_mode = mcts`
-  - `simulation/r1.approved.json` contained `iterations = 32`
+  - `simulation/r1.approved.json` contained `iterations = 10000`
   - the top branch label remained `Signal resolve`
   - `reports/r1.report.md` existed after simulation
 - A fresh-install child-revision smoke test on 2026-04-20 also verified:

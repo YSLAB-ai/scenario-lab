@@ -679,10 +679,16 @@ def simulate(
     root: Path = typer.Option(Path(".forecast")),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
+    iterations: int = typer.Option(10000),
 ) -> None:
     repo = RunRepository(root)
     pack = _load_pack_for_run(repo, run_id)
-    result = _service(root).simulate_revision(run_id=run_id, revision_id=revision_id, pack=pack)
+    result = _service(root).simulate_revision(
+        run_id=run_id,
+        revision_id=revision_id,
+        pack=pack,
+        iterations=iterations,
+    )
     print(json.dumps(result))
 
 

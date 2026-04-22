@@ -49,7 +49,7 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - destabilization penalty now tracks the worst negative actor utility outcome instead of reusing a static actor trait
 - domain-specific actor-utility hooks still exist where they add value, including `interstate-crisis`, `company-action`, and `pandemic-response`
 - the shared actor-aware default now explicitly requires `score_state()` to provide `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present
-- `interstate-crisis` now uses a modestly higher default search budget (`32` iterations) so actor-centered replay cases do not collapse onto one visited root branch
+- the CLI `simulate` command now defaults to a `10000`-iteration runtime search budget for serious analysis
 - the interstate replay slice now includes `philippines-china-shoal`
 - the built-in replay corpus now contains `18` cases, including `6` source-attributed historically anchored cases
 - replay calibration summaries now expose structured per-case attention items and aggregated failure-type counts
@@ -196,6 +196,16 @@ forecast-harness summarize-revision --root "$RUN_ROOT" --run-id china-taiwan-1 -
 forecast-harness generate-report --root "$RUN_ROOT" --run-id china-taiwan-1 --revision-id r1
 ```
 
+The default simulation budget is `10000` MCTS iterations. To change it for a specific run:
+
+```bash
+forecast-harness simulate \
+  --root "$RUN_ROOT" \
+  --run-id china-taiwan-1 \
+  --revision-id r1 \
+  --iterations 3000
+```
+
 ### 9. Create a child revision when the situation changes
 
 ```bash
@@ -250,6 +260,8 @@ Current boundary:
   - [2026-04-21-actor-utility-pass.md](docs/status/2026-04-21-actor-utility-pass.md)
 - Replay calibration expansion:
   - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
+- High default iterations:
+  - [2026-04-21-high-default-iterations.md](docs/status/2026-04-21-high-default-iterations.md)
 - Broader repo status:
   - [2026-04-20-project-status.md](docs/status/2026-04-20-project-status.md)
 

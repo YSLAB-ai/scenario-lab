@@ -30,7 +30,7 @@ def _resolved_branch_id(branch_id: str, seen_branch_ids: dict[str, int]) -> str:
 
 @dataclass(frozen=True)
 class SearchConfig:
-    iterations: int = 24
+    iterations: int = 10000
     max_depth: int = 3
     rollout_depth: int = 3
     c_puct: float = 1.2
@@ -240,13 +240,13 @@ def _dependency_hash(state: Any, dependencies: dict[str, Any]) -> str | None:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
-def _search_config(domain_pack: Any) -> SearchConfig:
+def _search_config(domain_pack: Any, *, iterations_override: int | None = None) -> SearchConfig:
     raw_config = {}
     config_fn = getattr(domain_pack, "search_config", None)
     if callable(config_fn):
         raw_config = config_fn() or {}
     return SearchConfig(
-        iterations=int(raw_config.get("iterations", SearchConfig.iterations)),
+        iterations=int(iterations_override if iterations_override is not None else raw_config.get("iterations", SearchConfig.iterations)),
         max_depth=int(raw_config.get("max_depth", SearchConfig.max_depth)),
         rollout_depth=int(raw_config.get("rollout_depth", SearchConfig.rollout_depth)),
         c_puct=float(raw_config.get("c_puct", SearchConfig.c_puct)),
@@ -546,9 +546,15 @@ class SimulationEngine:
             "confidence_signal": round(node.visits / max(root_visits, 1), 3),
         }
 
-    def run(self, state: Any, reuse_context: dict[str, Any] | None = None) -> dict[str, Any]:
+    def run(
+        self,
+        state: Any,
+        reuse_context: dict[str, Any] | None = None,
+        *,
+        iterations: int | None = None,
+    ) -> dict[str, Any]:
         self._validate_root_state(state)
-        config = _search_config(self.domain_pack)
+        config = _search_config(self.domain_pack, iterations_override=iterations)
         self._all_nodes = {}
         self._state_table = {}
         self._seen_state_hashes = set()

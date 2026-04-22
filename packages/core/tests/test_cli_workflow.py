@@ -188,6 +188,8 @@ def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
         ],
     )
     assert simulation_result.exit_code == 0
+    simulation_payload = json.loads(simulation_result.stdout)
+    assert simulation_payload["iterations"] == 10000
 
     report_result = runner.invoke(
         app,
@@ -212,6 +214,69 @@ def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
     assert "## Actor Utility Summary" in report
     assert "## Aggregation Lens" in report
 
+
+def test_simulate_command_accepts_iteration_override(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+    assumptions_path = tmp_path / "assumptions.json"
+
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["US", "Iran"],
+                "current_development": "Exchange of strikes",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "revision_id": "r1",
+                "items": [
+                    {
+                        "evidence_id": "r1-ev-1",
+                        "source_id": "doc-1",
+                        "source_title": "Doc 1",
+                        "reason": "Relevant context",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assumptions_path.write_text(json.dumps({"summary": ["Both sides avoid immediate total war"]}), encoding="utf-8")
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["approve-revision", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(assumptions_path)],
+    ).exit_code == 0
+
+    simulation_result = runner.invoke(
+        app,
+        ["simulate", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--iterations", "250"],
+    )
+
+    assert simulation_result.exit_code == 0
+    simulation_payload = json.loads(simulation_result.stdout)
+    assert simulation_payload["iterations"] == 250
 
 def test_draft_evidence_packet_command(tmp_path: Path) -> None:
     runner = CliRunner()
