@@ -53,7 +53,7 @@ Date: 2026-04-22
 - The simulation engine now deduplicates equivalent non-root states through a transposition table and persists tree metadata for reuse.
 - The core now supports deterministic replay execution through `forecast-harness run-replay-suite`, including top-branch accuracy, root-strategy accuracy, evidence-source accuracy, inferred-field coverage, and per-domain breakdown metrics.
 - Belief-state compilation now also infers actor utility preference fields from approved evidence and case framing, including `domestic_sensitivity`, `economic_pain_tolerance`, `negotiation_openness`, `reputational_sensitivity`, `alliance_dependence`, and `coercive_bias`.
-- The repo now also includes a built-in 22-case replay library plus deterministic calibration reporting through:
+- The repo now also includes a built-in 40-case replay library plus deterministic calibration reporting through:
   - `forecast-harness run-builtin-replay-suite`
   - `forecast-harness list-builtin-replay-cases`
   - `forecast-harness summarize-replay-calibration`
@@ -63,8 +63,8 @@ Date: 2026-04-22
 - The repo now also includes a built-in multi-domain replay retuning loop through:
   - `forecast-harness run-builtin-replay-retuning`
   This walks the full built-in replay corpus one domain at a time, preserves the protected domain-evolution boundary, and aggregates retuning results across domains.
-- The interstate replay slice inside that 22-case corpus now includes `philippines-china-shoal` and the historically anchored `taiwan-drills-2022` case, preserving full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
-- Ten of the built-in replay cases now carry explicit source attribution and historical outcome notes.
+- The interstate replay slice inside that 40-case corpus includes `philippines-china-shoal`, the historically anchored `taiwan-drills-2022`, `philippines-ayungin-2024`, and `red-sea-strikes-2024` cases, preserving full replay calibration while exercising actor-preference inference and a `domestic-politics-first` recommended run lens.
+- Twenty-eight of the built-in replay cases now carry explicit source attribution and historical outcome notes.
 - Calibration summaries now expose structured `attention_items` and `failure_type_counts` in addition to per-domain composite scores.
 - The workflow compiler now lets domain packs infer state fields from approved evidence, so realistic runs do not depend entirely on manually supplied `pack_fields`.
 - The post-search layer now synthesizes root-route-aware scenario families, top-branch path detail, and search-summary metadata for reports and adapter summaries.
@@ -183,6 +183,14 @@ Date: 2026-04-22
     - `case_count = 22`
     - `weak_domain_count = 0`
     - `generated_suggestion_count = 0`
+- The replay expansion pass on 2026-04-22 then further verified:
+  - `forecast-harness summarize-builtin-replay-corpus` -> `case_count = 40`
+  - `forecast-harness summarize-builtin-replay-corpus` -> `anchored_case_count = 28`
+  - `forecast-harness list-builtin-replay-cases` returned `40` structured catalog entries
+  - `forecast-harness summarize-replay-calibration` -> `historically_anchored_case_count = 28`
+  - `forecast-harness summarize-replay-calibration` -> `failure_type_counts = {}`
+  - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
+  - `forecast-harness run-builtin-replay-retuning --workspace-root /tmp/replay-retuning-phase4 --no-branch` can now walk the full 40-case corpus without generating weak-domain suggestions on the accepted calibration baseline
 - The local neural embeddings pass on 2026-04-22 then further verified:
   - `forecast-harness rebuild-corpus-embeddings --corpus-db /tmp/local-neural-embeddings-v1.db` ->
     - `requested_backend = baseline`
@@ -362,7 +370,6 @@ Date: 2026-04-22
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
 - The simulation engine still reports raw ranking instead of calibrated probability or confidence outputs.
-- The built-in replay corpus is still at `22` cases rather than the frozen `40`-case target.
 - The system still does not implement a rule-extraction / knowledge compiler pass.
 - Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline still does not synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
 - Codex and Claude local integrations are still thin repository wrappers rather than fully packaged local runtimes.

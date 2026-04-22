@@ -79,6 +79,16 @@ class CompanyActionPack(DomainPack):
             text,
             ["weak quarter", "margin pressure", "funding pressure", "cash burn", "cash preservation"],
         )
+        cash_runway -= 3 * count_term_matches(
+            text,
+            [
+                "weak financial performance",
+                "cost reduction",
+                "headcount",
+                "capital spending",
+                "capital expenditures",
+            ],
+        )
         cash_runway -= 2 * count_term_matches(text, ["product delays", "delivery concerns", "supplier reassurance"])
         cash_runway += 3 * count_term_matches(text, ["balance sheet", "liquidity", "capital raise"])
         cash_runway = max(3, min(48, cash_runway))
@@ -87,6 +97,15 @@ class CompanyActionPack(DomainPack):
         brand_sentiment -= 0.08 * count_term_matches(
             text,
             ["investor concern", "product delays", "delivery concerns", "customer backlash", "credibility pressure"],
+        )
+        brand_sentiment -= 0.06 * count_term_matches(
+            text,
+            [
+                "stranded passengers",
+                "operational failures",
+                "record consumer protection penalty",
+                "weak financial performance",
+            ],
         )
         brand_sentiment += 0.04 * count_term_matches(text, ["succession clarity", "supplier reassurance", "stabilize messaging"])
         brand_sentiment = bounded(brand_sentiment)
@@ -105,7 +124,7 @@ class CompanyActionPack(DomainPack):
         )
         board_cohesion += 0.1 * count_term_matches(
             text,
-            ["succession clarity", "board wants stability", "board support", "internal successor", "stability"],
+            ["succession clarity", "board wants stability", "board support", "internal successor", "board stability"],
         )
         board_cohesion = bounded(board_cohesion)
 
@@ -113,6 +132,20 @@ class CompanyActionPack(DomainPack):
         operational_stability -= 0.12 * count_term_matches(
             text,
             ["delivery concerns", "production recovery", "safety scrutiny", "supplier anxiety", "product delays", "quality systems"],
+        )
+        operational_stability -= 0.1 * count_term_matches(
+            text,
+            [
+                "operational failures",
+                "meltdown",
+                "outage",
+                "resiliency",
+                "network coordination",
+                "operating model",
+                "headcount",
+                "capital expenditures",
+                "capital spending",
+            ],
         )
         operational_stability += 0.06 * count_term_matches(text, ["roadmap credibility", "stabilize production", "supplier reassurance"])
         operational_stability = bounded(operational_stability)
@@ -187,18 +220,68 @@ class CompanyActionPack(DomainPack):
         sentiment = numeric_field(state, "brand_sentiment", 0.5)
         operational_stability = numeric_field(state, "operational_stability", 0.5)
         pressure = numeric_field(state, "regulatory_pressure", 0.35)
+        text = state_signal_text(state)
+        operational_reset_signal = count_term_matches(
+            text,
+            [
+                "cost reduction",
+                "operating model",
+                "headcount",
+                "capital expenditures",
+                "capital spending",
+                "operational failures",
+                "meltdown",
+                "outage",
+                "resiliency",
+                "network coordination",
+                "technology",
+            ],
+        )
+        messaging_signal = count_term_matches(
+            text,
+            [
+                "weak quarter",
+                "investor concern",
+                "reassure customers",
+                "delivery concerns",
+                "stabilize messaging",
+                "supplier reassurance",
+            ],
+        )
+        stakeholder_signal = count_term_matches(
+            text,
+            [
+                "ceo transition",
+                "leadership turnover",
+                "governance",
+                "board crisis",
+                "stakeholder confidence",
+                "succession",
+            ],
+        )
         if phase == "trigger":
             actions = [
                 {
                     "action_id": "contain-message",
                     "label": "Contain message",
-                    "prior": bounded(0.14 + sentiment * 0.2 + board_cohesion * 0.16),
+                    "prior": bounded(
+                        0.14
+                        + sentiment * 0.2
+                        + board_cohesion * 0.16
+                        + messaging_signal * 0.05
+                        - operational_reset_signal * 0.16
+                    ),
                     "dependencies": {"fields": ["board_cohesion", "brand_sentiment"]},
                 },
                 {
                     "action_id": "strategic-review",
                     "label": "Strategic review",
-                    "prior": bounded(0.14 + max(0, 12 - runway) * 0.03 + max(0.0, 0.5 - board_cohesion) * 0.22),
+                    "prior": bounded(
+                        0.14
+                        + max(0, 12 - runway) * 0.03
+                        + max(0.0, 0.5 - board_cohesion) * 0.22
+                        + operational_reset_signal * 0.0
+                    ),
                     "dependencies": {"fields": ["board_cohesion", "cash_runway_months"]},
                 },
                 {
@@ -209,13 +292,22 @@ class CompanyActionPack(DomainPack):
                         + pressure * 0.18
                         + max(0.0, 0.5 - operational_stability) * 0.35
                         + max(0, 10 - runway) * 0.02
+                        + operational_reset_signal * 0.16
                     ),
                     "dependencies": {"fields": ["cash_runway_months", "operational_stability", "regulatory_pressure"]},
                 },
                 {
                     "action_id": "stakeholder-reset",
                     "label": "Stakeholder reset",
-                    "prior": bounded(0.08 + max(0.0, 0.6 - sentiment) * 0.18 + board_cohesion * 0.22 + pressure * 0.06),
+                    "prior": bounded(
+                        0.08
+                        + max(0.0, 0.6 - sentiment) * 0.18
+                        + board_cohesion * 0.22
+                        + pressure * 0.06
+                        + stakeholder_signal * 0.05
+                        - messaging_signal * 0.02
+                        - operational_reset_signal * 0.08
+                    ),
                     "dependencies": {"fields": ["board_cohesion", "brand_sentiment", "regulatory_pressure"]},
                 },
             ]
@@ -250,6 +342,22 @@ class CompanyActionPack(DomainPack):
         phase = getattr(state, "phase", None) or "trigger"
 
         if phase == "trigger" and action_id == "contain-message":
+            operational_reset_signal = count_term_matches(
+                state_signal_text(state),
+                [
+                    "cost reduction",
+                    "operating model",
+                    "headcount",
+                    "capital expenditures",
+                    "capital spending",
+                    "operational failures",
+                    "meltdown",
+                    "outage",
+                    "resiliency",
+                    "network coordination",
+                    "technology",
+                ],
+            )
             return [
                 {
                     "next_state": with_updates(
@@ -257,9 +365,9 @@ class CompanyActionPack(DomainPack):
                         phase="market-response",
                         field_updates={
                             "board_cohesion": max(board_cohesion, 0.58),
-                            "brand_sentiment": bounded(sentiment + 0.1),
-                            "cash_runway_months": runway,
-                            "operational_stability": operational_stability,
+                            "brand_sentiment": bounded(sentiment + 0.1 - operational_reset_signal * 0.03),
+                            "cash_runway_months": max(1, runway - (1 if operational_reset_signal >= 2 else 0)),
+                            "operational_stability": bounded(max(0.0, operational_stability - operational_reset_signal * 0.03)),
                         },
                     ),
                     "weight": 0.65,
@@ -273,8 +381,8 @@ class CompanyActionPack(DomainPack):
                         field_updates={
                             "board_cohesion": bounded(max(0.0, board_cohesion - 0.06)),
                             "brand_sentiment": max(0.0, sentiment - 0.02),
-                            "cash_runway_months": runway - 1,
-                            "operational_stability": operational_stability,
+                            "cash_runway_months": max(1, runway - 1),
+                            "operational_stability": bounded(max(0.0, operational_stability - operational_reset_signal * 0.03)),
                         },
                     ),
                     "weight": 0.35,
@@ -296,28 +404,63 @@ class CompanyActionPack(DomainPack):
                 )
             ]
         if phase == "trigger" and action_id == "operational-pivot":
+            operational_reset_signal = count_term_matches(
+                state_signal_text(state),
+                [
+                    "cost reduction",
+                    "operating model",
+                    "headcount",
+                    "capital expenditures",
+                    "capital spending",
+                    "operational failures",
+                    "meltdown",
+                    "outage",
+                    "resiliency",
+                    "network coordination",
+                    "technology",
+                ],
+            )
             return [
                 with_updates(
                     state,
                     phase="restructuring",
                     field_updates={
-                        "cash_runway_months": max(1, runway - 1),
+                        "cash_runway_months": max(1, runway - 1 + (2 if operational_reset_signal >= 2 else 0)),
                         "brand_sentiment": bounded(sentiment - 0.03),
-                        "operational_stability": bounded(operational_stability + 0.18),
+                        "operational_stability": bounded(operational_stability + 0.18 + operational_reset_signal * 0.05),
                         "regulatory_pressure": pressure,
                     },
                 )
             ]
         if phase == "trigger" and action_id == "stakeholder-reset":
+            operational_reset_signal = count_term_matches(
+                state_signal_text(state),
+                [
+                    "cost reduction",
+                    "operating model",
+                    "headcount",
+                    "capital expenditures",
+                    "capital spending",
+                    "operational failures",
+                    "meltdown",
+                    "outage",
+                    "resiliency",
+                    "network coordination",
+                    "technology",
+                ],
+            )
             return [
                 with_updates(
                     state,
                     phase="board-response",
                     field_updates={
                         "board_cohesion": max(board_cohesion, 0.65),
-                        "brand_sentiment": bounded(sentiment + (0.08 if board_cohesion >= 0.55 else 0.03)),
-                        "operational_stability": operational_stability,
-                        "regulatory_pressure": max(0.0, pressure - (0.05 if board_cohesion >= 0.55 else 0.01)),
+                        "brand_sentiment": bounded(sentiment + (0.08 if board_cohesion >= 0.55 else 0.03) - operational_reset_signal * 0.02),
+                        "operational_stability": bounded(max(0.0, operational_stability - operational_reset_signal * 0.03)),
+                        "regulatory_pressure": max(
+                            0.0,
+                            pressure - (0.05 if board_cohesion >= 0.55 else 0.01) + operational_reset_signal * 0.02,
+                        ),
                     },
                 )
             ]
@@ -404,7 +547,7 @@ class CompanyActionPack(DomainPack):
         sentiment = numeric_field(state, "brand_sentiment", 0.5)
         operational_stability = numeric_field(state, "operational_stability", 0.5)
         pressure = numeric_field(state, "regulatory_pressure", 0.35)
-        phase_risk = {"trigger": 0.45, "board-response": 0.4, "market-response": 0.3, "restructuring": 0.5, "resolution": 0.2}[phase]
+        phase_risk = {"trigger": 0.45, "board-response": 0.4, "market-response": 0.3, "restructuring": 0.36, "resolution": 0.2}[phase]
         return {
             "escalation": bounded(phase_risk + (0.5 - sentiment) * 0.24 + pressure * 0.12 + max(0.0, 0.5 - board_cohesion) * 0.1 + max(0.0, 0.5 - operational_stability) * 0.15),
             "negotiation": bounded(0.18 + sentiment * 0.28 + max(0, runway - 6) * 0.03 + board_cohesion * 0.12 + operational_stability * 0.1),

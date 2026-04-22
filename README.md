@@ -11,10 +11,10 @@ Verified on `main` on 2026-04-22:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
-  - `273 passed in 5.18s`
+  - `289 passed in 7.85s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `16 passed in 0.75s`
+  - `16 passed in 1.14s`
 
 ## Repository Layout
 
@@ -51,7 +51,7 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - the shared actor-aware default now explicitly requires `score_state()` to provide `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present
 - the CLI `simulate` command now defaults to a `10000`-iteration runtime search budget for serious analysis
 - the interstate replay slice now includes `philippines-china-shoal`
-- the built-in replay corpus now contains `22` cases, including `10` source-attributed historically anchored cases
+- the built-in replay corpus now contains `40` cases, including `28` source-attributed historically anchored cases
 - replay calibration summaries now expose structured per-case attention items and aggregated failure-type counts
 - the CLI now supports `list-builtin-replay-cases` in addition to corpus and calibration summaries
 - the CLI now supports `run-builtin-replay-retuning`, which runs the full built-in replay corpus one domain at a time through the protected retuning loop
@@ -333,6 +333,8 @@ Current boundary:
   - [2026-04-21-replay-retuning-v2.md](docs/status/2026-04-21-replay-retuning-v2.md)
 - Local neural embeddings:
   - [2026-04-22-local-neural-embeddings-v1.md](docs/status/2026-04-22-local-neural-embeddings-v1.md)
+- Replay expansion to the frozen 40-case target:
+  - [2026-04-22-replay-expansion-v3.md](docs/status/2026-04-22-replay-expansion-v3.md)
 - Direct evidence runtime editing:
   - [2026-04-21-evidence-runtime-v1.md](docs/status/2026-04-21-evidence-runtime-v1.md)
 - Broader repo status:
@@ -342,6 +344,5 @@ Current boundary:
 
 - Some broader workflow polish remains outside the Phase 3 analyst-facing structured-input surfaces.
 - The simulation engine still reports raw ranking rather than calibrated probability or confidence outputs.
-- The built-in replay corpus still has `22` cases rather than the frozen `40`-case calibration target.
 - Knowledge compiler / rule extraction, richer new-domain synthesis, and packaged Codex/Claude local integrations are still pending.
 - OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.

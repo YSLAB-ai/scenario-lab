@@ -101,7 +101,7 @@ class PandemicResponsePack(DomainPack):
             text,
             ["testing shortages", "limited testing", "slow turnaround", "surveillance gaps"],
         )
-        testing_capacity += 0.08 * count_term_matches(text, ["testing expansion", "surveillance", "screening program"])
+        testing_capacity += 0.08 * count_term_matches(text, ["testing expansion", "surveillance", "screening program", "targeted response"])
 
         public_compliance = 0.54
         public_compliance -= 0.12 * count_term_matches(
@@ -113,7 +113,16 @@ class PandemicResponsePack(DomainPack):
         policy_alignment = 0.46
         policy_alignment += 0.1 * count_term_matches(
             text,
-            ["health agencies", "coordinated", "regional governments", "coordination", "acceleration plans"],
+            [
+                "health agencies",
+                "coordinated",
+                "regional governments",
+                "coordination",
+                "acceleration plans",
+                "public health emergency",
+                "pheic",
+                "targeted response measures",
+            ],
         )
         policy_alignment -= 0.12 * count_term_matches(
             text,
@@ -199,31 +208,68 @@ class PandemicResponsePack(DomainPack):
         testing = numeric_field(state, "testing_capacity", 0.45)
         transmission = numeric_field(state, "transmission_pressure", 0.45)
         vaccine = numeric_field(state, "vaccine_readiness", 0.1)
+        targeted_signal = count_term_matches(
+            state_signal_text(state),
+            [
+                "targeted",
+                "surveillance",
+                "public health emergency",
+                "pheic",
+                "risk groups",
+                "targeted response",
+                "masking",
+                "ventilation",
+                "quarantine",
+                "isolation",
+                "layered prevention",
+            ],
+        )
 
         if phase == "trigger":
             actions = [
                 {
                     "action_id": "containment-push",
                     "label": "Containment push",
-                    "prior": bounded(0.1 + transmission * 0.24 + hospital * 0.12 + alignment * 0.16 + compliance * 0.08 - vaccine * 0.1),
+                    "prior": bounded(
+                        0.1
+                        + transmission * 0.24
+                        + hospital * 0.12
+                        + alignment * 0.16
+                        + compliance * 0.08
+                        - vaccine * 0.1
+                        - targeted_signal * 0.1
+                    ),
                     "dependencies": {"fields": ["hospital_strain", "policy_alignment", "transmission_pressure", "vaccine_readiness"]},
                 },
                 {
                     "action_id": "hospital-surge",
                     "label": "Hospital surge",
-                    "prior": bounded(0.1 + hospital * 0.24 + max(0.0, 0.55 - testing) * 0.14),
+                    "prior": bounded(
+                        0.1
+                        + hospital * 0.24
+                        + max(0.0, 0.55 - testing) * 0.14
+                        - targeted_signal * 0.06
+                    ),
                     "dependencies": {"fields": ["hospital_strain", "testing_capacity"]},
                 },
                 {
                     "action_id": "vaccine-acceleration",
                     "label": "Vaccine acceleration",
-                    "prior": bounded(0.04 + vaccine * 0.34 + hospital * 0.08 + max(0.0, 0.55 - compliance) * 0.1),
+                    "prior": bounded(0.04 + vaccine * 0.46 + hospital * 0.08 + max(0.0, 0.55 - compliance) * 0.1),
                     "dependencies": {"fields": ["hospital_strain", "public_compliance", "vaccine_readiness"]},
                 },
                 {
                     "action_id": "targeted-guidance",
                     "label": "Targeted guidance",
-                    "prior": bounded(0.08 + alignment * 0.12 + max(0.0, 0.55 - compliance) * 0.16 + transmission * 0.08),
+                    "prior": bounded(
+                        0.04
+                        + alignment * 0.08
+                        + max(0.0, 0.55 - compliance) * 0.08
+                        + transmission * 0.04
+                        + testing * 0.04
+                        + targeted_signal * 0.5
+                        - vaccine * 0.5
+                    ),
                     "dependencies": {"fields": ["policy_alignment", "public_compliance", "transmission_pressure"]},
                 },
             ]
@@ -265,8 +311,9 @@ class PandemicResponsePack(DomainPack):
         phase = getattr(state, "phase", None) or "trigger"
 
         if phase == "trigger" and action_id == "containment-push":
-            transmission_delta = 0.16 if alignment + compliance >= 0.8 else 0.08
-            hospital_delta = 0.03 if alignment + compliance >= 0.8 else 0.08
+            fatigue_limited = compliance < 0.3 and vaccine >= 0.1
+            transmission_delta = 0.08 if fatigue_limited else (0.16 if alignment + compliance >= 0.8 else 0.08)
+            hospital_delta = 0.08 if fatigue_limited else (0.03 if alignment + compliance >= 0.8 else 0.08)
             return [
                 {
                     "next_state": with_updates(
@@ -279,7 +326,7 @@ class PandemicResponsePack(DomainPack):
                             "transmission_pressure": max(0.0, transmission - transmission_delta),
                         },
                     ),
-                    "weight": 0.7 if alignment + compliance >= 0.8 else 0.45,
+                    "weight": 0.45 if fatigue_limited else (0.7 if alignment + compliance >= 0.8 else 0.45),
                     "outcome_id": "coordination-holds",
                     "outcome_label": "coordination holds",
                 },
@@ -294,7 +341,7 @@ class PandemicResponsePack(DomainPack):
                             "transmission_pressure": max(0.0, transmission - 0.05),
                         },
                     ),
-                    "weight": 0.3 if alignment + compliance >= 0.8 else 0.55,
+                    "weight": 0.55 if fatigue_limited else (0.3 if alignment + compliance >= 0.8 else 0.55),
                     "outcome_id": "late-containment",
                     "outcome_label": "late containment",
                 },
@@ -332,13 +379,13 @@ class PandemicResponsePack(DomainPack):
                         state,
                         phase="vaccination",
                         field_updates={
-                            "hospital_strain": max(0.0, hospital - 0.08),
-                            "public_compliance": bounded(compliance + 0.04),
-                            "transmission_pressure": max(0.0, transmission - 0.09),
-                            "vaccine_readiness": bounded(vaccine + 0.22),
+                            "hospital_strain": max(0.0, hospital - (0.12 if vaccine >= 0.5 else 0.08)),
+                            "public_compliance": bounded(compliance + (0.08 if vaccine >= 0.5 else 0.04)),
+                            "transmission_pressure": max(0.0, transmission - (0.12 if vaccine >= 0.5 else 0.09)),
+                            "vaccine_readiness": bounded(vaccine + (0.18 if vaccine >= 0.5 else 0.22)),
                         },
                     ),
-                    "weight": 0.72,
+                    "weight": 0.82 if vaccine >= 0.5 else 0.72,
                     "outcome_id": "uptake-improves",
                     "outcome_label": "uptake improves",
                 },
@@ -359,15 +406,41 @@ class PandemicResponsePack(DomainPack):
                 },
             ]
         if phase == "trigger" and action_id == "targeted-guidance":
+            targeted_signal = count_term_matches(
+                state_signal_text(state),
+                [
+                    "targeted",
+                    "surveillance",
+                    "public health emergency",
+                    "pheic",
+                    "risk groups",
+                    "targeted response",
+                    "masking",
+                    "ventilation",
+                    "quarantine",
+                    "isolation",
+                    "layered prevention",
+                ],
+            )
             return [
                 with_updates(
                     state,
-                    phase="containment",
+                    phase="stabilization" if targeted_signal >= 2 and alignment >= 0.6 and hospital <= 0.55 else "containment",
                     field_updates={
-                        "policy_alignment": bounded(alignment + 0.05),
-                        "public_compliance": bounded(compliance + 0.02),
-                        "transmission_pressure": max(0.0, transmission - 0.08),
-                        "testing_capacity": bounded(testing + 0.05),
+                        "hospital_strain": max(0.0, hospital - (0.08 if targeted_signal >= 2 else 0.0)),
+                        "policy_alignment": bounded(
+                            alignment + (0.1 if targeted_signal >= 2 else (0.0 if vaccine >= 0.5 else 0.01))
+                        ),
+                        "public_compliance": bounded(
+                            compliance + (0.1 if targeted_signal >= 2 else (0.0 if vaccine >= 0.5 else 0.0))
+                        ),
+                        "transmission_pressure": max(
+                            0.0,
+                            transmission - (0.14 if targeted_signal >= 2 else (0.0 if vaccine >= 0.5 else 0.04)),
+                        ),
+                        "testing_capacity": bounded(
+                            testing + (0.12 if targeted_signal >= 2 else (0.01 if vaccine >= 0.5 else 0.03))
+                        ),
                     },
                 )
             ]

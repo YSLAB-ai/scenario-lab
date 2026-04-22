@@ -53,8 +53,8 @@
       "vaccine-rollout.md": "Vaccine supply is available but booster uptake lags, logistics are uneven, and health agencies push acceleration plans.",
       "winter-wave.md": "A winter wave drives renewed hospital strain while public fatigue weakens compliance with broad restrictions."
     },
-    "expected_top_branch": "Vaccine acceleration (uptake improves)",
-    "expected_root_strategy": "Vaccine acceleration",
+    "expected_top_branch": "Targeted guidance",
+    "expected_root_strategy": "Targeted guidance",
     "expected_evidence_sources": ["vaccine-rollout", "winter-wave"],
     "expected_inferred_fields": [
       "hospital_strain",
@@ -117,11 +117,139 @@
       "cdc-booster.md": "CDC expanded booster recommendations in late November 2021 and tied them to concerns about the emerging Omicron variant.",
       "omicron-mmwr.md": "CDC said concurrent prevention strategies, including vaccination, masking, ventilation, testing, quarantine, and isolation, were recommended to slow Omicron transmission."
     },
-    "expected_top_branch": "Targeted guidance",
-    "expected_root_strategy": "Targeted guidance",
+    "expected_top_branch": "Containment push (coordination holds)",
+    "expected_root_strategy": "Containment push",
     "expected_evidence_sources": [
       "cdc-booster"
     ],
+    "expected_inferred_fields": [
+      "hospital_strain",
+      "policy_alignment",
+      "public_compliance",
+      "testing_capacity",
+      "transmission_pressure",
+      "vaccine_readiness"
+    ]
+  },
+  {
+    "run_id": "mpox-phe-2022",
+    "domain_pack": "pandemic-response",
+    "case_title": "Mpox emergency and targeted public health response in 2022",
+    "time_anchor": "2022-08",
+    "historical_outcome": "Authorities escalated surveillance and targeted public-health measures during the 2022 mpox emergency rather than returning to blanket society-wide restrictions.",
+    "sources": [
+      {
+        "title": "Mpox (monkeypox) IHR Emergency Committee",
+        "publisher": "World Health Organization",
+        "url": "https://www.who.int/groups/monkeypox-ihr-emergency-committee"
+      },
+      {
+        "title": "08/05/2022: Lab Advisory: HHS Declares Mpox a Public Health Emergency",
+        "publisher": "Centers for Disease Control and Prevention",
+        "url": "https://www.cdc.gov/locs/2022/08-05-2022-lab-advisory-hhs_declares_monkeypox_public_health_emergency.html"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess response choices after the 2022 mpox outbreak is escalated to an international and U.S. public health emergency.",
+      "focus_entities": [
+        "National Government",
+        "Public Health System"
+      ],
+      "current_development": "The WHO declares mpox a PHEIC, HHS declares a public health emergency, and authorities expand surveillance and targeted response measures.",
+      "current_stage": "trigger",
+      "time_horizon": "90d",
+      "known_constraints": [
+        "Authorities need to act quickly without reverting to blanket population-wide shutdowns",
+        "Public communication and targeted response capacity matter more than mass restrictions"
+      ],
+      "known_unknowns": [
+        "Whether targeted public-health action can contain spread without broader disruption"
+      ],
+      "suggested_entities": [
+        "Hospitals",
+        "Regional Governments"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Officials will favor targeted guidance and emergency public-health coordination over a lockdown-style response"
+      ],
+      "suggested_actors": [
+        "Hospitals",
+        "Regional Governments"
+      ]
+    },
+    "documents": {
+      "who-mpox.md": "WHO said the multi-country mpox outbreak constituted a Public Health Emergency of International Concern in July 2022.",
+      "hhs-mpox.md": "CDC said HHS declared a public health emergency in August 2022 to help public health officials respond to the mpox outbreak."
+    },
+    "expected_top_branch": "Targeted guidance",
+    "expected_root_strategy": "Targeted guidance",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "hospital_strain",
+      "policy_alignment",
+      "public_compliance",
+      "testing_capacity",
+      "transmission_pressure",
+      "vaccine_readiness"
+    ]
+  },
+  {
+    "run_id": "h1n1-vaccine-rollout-2009",
+    "domain_pack": "pandemic-response",
+    "case_title": "2009 H1N1 vaccine rollout and prioritization",
+    "time_anchor": "2009-10",
+    "historical_outcome": "The U.S. response to H1N1 moved into phased vaccine rollout and priority-group targeting once vaccine became available.",
+    "sources": [
+      {
+        "title": "CDC H1N1 Flu | Key Facts About 2009 H1N1 Flu Vaccine",
+        "publisher": "Centers for Disease Control and Prevention",
+        "url": "https://archive.cdc.gov/www_cdc_gov/h1n1flu/vaccination/vaccine_keyfacts.htm"
+      },
+      {
+        "title": "U.S. Response to 2009 H1N1 Influenza",
+        "publisher": "U.S. Department of Health and Human Services",
+        "url": "https://www.hhs.gov/sites/default/files/response-to-2009-h1n1-influenza.pdf"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess response choices once vaccine became available during the 2009 H1N1 pandemic response.",
+      "focus_entities": [
+        "U.S. Government",
+        "Public Health System"
+      ],
+      "current_development": "Vaccine becomes available during the 2009 H1N1 response and authorities shift toward priority-group vaccination while transmission continues.",
+      "current_stage": "trigger",
+      "time_horizon": "120d",
+      "known_constraints": [
+        "Initial vaccine supply has to be prioritized across high-risk groups",
+        "Seasonal influenza and pandemic response are overlapping"
+      ],
+      "known_unknowns": [
+        "How quickly vaccine rollout can reduce pressure on the health system"
+      ],
+      "suggested_entities": [
+        "Hospitals",
+        "Schools"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Officials will pivot toward vaccine acceleration and targeted prioritization once supply becomes available"
+      ],
+      "suggested_actors": [
+        "Hospitals",
+        "Schools"
+      ]
+    },
+    "documents": {
+      "cdc-h1n1-vaccine.md": "CDC said vaccine supply was being used with priority groups and described the 2009 H1N1 vaccine rollout as a central part of the response.",
+      "hhs-h1n1-response.md": "HHS described the federal response to 2009 H1N1 as moving into large-scale vaccine production and deployment."
+    },
+    "expected_top_branch": "Vaccine acceleration (uptake improves)",
+    "expected_root_strategy": "Vaccine acceleration",
+    "expected_evidence_sources": [],
     "expected_inferred_fields": [
       "hospital_strain",
       "policy_alignment",

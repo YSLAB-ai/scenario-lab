@@ -91,11 +91,25 @@ class MarketShockPack(DomainPack):
             ["credit spreads", "cross-asset", "spillover", "funding market", "dealers", "global equities"],
         )
         contagion_risk += 0.08 * count_term_matches(text, ["money market", "treasury market", "banks"])
+        contagion_risk += 0.06 * count_term_matches(text, ["confidence crisis", "depositor confidence", "bank failures"])
 
         policy_optionality = 0.3
         policy_optionality += 0.12 * count_term_matches(
             text,
             ["swap lines", "market functioning", "facility", "liquidity tools", "backstop", "authorities will prioritize"],
+        )
+        policy_optionality += 0.12 * count_term_matches(
+            text,
+            [
+                "forced takeover",
+                "takeover",
+                "merger",
+                "receivership",
+                "transfer",
+                "guarantees",
+                "support measures",
+                "protect depositors",
+            ],
         )
         policy_optionality -= 0.08 * count_term_matches(text, ["credibility at stake", "emergency rate hike", "surprise decision"])
 
@@ -121,6 +135,19 @@ class MarketShockPack(DomainPack):
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
         optionality = numeric_field(state, "policy_optionality", 0.3)
+        backstop_signal = count_term_matches(
+            state_signal_text(state),
+            [
+                "forced takeover",
+                "takeover",
+                "merger",
+                "receivership",
+                "transfer",
+                "guarantees",
+                "support measures",
+                "protect depositors",
+            ],
+        )
         if phase == "trigger":
             actions = [
                 {
@@ -132,7 +159,7 @@ class MarketShockPack(DomainPack):
                 {
                     "action_id": "emergency-liquidity",
                     "label": "Emergency liquidity",
-                    "prior": bounded(0.14 + liquidity * 0.18 + contagion * 0.18 + optionality * 0.14),
+                    "prior": bounded(0.14 + liquidity * 0.18 + contagion * 0.18 + optionality * 0.14 - backstop_signal * 0.04),
                     "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_optionality"]},
                 },
                 {
@@ -144,7 +171,14 @@ class MarketShockPack(DomainPack):
                 {
                     "action_id": "coordinated-backstop",
                     "label": "Coordinated backstop",
-                    "prior": bounded(0.1 + liquidity * 0.12 + contagion * 0.16 + credibility * 0.08 + optionality * 0.16),
+                    "prior": bounded(
+                        0.1
+                        + liquidity * 0.12
+                        + contagion * 0.16
+                        + credibility * 0.08
+                        + optionality * 0.16
+                        + backstop_signal * 0.14
+                    ),
                     "dependencies": {"fields": ["contagion_risk", "liquidity_stress", "policy_credibility", "policy_optionality"]},
                 },
             ]
@@ -176,6 +210,19 @@ class MarketShockPack(DomainPack):
         rates = numeric_field(state, "rate_pressure", 0.55)
         credibility = numeric_field(state, "policy_credibility", 0.5)
         optionality = numeric_field(state, "policy_optionality", 0.3)
+        backstop_signal = count_term_matches(
+            state_signal_text(state),
+            [
+                "forced takeover",
+                "takeover",
+                "merger",
+                "receivership",
+                "transfer",
+                "guarantees",
+                "support measures",
+                "protect depositors",
+            ],
+        )
         phase = getattr(state, "phase", None) or "trigger"
 
         if phase == "trigger" and action_id == "hawkish-guidance":
@@ -223,9 +270,9 @@ class MarketShockPack(DomainPack):
                     state,
                     phase="policy-response",
                     field_updates={
-                        "contagion_risk": max(0.0, contagion - 0.1),
-                        "liquidity_stress": max(0.0, liquidity - 0.12),
-                        "policy_credibility": credibility + 0.12,
+                        "contagion_risk": max(0.0, contagion - (0.14 if backstop_signal >= 2 else 0.1)),
+                        "liquidity_stress": max(0.0, liquidity - (0.15 if backstop_signal >= 2 else 0.12)),
+                        "policy_credibility": credibility + (0.14 if backstop_signal >= 2 else 0.12),
                         "policy_optionality": optionality + 0.08,
                     },
                 )

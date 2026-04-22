@@ -264,7 +264,7 @@ def test_run_builtin_replay_retuning_command_reports_multi_domain_summary(tmp_pa
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["domain_count"] == 2
-    assert payload["case_count"] == 6
+    assert payload["case_count"] == 11
     assert payload["weak_domain_count"] == 0
     assert payload["domains"] == ["market-shock", "regulatory-enforcement"]
     assert payload["generated_suggestion_count"] == 0

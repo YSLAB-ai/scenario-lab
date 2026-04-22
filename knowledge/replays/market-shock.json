@@ -178,5 +178,194 @@
       "policy_optionality",
       "rate_pressure"
     ]
+  },
+  {
+    "run_id": "credit-suisse-ubs-2023",
+    "domain_pack": "market-shock",
+    "case_title": "Credit Suisse crisis and the 2023 UBS rescue package",
+    "time_anchor": "2023-03",
+    "historical_outcome": "Swiss authorities used extraordinary support and a forced merger to stabilize Credit Suisse and contain broader market disruption.",
+    "sources": [
+      {
+        "title": "FINMA approves merger of UBS and Credit Suisse",
+        "publisher": "FINMA",
+        "url": "https://www.finma.ch/en/news/2023/03/20230319-mm-cs-ubs/"
+      },
+      {
+        "title": "Übernahme der Credit Suisse durch die UBS",
+        "publisher": "Swiss Federal Department of Finance",
+        "url": "https://www.efd.admin.ch/de/credit-suisse"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess market scenarios during the March 2023 Credit Suisse crisis and rescue merger with UBS.",
+      "focus_entities": [
+        "Swiss Authorities",
+        "Swiss Banking System"
+      ],
+      "current_development": "A crisis of confidence at Credit Suisse triggers extraordinary liquidity support, official guarantees, and a forced takeover by UBS to preserve stability.",
+      "current_stage": "trigger",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "Authorities must preserve depositor confidence and market functioning quickly",
+        "The rescue package has to limit wider contagion across the financial system"
+      ],
+      "known_unknowns": [
+        "Whether the rescue package will stabilize confidence without creating broader market spillovers"
+      ],
+      "suggested_entities": [
+        "Swiss National Bank",
+        "UBS"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Authorities will prioritize a coordinated stabilization package over a passive wait-and-see approach"
+      ],
+      "suggested_actors": [
+        "Swiss National Bank",
+        "UBS"
+      ]
+    },
+    "documents": {
+      "finma-merger.md": "FINMA said the takeover of Credit Suisse by UBS, together with official support measures, would ensure stability for customers and the Swiss financial centre.",
+      "federal-support.md": "Swiss authorities described an emergency package that enabled the UBS takeover of Credit Suisse and prevented greater harm to financial markets."
+    },
+    "expected_top_branch": "Coordinated backstop",
+    "expected_root_strategy": "Coordinated backstop",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "contagion_risk",
+      "liquidity_stress",
+      "policy_credibility",
+      "policy_optionality",
+      "rate_pressure"
+    ]
+  },
+  {
+    "run_id": "first-republic-2023",
+    "domain_pack": "market-shock",
+    "case_title": "First Republic failure and FDIC-assisted transfer",
+    "time_anchor": "2023-05",
+    "historical_outcome": "Authorities resolved First Republic through FDIC receivership and a rapid transfer to JPMorgan in order to protect depositors and contain further banking contagion.",
+    "sources": [
+      {
+        "title": "JPMorgan Chase Bank, National Association, Columbus, Ohio Assumes All the Deposits of First Republic Bank, San Francisco, California",
+        "publisher": "FDIC",
+        "url": "https://www.fdic.gov/news/press-releases/2023/pr23034.html"
+      },
+      {
+        "title": "FDIC Releases Report Detailing Supervision of the Former First Republic Bank, San Francisco, California",
+        "publisher": "FDIC",
+        "url": "https://www.fdic.gov/news/press-releases/2023/pr23073.html"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess market scenarios after the May 2023 failure of First Republic Bank and the FDIC-assisted transfer to JPMorgan.",
+      "focus_entities": [
+        "FDIC",
+        "U.S. Banking System"
+      ],
+      "current_development": "First Republic fails after a confidence crisis, the FDIC steps in as receiver, and substantially all deposits and assets move to JPMorgan.",
+      "current_stage": "trigger",
+      "time_horizon": "14d",
+      "known_constraints": [
+        "Depositor confidence and banking-system stability must be preserved",
+        "Authorities need to limit spillovers from the spring 2023 bank failures"
+      ],
+      "known_unknowns": [
+        "Whether the transfer will fully contain contagion pressure at other regional banks"
+      ],
+      "suggested_entities": [
+        "Treasury",
+        "JPMorgan"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Authorities will prioritize depositor protection and confidence stabilization over moral-hazard messaging during the acute phase"
+      ],
+      "suggested_actors": [
+        "Treasury",
+        "JPMorgan"
+      ]
+    },
+    "documents": {
+      "fdic-transfer.md": "The FDIC said First Republic was closed and all deposits plus substantially all assets were transferred to JPMorgan to protect depositors and minimize disruption.",
+      "fdic-review.md": "The FDIC later said a loss of market and depositor confidence following the March 2023 bank failures was the primary cause of First Republic's failure."
+    },
+    "expected_top_branch": "Coordinated backstop",
+    "expected_root_strategy": "Coordinated backstop",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "contagion_risk",
+      "liquidity_stress",
+      "policy_credibility",
+      "policy_optionality",
+      "rate_pressure"
+    ]
+  },
+  {
+    "run_id": "mmlf-2020",
+    "domain_pack": "market-shock",
+    "case_title": "Money Market Mutual Fund Liquidity Facility during March 2020 market stress",
+    "time_anchor": "2020-03",
+    "historical_outcome": "The Federal Reserve answered acute short-term funding stress by launching targeted liquidity facilities to support money market functioning rather than relying on pure guidance alone.",
+    "sources": [
+      {
+        "title": "Money Market Mutual Fund Liquidity Facility",
+        "publisher": "Federal Reserve Board",
+        "url": "https://www.federalreserve.gov/monetarypolicy/mmlf.htm"
+      },
+      {
+        "title": "Commercial Paper Funding Facility",
+        "publisher": "Federal Reserve Board",
+        "url": "https://www.federalreserve.gov/monetarypolicy/cpff.htm"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess market scenarios during the March 2020 dash-for-cash period when the Federal Reserve launched emergency short-term funding facilities.",
+      "focus_entities": [
+        "Federal Reserve",
+        "Money Markets"
+      ],
+      "current_development": "Acute funding stress and redemption pressure in short-term markets push the Federal Reserve to launch emergency facilities to restore liquidity and market functioning.",
+      "current_stage": "trigger",
+      "time_horizon": "14d",
+      "known_constraints": [
+        "Short-term funding markets need to keep functioning for households and businesses",
+        "Authorities need to relieve liquidity stress quickly"
+      ],
+      "known_unknowns": [
+        "Whether targeted liquidity facilities will be enough to restore confidence in money markets"
+      ],
+      "suggested_entities": [
+        "Treasury",
+        "Primary Dealers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Authorities will use emergency liquidity tools rapidly rather than waiting for markets to self-correct"
+      ],
+      "suggested_actors": [
+        "Treasury",
+        "Primary Dealers"
+      ]
+    },
+    "documents": {
+      "mmlf.md": "The Federal Reserve established the Money Market Mutual Fund Liquidity Facility to support the flow of credit and help money market funds meet redemption pressure.",
+      "cpff.md": "The Federal Reserve established the Commercial Paper Funding Facility to support the issuance market for short-term debt and keep credit flowing to households and businesses."
+    },
+    "expected_top_branch": "Emergency liquidity",
+    "expected_root_strategy": "Emergency liquidity",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "contagion_risk",
+      "liquidity_stress",
+      "policy_credibility",
+      "policy_optionality",
+      "rate_pressure"
+    ]
   }
 ]

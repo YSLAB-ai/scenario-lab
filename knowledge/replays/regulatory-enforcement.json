@@ -181,5 +181,131 @@
       "public_attention",
       "remedy_severity"
     ]
+  },
+  {
+    "run_id": "wells-fargo-cfpb-2022",
+    "domain_pack": "regulatory-enforcement",
+    "case_title": "Wells Fargo 2022 CFPB order and continuing remediation pressure",
+    "time_anchor": "2022-12",
+    "historical_outcome": "Wells Fargo stayed in a remediation-and-restrictions path under repeated official enforcement rather than winning a quick adversarial reset.",
+    "sources": [
+      {
+        "title": "CFPB Orders Wells Fargo to Pay $3.7 Billion for Widespread Mismanagement of Auto Loans, Mortgages, and Deposit Accounts",
+        "publisher": "Consumer Financial Protection Bureau",
+        "url": "https://www.consumerfinance.gov/about-us/newsroom/cfpb-orders-wells-fargo-to-pay-37-billion-for-widespread-mismanagement-of-auto-loans-mortgages-and-deposit-accounts/?s=09"
+      },
+      {
+        "title": "OCC Assesses $250 Million Civil Money Penalty, Issues Cease and Desist Order Against Wells Fargo",
+        "publisher": "Office of the Comptroller of the Currency",
+        "url": "https://www.occ.treas.gov/news-issuances/news-releases/2021/nr-occ-2021-95.html"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Wells Fargo's regulatory response path after the December 2022 CFPB order layered onto existing official restrictions.",
+      "focus_entities": [
+        "Wells Fargo",
+        "U.S. Regulators"
+      ],
+      "current_development": "The CFPB orders Wells Fargo to pay billions in redress and penalties, while existing official restrictions and remediation obligations remain in force.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "The bank must remediate under intense public scrutiny and repeated official action",
+        "Ongoing business restrictions and compliance weaknesses remain material"
+      ],
+      "known_unknowns": [
+        "Whether the bank can satisfy regulators quickly enough to reduce pressure on future activities"
+      ],
+      "suggested_entities": [
+        "External Counsel",
+        "Independent Monitor"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The bank will prioritize remediation and negotiated compliance over a full adversarial fight"
+      ],
+      "suggested_actors": [
+        "External Counsel",
+        "Independent Monitor"
+      ]
+    },
+    "documents": {
+      "cfpb-order.md": "The CFPB ordered Wells Fargo to provide consumer redress and pay a major penalty for widespread mismanagement across multiple product lines.",
+      "occ-restrictions.md": "The OCC said Wells Fargo still faced a cease and desist order, a civil money penalty, and limits on certain future activities until problems were addressed."
+    },
+    "expected_top_branch": "Internal remediation",
+    "expected_root_strategy": "Internal remediation",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "compliance_posture",
+      "enforcement_momentum",
+      "litigation_readiness",
+      "public_attention",
+      "remedy_severity"
+    ]
+  },
+  {
+    "run_id": "danske-bank-aml-2022",
+    "domain_pack": "regulatory-enforcement",
+    "case_title": "Danske Bank 2022 AML guilty plea and compliance overhaul",
+    "time_anchor": "2022-12",
+    "historical_outcome": "Danske Bank resolved the case through guilty plea, forfeiture, and compliance overhaul rather than choosing a prolonged adversarial strategy.",
+    "sources": [
+      {
+        "title": "Danske Bank Pleads Guilty to Fraud on U.S. Banks in Multi-Billion Dollar Scheme to Access the U.S. Financial System",
+        "publisher": "U.S. Department of Justice",
+        "url": "https://www.justice.gov/archives/opa/pr/danske-bank-pleads-guilty-fraud-us-banks-multi-billion-dollar-scheme-access-us-financial"
+      },
+      {
+        "title": "SEC v. Danske Bank A/S",
+        "publisher": "U.S. Securities and Exchange Commission",
+        "url": "https://www.sec.gov/enforcement-litigation/distributions-harmed-investors/sec-v-danske-bank"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Danske Bank's regulatory response path after its December 2022 U.S. AML resolution.",
+      "focus_entities": [
+        "Danske Bank",
+        "U.S. Regulators"
+      ],
+      "current_development": "Danske Bank pleads guilty, agrees to multibillion-dollar forfeiture, and commits to compliance changes after U.S. authorities conclude a major AML case.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "The bank must preserve operations while overhauling AML controls",
+        "Official scrutiny remains intense across domestic and foreign authorities"
+      ],
+      "known_unknowns": [
+        "Whether the compliance overhaul will satisfy authorities quickly enough to stabilize the bank's standing"
+      ],
+      "suggested_entities": [
+        "External Counsel",
+        "Independent Monitor"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The bank will favor remediation and compliance overhaul over a renewed litigation-heavy posture"
+      ],
+      "suggested_actors": [
+        "External Counsel",
+        "Independent Monitor"
+      ]
+    },
+    "documents": {
+      "doj-danske.md": "The Justice Department said Danske Bank pleaded guilty, agreed to forfeit over 2 billion dollars, and would implement significant changes to AML controls.",
+      "sec-danske.md": "The SEC case documentation described the parallel U.S. securities action arising from the same AML control failures."
+    },
+    "expected_top_branch": "Internal remediation",
+    "expected_root_strategy": "Internal remediation",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "compliance_posture",
+      "enforcement_momentum",
+      "litigation_readiness",
+      "public_attention",
+      "remedy_severity"
+    ]
   }
 ]
