@@ -163,5 +163,67 @@
       "operational_stability",
       "regulatory_pressure"
     ]
+  },
+  {
+    "run_id": "boeing-max9-2024",
+    "domain_pack": "company-action",
+    "case_title": "Boeing 737-9 MAX grounding and quality reset",
+    "time_anchor": "2024-01",
+    "historical_outcome": "After the Alaska Airlines Flight 1282 incident, Boeing faced FAA grounding and production restrictions and moved into a broader stakeholder confidence and safety-quality reset under intensified regulatory oversight.",
+    "sources": [
+      {
+        "title": "FAA Halts Boeing MAX Production Expansion to Improve Quality Control",
+        "publisher": "Federal Aviation Administration",
+        "url": "https://www.faa.gov/newsroom/faa-halts-boeing-max-production-expansion-improve-quality-control-also-lays-out-extensive"
+      },
+      {
+        "title": "737-9 Updates: Boeing to Hold Quality Stand Downs",
+        "publisher": "Boeing",
+        "url": "https://www.boeing.com/737-9-updates/jan-23-2024-boeing-to-hold-quality-stand-downs"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Boeing strategy after the January 2024 737-9 MAX incident, grounding, and FAA production restrictions.",
+      "focus_entities": [
+        "Boeing"
+      ],
+      "current_development": "After the Alaska Airlines Flight 1282 incident, the FAA grounded affected 737-9 MAX aircraft, halted Boeing's planned production expansion, and intensified quality oversight.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "Safety and production quality must be restored under direct regulatory oversight",
+        "Airline customers need operational credibility and delivery certainty"
+      ],
+      "known_unknowns": [
+        "Whether Boeing can stabilize production quality fast enough to restore stakeholder confidence"
+      ],
+      "suggested_entities": [
+        "FAA",
+        "Airline Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Management will prioritize a visible safety and quality reset over aggressive short-term expansion"
+      ],
+      "suggested_actors": [
+        "FAA",
+        "Airline Customers"
+      ]
+    },
+    "documents": {
+      "faa-max9.md": "The FAA said it grounded affected 737-9 MAX aircraft, blocked Boeing from expanding MAX production, and increased oversight of Boeing and its suppliers after the January 2024 incident.",
+      "boeing-quality-plan.md": "Boeing said it would hold quality stand downs and focus production teams on safety and quality improvements after the 737-9 MAX incident."
+    },
+    "expected_top_branch": "Stakeholder reset",
+    "expected_root_strategy": "Stakeholder reset",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
   }
 ]

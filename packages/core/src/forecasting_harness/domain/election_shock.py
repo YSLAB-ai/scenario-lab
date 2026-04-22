@@ -315,7 +315,7 @@ class ElectionShockPack(DomainPack):
                         "coalition_fragility": max(0.0, coalition - 0.08),
                         "donor_confidence": donors + 0.04,
                         "poll_margin": margin + 0.25,
-                        "message_discipline": discipline + 0.03,
+                        "message_discipline": discipline + 0.05,
                     },
                 )
             ]

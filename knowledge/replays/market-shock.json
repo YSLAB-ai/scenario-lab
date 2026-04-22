@@ -115,5 +115,68 @@
       "policy_optionality",
       "rate_pressure"
     ]
+  },
+  {
+    "run_id": "uk-gilt-intervention-2022",
+    "domain_pack": "market-shock",
+    "case_title": "Bank of England temporary gilt purchases during the 2022 gilt crisis",
+    "time_anchor": "2022-09",
+    "historical_outcome": "The Bank of England intervened with temporary and targeted gilt purchases and liquidity support to restore orderly market conditions during the gilt market crisis.",
+    "sources": [
+      {
+        "title": "Asset Purchase Facility: Gilt Sales – Market Notice 29 September 2022",
+        "publisher": "Bank of England",
+        "url": "https://www.bankofengland.co.uk/markets/market-notices/2022/september/asset-purchase-facility-gilt-sales-provisional-market-notice-29-september-2022"
+      },
+      {
+        "title": "Bank of England statement on end of gilt market operations",
+        "publisher": "Bank of England",
+        "url": "https://www.bankofengland.co.uk/news/2022/october/statement-on-end-of-gilt-market-operations"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess market scenarios during the September 2022 UK gilt market crisis and Bank of England intervention.",
+      "focus_entities": [
+        "Bank of England",
+        "UK Gilt Market"
+      ],
+      "current_development": "After severe dysfunction in the long-dated gilt market and stress around liability-driven investment funds, the Bank of England launches temporary gilt purchases to restore orderly conditions.",
+      "current_stage": "trigger",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "Financial stability and orderly market functioning must be restored quickly",
+        "Authorities also need to preserve monetary policy credibility"
+      ],
+      "known_unknowns": [
+        "Whether the intervention will contain contagion without becoming a permanent backstop"
+      ],
+      "suggested_entities": [
+        "Pension Funds",
+        "UK Treasury"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Authorities will prioritize financial stability and market functioning over a rigid commitment to planned balance-sheet sales during the acute stress window"
+      ],
+      "suggested_actors": [
+        "Pension Funds",
+        "UK Treasury"
+      ]
+    },
+    "documents": {
+      "boe-market-notice.md": "The Bank of England said it would conduct temporary purchases of long-dated UK government bonds to restore orderly market conditions and postponed planned gilt sales.",
+      "boe-end-operations.md": "The Bank later said the temporary and targeted gilt purchases had increased market resilience and were intended to give liability-driven investment funds time to address risks."
+    },
+    "expected_top_branch": "Emergency liquidity",
+    "expected_root_strategy": "Emergency liquidity",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "contagion_risk",
+      "liquidity_stress",
+      "policy_credibility",
+      "policy_optionality",
+      "rate_pressure"
+    ]
   }
 ]

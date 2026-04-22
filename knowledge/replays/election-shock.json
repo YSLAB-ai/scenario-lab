@@ -49,5 +49,70 @@
       "poll_margin",
       "turnout_energy"
     ]
+  },
+  {
+    "run_id": "south-africa-gnu-2024",
+    "domain_pack": "election-shock",
+    "case_title": "South Africa 2024 coalition negotiations and Government of National Unity",
+    "time_anchor": "2024-06",
+    "historical_outcome": "After losing its parliamentary majority, the ANC moved toward a Government of National Unity and cross-party dealmaking instead of trying to govern alone.",
+    "sources": [
+      {
+        "title": "Handover of Final List of Elected Representatives for National Assembly and Provincial Legislatures",
+        "publisher": "Electoral Commission of South Africa",
+        "url": "https://www.elections.org.za/pw/News-And-Media/News-List/News/News-Article/Handover-of-Final-List-of-Elected-Representatives-for-National-Assembly-and-Provincial-Legislatures---Remarks-by-Chairperson-Mosotho-Moepya?a=AISDGvpz75ps1usOfX7oiq5kZQbN79TDVUamECkav6c%3D"
+      },
+      {
+        "title": "ANC Welcomes Political Parties to the Government of National Unity",
+        "publisher": "African National Congress",
+        "url": "https://www.anc1912.org.za/anc-welcomes-political-parties-to-the-government-of-national-unity/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess coalition-shaping dynamics after South Africa's 2024 election produces no outright majority.",
+      "focus_entities": [
+        "ANC",
+        "Democratic Alliance"
+      ],
+      "current_development": "The ANC loses its governing majority after the 2024 election and coalition negotiations intensify around a possible Government of National Unity.",
+      "current_stage": "coalition-shaping",
+      "time_horizon": "30d",
+      "known_constraints": [
+        "No single party has a full governing mandate",
+        "Investors and voters want a stable governing arrangement quickly"
+      ],
+      "known_unknowns": [
+        "Whether coalition partners can align on a workable governing framework"
+      ],
+      "suggested_entities": [
+        "Inkatha Freedom Party",
+        "Party Leadership"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Coalition bargaining and elite dealmaking will matter more than fresh persuasion"
+      ],
+      "suggested_actors": [
+        "Inkatha Freedom Party",
+        "Party Leadership"
+      ]
+    },
+    "documents": {
+      "iec-results.md": "South Africa's 2024 election produced a fragmented parliament with no single party able to govern alone and coalition talks becoming decisive.",
+      "gnu-statement.md": "The ANC said the election result required parties to work together and welcomed the formation of a Government of National Unity built around a statement of intent."
+    },
+    "expected_top_branch": "Targeted deal",
+    "expected_root_strategy": "Targeted deal",
+    "expected_evidence_sources": [
+      "iec-results"
+    ],
+    "expected_inferred_fields": [
+      "coalition_fragility",
+      "donor_confidence",
+      "message_discipline",
+      "poll_margin",
+      "turnout_energy"
+    ]
   }
 ]

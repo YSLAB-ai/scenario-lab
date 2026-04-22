@@ -364,6 +364,19 @@ def run_replay_retuning_command(
     print(json.dumps(summary))
 
 
+@app.command("run-builtin-replay-retuning")
+def run_builtin_replay_retuning_command(
+    workspace_root: Path = typer.Option(Path(".")),
+    domain_pack: list[str] | None = typer.Option(None),
+    no_branch: bool = typer.Option(False),
+) -> None:
+    summary = _evolution_service(workspace_root).run_builtin_replay_retuning(
+        domain_slugs=domain_pack,
+        create_branch=not no_branch,
+    )
+    print(json.dumps(summary))
+
+
 @app.command("summarize-domain-evolution")
 def summarize_domain_evolution_command(
     workspace_root: Path = typer.Option(Path(".")),

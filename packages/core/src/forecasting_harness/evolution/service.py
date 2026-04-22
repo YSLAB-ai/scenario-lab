@@ -10,6 +10,7 @@ from pathlib import Path
 from forecasting_harness.domain.template_utils import tokenize_text
 from forecasting_harness.evolution.models import DomainBlueprint, DomainEvolutionCandidate, DomainSuggestion, DomainWeaknessBrief
 from forecasting_harness.evolution.storage import EvolutionStorage
+from forecasting_harness.knowledge import load_builtin_replay_cases
 from forecasting_harness.replay import ReplayCase, ReplaySuiteResult, run_replay_suite, summarize_calibration
 
 
@@ -338,6 +339,45 @@ class DomainEvolutionService:
         }
         self.evolution_storage.write_report(domain_slug, "retuning-latest.json", summary)
         return summary
+
+    def run_builtin_replay_retuning(
+        self,
+        *,
+        domain_slugs: list[str] | None = None,
+        create_branch: bool = True,
+    ) -> dict[str, object]:
+        builtin_cases = load_builtin_replay_cases(domain_packs=domain_slugs)
+        grouped_cases: dict[str, list[ReplayCase]] = {}
+        for case in builtin_cases:
+            grouped_cases.setdefault(case.domain_pack, []).append(case)
+
+        ordered_domains = sorted(grouped_cases)
+        per_domain: dict[str, dict[str, object]] = {}
+        case_count = 0
+        weak_domain_count = 0
+        generated_suggestion_count = 0
+        for domain_slug in ordered_domains:
+            summary = self.run_replay_retuning(
+                domain_slug,
+                replay_cases=grouped_cases[domain_slug],
+                create_branch=create_branch,
+            )
+            per_domain[domain_slug] = summary
+            case_count += int(summary["case_count"])
+            generated_suggestion_count += int(summary["generated_suggestion_count"])
+            if int(summary["weak_case_count"]) > 0:
+                weak_domain_count += 1
+
+        result = {
+            "domains": ordered_domains,
+            "domain_count": len(ordered_domains),
+            "case_count": case_count,
+            "weak_domain_count": weak_domain_count,
+            "generated_suggestion_count": generated_suggestion_count,
+            "per_domain": per_domain,
+        }
+        self.evolution_storage.write_report("_builtin", "retuning-latest.json", result)
+        return result
 
     def synthesize_candidate(
         self,

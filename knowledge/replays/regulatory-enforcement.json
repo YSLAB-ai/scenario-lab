@@ -115,5 +115,71 @@
       "public_attention",
       "remedy_severity"
     ]
+  },
+  {
+    "run_id": "td-bank-aml-2024",
+    "domain_pack": "regulatory-enforcement",
+    "case_title": "TD Bank AML settlement, monitorship, and growth restrictions",
+    "time_anchor": "2024-10",
+    "historical_outcome": "TD Bank accepted guilty pleas, major penalties, a monitorship, and growth restrictions, moving into remediation rather than a prolonged adversarial fight.",
+    "sources": [
+      {
+        "title": "TD Bank Pleads Guilty to Bank Secrecy Act and Money Laundering Conspiracy Violations in $1.8B Resolution",
+        "publisher": "U.S. Department of Justice",
+        "url": "https://www.justice.gov/archives/opa/pr/td-bank-pleads-guilty-bank-secrecy-act-and-money-laundering-conspiracy-violations-18b"
+      },
+      {
+        "title": "OCC Issues Cease and Desist Order, Assesses $450 Million Civil Money Penalty, and Imposes Growth Restriction Upon TD Bank, N.A. for BSA/AML Deficiencies",
+        "publisher": "Office of the Comptroller of the Currency",
+        "url": "https://www.occ.treas.gov/news-issuances/news-releases/2024/nr-occ-2024-116.html"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess TD Bank strategy after the October 2024 U.S. AML resolution, monitorship, and growth restriction.",
+      "focus_entities": [
+        "TD Bank",
+        "U.S. Regulators"
+      ],
+      "current_development": "TD Bank pleads guilty to AML-related charges, accepts large penalties, a monitorship, and a growth restriction, and must remediate major compliance failures under direct official scrutiny.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "The bank must preserve operations while meeting remediation and monitorship obligations",
+        "Compliance controls are under intense official and public scrutiny"
+      ],
+      "known_unknowns": [
+        "Whether remediation will satisfy regulators quickly enough to ease the growth restriction"
+      ],
+      "suggested_entities": [
+        "Independent Monitor",
+        "External Counsel"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The bank will prioritize remediation and negotiated compliance over an aggressive adversarial stance"
+      ],
+      "suggested_actors": [
+        "Independent Monitor",
+        "External Counsel"
+      ]
+    },
+    "documents": {
+      "doj-td-resolution.md": "The Justice Department said TD Bank pleaded guilty, agreed to over 1.8 billion dollars in penalties, and must address longstanding AML compliance failures.",
+      "occ-td-order.md": "The OCC imposed a cease and desist order, a major civil money penalty, and a growth restriction on TD Bank for BSA and AML deficiencies."
+    },
+    "expected_top_branch": "Internal remediation",
+    "expected_root_strategy": "Internal remediation",
+    "expected_evidence_sources": [
+      "doj-td-resolution",
+      "occ-td-order"
+    ],
+    "expected_inferred_fields": [
+      "compliance_posture",
+      "enforcement_momentum",
+      "litigation_readiness",
+      "public_attention",
+      "remedy_severity"
+    ]
   }
 ]

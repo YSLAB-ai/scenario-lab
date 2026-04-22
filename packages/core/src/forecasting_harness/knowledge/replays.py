@@ -30,15 +30,20 @@ class ReplayCatalogEntry(BaseModel):
     source_count: int = 0
 
 
-def load_builtin_replay_cases() -> list[ReplayCase]:
+def load_builtin_replay_cases(*, domain_packs: list[str] | None = None) -> list[ReplayCase]:
     replay_root = _replay_root()
     if not replay_root.exists():
         raise FileNotFoundError(replay_root)
 
+    allowed = set(domain_packs or [])
     cases: list[ReplayCase] = []
     for replay_path in sorted(replay_root.glob("*.json")):
         payload = json.loads(replay_path.read_text(encoding="utf-8"))
-        cases.extend(ReplayCase.model_validate(item) for item in payload)
+        for item in payload:
+            case = ReplayCase.model_validate(item)
+            if allowed and case.domain_pack not in allowed:
+                continue
+            cases.append(case)
     return cases
 
 

@@ -11,10 +11,10 @@ Verified on `main` on 2026-04-21:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - `262 passed in 3.57s`
+  - `270 passed in 4.08s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `16 passed in 0.66s`
+  - `16 passed in 0.63s`
 
 ## Repository Layout
 
@@ -51,9 +51,10 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - the shared actor-aware default now explicitly requires `score_state()` to provide `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present
 - the CLI `simulate` command now defaults to a `10000`-iteration runtime search budget for serious analysis
 - the interstate replay slice now includes `philippines-china-shoal`
-- the built-in replay corpus now contains `18` cases, including `6` source-attributed historically anchored cases
+- the built-in replay corpus now contains `22` cases, including `10` source-attributed historically anchored cases
 - replay calibration summaries now expose structured per-case attention items and aggregated failure-type counts
 - the CLI now supports `list-builtin-replay-cases` in addition to corpus and calibration summaries
+- the CLI now supports `run-builtin-replay-retuning`, which runs the full built-in replay corpus one domain at a time through the protected retuning loop
 
 Recent correctness fixes included in `main`:
 
@@ -65,6 +66,7 @@ Recent correctness fixes included in `main`:
 Detailed recent notes:
 - [2026-04-21-actor-utility-pass.md](docs/status/2026-04-21-actor-utility-pass.md)
 - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
+- [2026-04-21-replay-retuning-v2.md](docs/status/2026-04-21-replay-retuning-v2.md)
 
 ## Install
 
@@ -265,6 +267,7 @@ forecast-harness list-builtin-replay-cases
 forecast-harness run-builtin-replay-suite
 forecast-harness summarize-replay-calibration
 forecast-harness run-replay-retuning --domain-pack company-action --no-branch
+forecast-harness run-builtin-replay-retuning --workspace-root /tmp/replay-retuning --no-branch
 ```
 
 ## Adapters
@@ -294,6 +297,8 @@ Current boundary:
   - [2026-04-21-adapter-runtime-v1.md](docs/status/2026-04-21-adapter-runtime-v1.md)
 - Replay retuning:
   - [2026-04-21-replay-retuning-v1.md](docs/status/2026-04-21-replay-retuning-v1.md)
+- Broader replay history plus retuning:
+  - [2026-04-21-replay-retuning-v2.md](docs/status/2026-04-21-replay-retuning-v2.md)
 - Direct evidence runtime editing:
   - [2026-04-21-evidence-runtime-v1.md](docs/status/2026-04-21-evidence-runtime-v1.md)
 - Broader repo status:
@@ -302,5 +307,5 @@ Current boundary:
 ## Current Gaps
 
 - The built-in domain packs are templates, not mature validated forecasting models.
-- The replay corpus is still modest rather than broad.
+- The replay corpus is broader than before and now has `22` built-in cases, but it is still modest rather than a large historical library.
 - Some broader bulk-edit workflows remain file-backed, but direct evidence-packet replacement is now available through structured CLI/runtime inputs.

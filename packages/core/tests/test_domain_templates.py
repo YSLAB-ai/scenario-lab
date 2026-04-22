@@ -4,6 +4,7 @@ import pytest
 
 from forecasting_harness.knowledge.manifests import AdaptiveActionBias, DomainManifest
 from forecasting_harness.models import Actor, BehaviorProfile, BeliefField, BeliefState
+from forecasting_harness.objectives import objective_profile_by_name
 from forecasting_harness.workflow.models import IntakeDraft
 
 
@@ -263,6 +264,36 @@ def test_company_action_pack_scores_actor_impacts_from_company_state() -> None:
     assert actor_impacts["acme-corp"]["reputational_sensitivity"] > 0.7
     assert actor_impacts["acme-corp"]["economic_pain_tolerance"] < 0.35
     assert actor_impacts["regulator"]["negotiation_openness"] > 0.5
+
+
+def test_election_pack_prefers_targeted_deal_during_coalition_shaping() -> None:
+    from forecasting_harness.domain.election_shock import ElectionShockPack
+
+    pack = ElectionShockPack()
+    state = _state(
+        "election-shock",
+        "coalition-shaping",
+        {
+            "coalition_fragility": _field(0.34),
+            "donor_confidence": _field(0.48),
+            "message_discipline": _field(0.5),
+            "poll_margin": _field(0.0),
+            "turnout_energy": _field(0.5),
+        },
+    )
+
+    actions = {action["action_id"]: action for action in pack.propose_actions(state)}
+    targeted_next = pack.sample_transition(state, actions["targeted-deal"])[0]
+    discipline_next = pack.sample_transition(state, actions["discipline-message"])[0]
+
+    targeted_state = targeted_next["next_state"] if isinstance(targeted_next, dict) else targeted_next
+    discipline_state = discipline_next["next_state"] if isinstance(discipline_next, dict) else discipline_next
+
+    lens = objective_profile_by_name("balanced-system")
+    targeted_score, _ = lens.aggregate(pack.score_state(targeted_state), {})
+    discipline_score, _ = lens.aggregate(pack.score_state(discipline_state), {})
+
+    assert targeted_score > discipline_score
 
 
 def test_pandemic_response_pack_recommends_focal_run_lens_for_compliance_crisis() -> None:
