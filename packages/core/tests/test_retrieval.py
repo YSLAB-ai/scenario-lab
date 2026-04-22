@@ -1,10 +1,15 @@
+import json
 from pathlib import Path
 import sqlite3
 
 import pytest
 
 from forecasting_harness.query_api import get_evidence_for_assumption, summarize_top_branches
+from typer.testing import CliRunner
+
+from forecasting_harness.cli import app
 from forecasting_harness.retrieval import CorpusRegistry, RetrievalQuery, SearchEngine
+from forecasting_harness.retrieval.semantic import deserialize_vector
 
 
 def _register_markdown_source(
@@ -297,6 +302,112 @@ def test_search_engine_accepts_manifest_alias_groups_for_semantic_hits(tmp_path:
     assert hits[0]["source_id"] == "src-1"
     assert hits[0]["semantic_score"] > 0
     assert hits[0]["lexical_score"] == 0.0
+
+
+def test_search_engine_recomputes_semantic_vectors_when_stored_version_is_stale(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Leadership response",
+        source_type="markdown",
+        path="/tmp/leadership.md",
+        published_at="2026-04-20",
+        tags={"domain": "company-action"},
+        chunks=[
+            {"chunk_id": "1", "location": "heading:Overview", "content": "The chief executive stabilized messaging quickly."}
+        ],
+    )
+
+    def fake_encode_text(text: str, *, alias_groups=None, requested_backend=None, model_name=None):
+        normalized = text.lower()
+        if "chief executive" in normalized or "ceo" in normalized:
+            return ([1.0, 0.0], 2)
+        return ([0.0, 1.0], 2)
+
+    monkeypatch.setattr(
+        "forecasting_harness.retrieval.registry.current_embedding_version",
+        lambda **kwargs: "local-neural-v1",
+    )
+    monkeypatch.setattr("forecasting_harness.retrieval.registry.encode_text", fake_encode_text)
+
+    hits = SearchEngine(registry).search(
+        RetrievalQuery(text="ceo response", filters={"domain": "company-action"})
+    )
+
+    assert hits
+    assert hits[0]["source_id"] == "src-1"
+    assert hits[0]["semantic_score"] > 0.0
+
+
+def test_registry_can_rebuild_chunk_vectors_for_current_backend(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = CorpusRegistry(tmp_path / "corpus.db")
+    registry.register_document(
+        source_id="src-1",
+        title="Leadership response",
+        source_type="markdown",
+        path="/tmp/leadership.md",
+        published_at="2026-04-20",
+        tags={"domain": "company-action"},
+        chunks=[
+            {"chunk_id": "1", "location": "heading:Overview", "content": "The chief executive stabilized messaging quickly."}
+        ],
+    )
+
+    monkeypatch.setattr(
+        "forecasting_harness.retrieval.registry.current_embedding_version",
+        lambda **kwargs: "local-neural-v1",
+    )
+    monkeypatch.setattr(
+        "forecasting_harness.retrieval.registry.encode_text",
+        lambda text, *, alias_groups=None, requested_backend=None, model_name=None: ([0.6, 0.8], 6),
+    )
+
+    summary = registry.rebuild_embeddings()
+
+    with registry._connect() as connection:
+        row = connection.execute(
+            "SELECT embedding_version, vector_json, token_count FROM chunk_vectors WHERE source_id = 'src-1' AND chunk_id = '1'"
+        ).fetchone()
+
+    assert summary["document_count"] == 1
+    assert summary["chunk_count"] == 1
+    assert summary["updated_chunks"] == 1
+    assert row["embedding_version"] == "local-neural-v1"
+    assert deserialize_vector(row["vector_json"]) == [0.6, 0.8]
+    assert row["token_count"] == 6
+
+
+def test_rebuild_corpus_embeddings_command_outputs_summary(tmp_path: Path) -> None:
+    corpus_db = tmp_path / "corpus.db"
+    registry = CorpusRegistry(corpus_db)
+    registry.register_document(
+        source_id="src-1",
+        title="Leadership response",
+        source_type="markdown",
+        path="/tmp/leadership.md",
+        published_at="2026-04-20",
+        tags={"domain": "company-action"},
+        chunks=[
+            {"chunk_id": "1", "location": "heading:Overview", "content": "The chief executive stabilized messaging quickly."}
+        ],
+    )
+
+    result = CliRunner().invoke(
+        app,
+        ["rebuild-corpus-embeddings", "--corpus-db", str(corpus_db)],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["chunk_count"] == 1
+    assert payload["updated_chunks"] == 1
+    assert payload["embedding_version"]
 
 
 def test_freshness_multiplier_is_neutral_without_published_at(tmp_path: Path) -> None:

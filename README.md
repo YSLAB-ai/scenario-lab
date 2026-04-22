@@ -5,13 +5,13 @@ Local-first forecasting harness for scenario analysis. The repo contains a share
 ## Repo State
 
 - `main` is the accepted baseline branch.
-- This README describes the accepted `main` state, including the actor-utility defaults and replay calibration improvements merged on 2026-04-21.
+- This README describes the accepted `main` state, including the actor-utility defaults, replay calibration improvements, and local neural embedding support.
 
-Verified on `main` on 2026-04-21:
+Verified on `main` on 2026-04-22:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - `270 passed in 4.08s`
+  - `273 passed in 5.28s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - `16 passed in 0.63s`
@@ -55,6 +55,8 @@ This repo state includes actor-utility and replay-calibration behavior on top of
 - replay calibration summaries now expose structured per-case attention items and aggregated failure-type counts
 - the CLI now supports `list-builtin-replay-cases` in addition to corpus and calibration summaries
 - the CLI now supports `run-builtin-replay-retuning`, which runs the full built-in replay corpus one domain at a time through the protected retuning loop
+- the corpus now supports a persisted local semantic backend choice plus `rebuild-corpus-embeddings` for upgrading existing vector rows
+- the retrieval layer now supports optional local neural embeddings through the `semantic-local` extra while preserving the deterministic hashed baseline as a fallback
 
 Recent correctness fixes included in `main`:
 
@@ -67,6 +69,7 @@ Detailed recent notes:
 - [2026-04-21-actor-utility-pass.md](docs/status/2026-04-21-actor-utility-pass.md)
 - [2026-04-21-replay-calibration-v2.md](docs/status/2026-04-21-replay-calibration-v2.md)
 - [2026-04-21-replay-retuning-v2.md](docs/status/2026-04-21-replay-retuning-v2.md)
+- [2026-04-22-local-neural-embeddings-v1.md](docs/status/2026-04-22-local-neural-embeddings-v1.md)
 
 ## Install
 
@@ -77,6 +80,12 @@ PYTHON=/path/to/python3.12
 "$PYTHON" -m venv .venv
 source .venv/bin/activate
 pip install -e 'packages/core[dev]'
+```
+
+To enable the local neural embedding backend as well:
+
+```bash
+pip install -e 'packages/core[dev,semantic-local]'
 ```
 
 ## How To Use
@@ -245,6 +254,18 @@ forecast-harness begin-revision-update \
   --revision-id r2
 ```
 
+### 10. Upgrade a corpus to local neural embeddings
+
+After installing the `semantic-local` extra, rebuild the stored vectors once and persist the new backend choice in the corpus DB:
+
+```bash
+forecast-harness rebuild-corpus-embeddings \
+  --corpus-db "$CORPUS_DB" \
+  --semantic-backend neural
+```
+
+Future ingests into that same corpus will reuse the stored backend preference automatically.
+
 ## Verification Commands
 
 Full suite:
@@ -268,6 +289,7 @@ forecast-harness run-builtin-replay-suite
 forecast-harness summarize-replay-calibration
 forecast-harness run-replay-retuning --domain-pack company-action --no-branch
 forecast-harness run-builtin-replay-retuning --workspace-root /tmp/replay-retuning --no-branch
+forecast-harness rebuild-corpus-embeddings --corpus-db .forecast/corpus.db --semantic-backend neural
 ```
 
 ## Adapters
@@ -299,6 +321,8 @@ Current boundary:
   - [2026-04-21-replay-retuning-v1.md](docs/status/2026-04-21-replay-retuning-v1.md)
 - Broader replay history plus retuning:
   - [2026-04-21-replay-retuning-v2.md](docs/status/2026-04-21-replay-retuning-v2.md)
+- Local neural embeddings:
+  - [2026-04-22-local-neural-embeddings-v1.md](docs/status/2026-04-22-local-neural-embeddings-v1.md)
 - Direct evidence runtime editing:
   - [2026-04-21-evidence-runtime-v1.md](docs/status/2026-04-21-evidence-runtime-v1.md)
 - Broader repo status:
@@ -309,3 +333,4 @@ Current boundary:
 - The built-in domain packs are templates, not mature validated forecasting models.
 - The replay corpus is broader than before and now has `22` built-in cases, but it is still modest rather than a large historical library.
 - Some broader bulk-edit workflows remain file-backed, but direct evidence-packet replacement is now available through structured CLI/runtime inputs.
+- OCR-backed PDF ingestion is still missing for image-only PDFs, although text-extractable PDFs already work and Codex/Claude can inspect PDFs through their own tooling.

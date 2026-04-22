@@ -456,6 +456,27 @@ def list_corpus_sources(corpus_db: Path = typer.Option(...)) -> None:
     print(json.dumps(CorpusRegistry(corpus_db).list_documents()))
 
 
+@app.command("rebuild-corpus-embeddings")
+def rebuild_corpus_embeddings_command(
+    corpus_db: Path = typer.Option(...),
+    semantic_backend: str | None = typer.Option(None, "--semantic-backend"),
+    semantic_model: str | None = typer.Option(None, "--semantic-model"),
+) -> None:
+    registry = CorpusRegistry(
+        corpus_db,
+        embedding_backend=semantic_backend,
+        embedding_model=semantic_model,
+    )
+    print(
+        json.dumps(
+            registry.rebuild_embeddings(
+                embedding_backend=semantic_backend,
+                embedding_model=semantic_model,
+            )
+        )
+    )
+
+
 @app.command("run-replay-suite")
 def run_replay_suite_command(
     input: Path = typer.Option(...),

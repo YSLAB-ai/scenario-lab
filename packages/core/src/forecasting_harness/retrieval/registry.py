@@ -9,7 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from forecasting_harness.retrieval.semantic import (
-    EMBEDDING_VERSION,
+    DEFAULT_EMBEDDING_BACKEND,
+    DEFAULT_NEURAL_MODEL,
+    current_embedding_version,
+    embedding_backend_summary,
     cosine_similarity,
     deserialize_vector,
     encode_text,
@@ -28,8 +31,16 @@ def parse_published_at(published_at: str | None) -> str | None:
 
 
 class CorpusRegistry:
-    def __init__(self, db_path: Path | str):
+    def __init__(
+        self,
+        db_path: Path | str,
+        *,
+        embedding_backend: str | None = None,
+        embedding_model: str | None = None,
+    ):
         self.db_path = Path(db_path)
+        self.embedding_backend = embedding_backend
+        self.embedding_model = embedding_model
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
@@ -72,6 +83,81 @@ class CorpusRegistry:
                 )
                 """
             )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+                """
+            )
+
+    def _metadata_value(self, key: str) -> str | None:
+        with self._connect() as connection:
+            row = connection.execute("SELECT value FROM metadata WHERE key = ?", (key,)).fetchone()
+        return None if row is None else str(row["value"])
+
+    def _set_metadata_value(self, key: str, value: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO metadata (key, value)
+                VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                (key, value),
+            )
+
+    def _resolved_embedding_backend(self, override_backend: str | None = None) -> str | None:
+        if override_backend is not None:
+            return override_backend
+        if self.embedding_backend is not None:
+            return self.embedding_backend
+        return self._metadata_value("embedding_backend") or DEFAULT_EMBEDDING_BACKEND
+
+    def _resolved_embedding_model(self, override_model: str | None = None) -> str | None:
+        if override_model is not None:
+            return override_model
+        if self.embedding_model is not None:
+            return self.embedding_model
+        return self._metadata_value("embedding_model") or DEFAULT_NEURAL_MODEL
+
+    def _encode_text(
+        self,
+        text: str,
+        *,
+        alias_groups: list[tuple[str, ...]] | None = None,
+        embedding_backend: str | None = None,
+        embedding_model: str | None = None,
+    ) -> tuple[list[float], int]:
+        return encode_text(
+            text,
+            alias_groups=alias_groups,
+            requested_backend=self._resolved_embedding_backend(embedding_backend),
+            model_name=self._resolved_embedding_model(embedding_model),
+        )
+
+    def current_embedding_version(
+        self,
+        *,
+        embedding_backend: str | None = None,
+        embedding_model: str | None = None,
+    ) -> str:
+        return current_embedding_version(
+            requested_backend=self._resolved_embedding_backend(embedding_backend),
+            model_name=self._resolved_embedding_model(embedding_model),
+        )
+
+    def semantic_backend_summary(
+        self,
+        *,
+        embedding_backend: str | None = None,
+        embedding_model: str | None = None,
+    ) -> dict[str, str | bool | None]:
+        return embedding_backend_summary(
+            requested_backend=self._resolved_embedding_backend(embedding_backend),
+            model_name=self._resolved_embedding_model(embedding_model),
+        )
 
     def _disambiguated_source_id(self, source_id: str, path: str) -> str:
         suffix = hashlib.sha1(path.encode("utf-8")).hexdigest()[:8]
@@ -123,6 +209,7 @@ class CorpusRegistry:
             ]
         else:
             normalized_chunks = chunks
+        embedding_version = self.current_embedding_version()
 
         with self._connect() as connection:
             connection.execute("DELETE FROM documents WHERE source_id = ?", (resolved_source_id,))
@@ -172,8 +259,8 @@ class CorpusRegistry:
                     (
                         resolved_source_id,
                         chunk["chunk_id"],
-                        EMBEDDING_VERSION,
-                        serialize_vector((encoded := encode_text(chunk["content"]))[0]),
+                        embedding_version,
+                        serialize_vector((encoded := self._encode_text(chunk["content"]))[0]),
                         encoded[1],
                     )
                     for chunk in normalized_chunks
@@ -249,7 +336,8 @@ class CorpusRegistry:
         limit: int = 20,
         alias_groups: list[tuple[str, ...]] | None = None,
     ) -> list[dict[str, Any]]:
-        query_vector, token_count = encode_text(text, alias_groups=alias_groups)
+        current_version = self.current_embedding_version()
+        query_vector, token_count = self._encode_text(text, alias_groups=alias_groups)
         if token_count == 0:
             return []
 
@@ -265,24 +353,24 @@ class CorpusRegistry:
                     chunks.tags,
                     chunks.location,
                     chunks.content,
-                    chunk_vectors.vector_json
+                    chunk_vectors.vector_json,
+                    chunk_vectors.embedding_version
                 FROM chunks
                 JOIN chunk_vectors
                   ON chunks.source_id = chunk_vectors.source_id
                  AND chunks.chunk_id = chunk_vectors.chunk_id
-                WHERE chunk_vectors.embedding_version = ?
                 """,
-                (EMBEDDING_VERSION,),
             ).fetchall()
 
         scored: list[dict[str, Any]] = []
         for row in rows:
             result = dict(row)
-            if alias_groups:
-                row_vector = encode_text(str(result.get("content", "")), alias_groups=alias_groups)[0]
-                result.pop("vector_json")
+            if alias_groups or result.get("embedding_version") != current_version:
+                row_vector = self._encode_text(str(result.get("content", "")), alias_groups=alias_groups)[0]
             else:
-                row_vector = deserialize_vector(result.pop("vector_json"))
+                row_vector = deserialize_vector(str(result.get("vector_json", "[]")))
+            result.pop("vector_json", None)
+            result.pop("embedding_version", None)
             similarity = cosine_similarity(query_vector, row_vector)
             if similarity <= 0.0:
                 continue
@@ -296,3 +384,86 @@ class CorpusRegistry:
 
         scored.sort(key=lambda item: (-item["semantic_score"], item["source_id"], item["chunk_id"]))
         return scored[:limit]
+
+    def rebuild_embeddings(
+        self,
+        *,
+        embedding_backend: str | None = None,
+        embedding_model: str | None = None,
+    ) -> dict[str, Any]:
+        requested_backend = self._resolved_embedding_backend(embedding_backend)
+        requested_model = self._resolved_embedding_model(embedding_model)
+        backend_summary = self.semantic_backend_summary(
+            embedding_backend=requested_backend,
+            embedding_model=requested_model,
+        )
+        embedding_version = self.current_embedding_version(
+            embedding_backend=requested_backend,
+            embedding_model=requested_model,
+        )
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_id, chunk_id, content
+                FROM chunks
+                ORDER BY source_id, chunk_id
+                """
+            ).fetchall()
+
+            connection.execute(
+                """
+                INSERT INTO metadata (key, value)
+                VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                ("embedding_backend", requested_backend),
+            )
+            connection.execute(
+                """
+                INSERT INTO metadata (key, value)
+                VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                ("embedding_model", requested_model),
+            )
+
+            updates = []
+            for row in rows:
+                encoded = self._encode_text(
+                    str(row["content"]),
+                    embedding_backend=requested_backend,
+                    embedding_model=requested_model,
+                )
+                updates.append(
+                    (
+                        str(row["source_id"]),
+                        str(row["chunk_id"]),
+                        embedding_version,
+                        serialize_vector(encoded[0]),
+                        encoded[1],
+                    )
+                )
+
+            connection.executemany(
+                """
+                INSERT INTO chunk_vectors (source_id, chunk_id, embedding_version, vector_json, token_count)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(source_id, chunk_id) DO UPDATE SET
+                    embedding_version = excluded.embedding_version,
+                    vector_json = excluded.vector_json,
+                    token_count = excluded.token_count
+                """,
+                updates,
+            )
+
+            document_count = int(
+                connection.execute("SELECT COUNT(*) AS count FROM documents").fetchone()["count"]
+            )
+
+        return {
+            **backend_summary,
+            "document_count": document_count,
+            "chunk_count": len(rows),
+            "updated_chunks": len(rows),
+        }

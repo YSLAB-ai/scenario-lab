@@ -19,9 +19,11 @@ Date: 2026-04-21
   - `pack_fields`
 - The corpus now supports document metadata plus citation-friendly chunk rows in the local SQLite/FTS registry.
 - The corpus now also stores local semantic vectors per chunk in the same SQLite database.
+- The corpus now also supports a persisted local semantic backend preference, so a corpus can be upgraded from the deterministic hashed baseline to a local neural backend without changing the rest of the workflow stack.
 - The CLI can ingest curated local `Markdown`, `CSV`, `JSON`, and text-extractable `PDF` files into the corpus.
 - The workflow can now draft evidence packets from the local corpus through a deterministic core step.
 - The retrieval layer now performs hybrid lexical + semantic search entirely locally, with no external API dependency.
+- The retrieval layer now also supports optional local neural embeddings through the `semantic-local` extra plus `forecast-harness rebuild-corpus-embeddings`.
 - The workflow can now draft deterministic intake guidance, grouped approval packets, and narrow run/revision summaries for adapters.
 - Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
 - Actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so domain packs inherit actor-aware behavior even when they do not implement custom hooks.
@@ -89,10 +91,13 @@ Date: 2026-04-21
 - The workflow can now recommend local files for ingestion, map them to source roles, and batch-ingest prioritized matches into the corpus.
 - The workflow now also exposes a packaged adapter runtime through `forecast-harness run-adapter-action`, which executes one approved workflow mutation and immediately returns the next deterministic conversation turn.
 - The packaged runtime and standalone CLI now both support direct structured evidence replacement through `save-evidence-draft --item-json ...` and `run-adapter-action --action save-evidence-draft --item-json ...`, removing the last evidence-packet file handoff from the core workflow path.
+- The CLI now also supports:
+  - `forecast-harness rebuild-corpus-embeddings`
+  which can rebuild an existing corpus with the chosen local embedding backend and persist that preference in the corpus DB.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
   - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
-  - Result: `270 passed in 4.08s`
+  - Result: `273 passed in 5.28s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
   - `japan-china-strait`
@@ -171,6 +176,16 @@ Date: 2026-04-21
     - `case_count = 22`
     - `weak_domain_count = 0`
     - `generated_suggestion_count = 0`
+- The local neural embeddings pass on 2026-04-22 then further verified:
+  - `forecast-harness rebuild-corpus-embeddings --corpus-db /tmp/local-neural-embeddings-v1.db` ->
+    - `requested_backend = baseline`
+    - `active_backend = baseline`
+    - `chunk_count = 0`
+    - `updated_chunks = 0`
+  - targeted retrieval coverage:
+    - stale-vector semantic search fallback across embedding versions
+    - chunk-vector rebuild updates the stored `embedding_version`
+    - CLI `rebuild-corpus-embeddings` returns structured summary output
 - The domain evolution pass on 2026-04-21 also verified:
   - a no-branch CLI smoke flow in a temporary workspace:
     - `record-domain-suggestion`
@@ -345,7 +360,6 @@ Date: 2026-04-21
 - The built-in domain packs are templates rather than mature validated models.
 - The manifests now guide retrieval planning, ingestion-gap reporting, and local ingestion orchestration, but they do not yet drive automatic acquisition or ingestion scheduling.
 - The system does not yet implement:
-  - local neural embeddings
   - OCR-backed PDF ingestion
   - spreadsheet or web archive ingestion
   - rule extraction / knowledge compiler

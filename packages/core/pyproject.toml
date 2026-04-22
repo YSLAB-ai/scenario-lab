@@ -17,6 +17,9 @@ dependencies = [
 dev = [
   "pytest>=8.2,<9",
 ]
+semantic-local = [
+  "sentence-transformers>=3,<4",
+]
 
 [project.scripts]
 forecast-harness = "forecasting_harness.cli:main"
