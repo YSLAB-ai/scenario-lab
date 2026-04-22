@@ -2,6 +2,12 @@
 
 Date: 2026-04-21
 
+## Branch Context
+
+- This status note is being read on `codex/actor-utility-run-lens`.
+- `main` does not yet include the actor-utility and run-lens changes described here.
+- Start with [README.md](../../README.md) for the concise branch handoff, then use this file and [2026-04-21-actor-utility-pass.md](2026-04-21-actor-utility-pass.md) for detailed verification.
+
 ## Verified Progress
 
 - The shared Python core exists under `packages/core/src/forecasting_harness/`.
@@ -109,13 +115,13 @@ Date: 2026-04-21
   - `market-shock`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- The calibration pass on 2026-04-21 also verified:
+- The initial calibration pass on 2026-04-21, before the later pandemic replay expansion, also verified:
   - `forecast-harness run-builtin-replay-suite` -> `case_count = 10`
   - `forecast-harness run-builtin-replay-suite` -> `top_branch_accuracy = 1.0`
   - `forecast-harness run-builtin-replay-suite` -> `root_strategy_accuracy = 1.0`
   - `forecast-harness summarize-builtin-replay-corpus` -> `files = 6`
   - `forecast-harness summarize-replay-calibration` -> `domains_needing_attention = []`
-- The pandemic from-zero benchmark pass on 2026-04-21 also verified:
+- The later pandemic from-zero benchmark pass on 2026-04-21 expanded that built-in corpus and also verified:
   - `forecast-harness summarize-builtin-replay-corpus` -> `case_count = 12`
   - `forecast-harness summarize-builtin-replay-corpus` -> `files = 7`
   - `forecast-harness summarize-builtin-replay-corpus` includes domain `pandemic-response`

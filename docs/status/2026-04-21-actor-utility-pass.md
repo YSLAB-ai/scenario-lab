@@ -2,19 +2,53 @@
 
 Date: 2026-04-21
 
+## Review Handoff
+
+- Branch under review: `codex/actor-utility-run-lens`
+- This branch is pushed and not merged into `main`.
+- Start with [README.md](../../README.md) for repo layout, workflow usage, and branch scope.
+- Then review these files first:
+  - `packages/core/src/forecasting_harness/models.py`
+  - `packages/core/src/forecasting_harness/objectives.py`
+  - `packages/core/src/forecasting_harness/domain/base.py`
+  - `packages/core/src/forecasting_harness/domain/interstate_crisis.py`
+  - `packages/core/src/forecasting_harness/workflow/compiler.py`
+  - `packages/core/src/forecasting_harness/workflow/models.py`
+  - `packages/core/src/forecasting_harness/workflow/service.py`
+  - `packages/core/src/forecasting_harness/compatibility.py`
+  - `packages/core/src/forecasting_harness/simulation/engine.py`
+  - `packages/core/src/forecasting_harness/query_api.py`
+  - `packages/core/src/forecasting_harness/workflow/reporting.py`
+
+## Review Focus
+
+- Confirm actor preference inference is deterministic and auditable.
+- Confirm recommended-vs-selected run-lens behavior is coherent.
+- Confirm actor alias normalization preserves reuse and focal-actor continuity.
+- Confirm report and query summaries match the engine's explored-first branch ordering.
+- Confirm the replay and smoke outputs still match the checked-in expectations after the branch-only changes.
+
 ## Changed Files
 
 - `knowledge/replays/interstate-crisis.json`
 - `packages/core/src/forecasting_harness/cli.py`
 - `packages/core/src/forecasting_harness/compatibility.py`
+- `packages/core/src/forecasting_harness/domain/base.py`
+- `packages/core/src/forecasting_harness/domain/interstate_crisis.py`
+- `packages/core/src/forecasting_harness/models.py`
 - `packages/core/src/forecasting_harness/objectives.py`
 - `packages/core/tests/test_replay.py`
 - `packages/core/src/forecasting_harness/query_api.py`
+- `packages/core/src/forecasting_harness/simulation/engine.py`
 - `packages/core/src/forecasting_harness/workflow/compiler.py`
+- `packages/core/src/forecasting_harness/workflow/models.py`
 - `packages/core/src/forecasting_harness/workflow/reporting.py`
 - `packages/core/src/forecasting_harness/workflow/service.py`
 - `packages/core/tests/test_cli_workflow.py`
+- `packages/core/tests/test_interstate_crisis_pack.py`
+- `packages/core/tests/test_models.py`
 - `packages/core/tests/test_retrieval.py`
+- `packages/core/tests/test_reporting.py`
 - `packages/core/tests/test_simulation.py`
 - `packages/core/tests/test_workflow_evidence.py`
 - `packages/core/tests/test_workflow_models.py`
