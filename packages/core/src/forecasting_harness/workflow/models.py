@@ -126,6 +126,7 @@ class BatchIngestionResult(BaseModel):
     ingested_count: int = 0
     skipped_count: int = 0
     ingested_source_ids: list[str] = Field(default_factory=list)
+    skipped_files: list[dict[str, str]] = Field(default_factory=list)
 
 
 class IntakeGuidance(BaseModel):

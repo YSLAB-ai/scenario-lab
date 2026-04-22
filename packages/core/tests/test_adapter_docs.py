@@ -49,6 +49,12 @@ def test_adapter_install_docs_reference_guided_query_style_workflow() -> None:
     assert "after each workflow mutation" in claude_skill
     assert "install.py --target-dir" in codex_doc
     assert "install.py --target-dir" in claude_doc
+    assert "PYTHON=/path/to/python3.12" in codex_doc
+    assert "PYTHON=/path/to/python3.12" in claude_doc
+    assert "/tmp/codex-plugins" in codex_doc
+    assert "/tmp/claude-root" in claude_doc
+    assert "--link" in codex_doc
+    assert "--link" in claude_doc
     assert "smoke.py" in codex_doc
     assert "smoke.py" in claude_doc
     assert "forecast-harness demo-run" not in codex_doc

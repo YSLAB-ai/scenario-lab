@@ -46,6 +46,8 @@ from forecasting_harness.workflow.planning import build_ingest_tasks, build_quer
 from forecasting_harness.workflow.compiler import compile_belief_state
 from forecasting_harness.workflow.reporting import render_report
 
+_ADAPTER_RUNTIME_DEFAULT_ITERATIONS = 10000
+
 
 def _validate_pack_fields(pack: DomainPack, intake: IntakeDraft) -> None:
     schema = pack.extend_schema()
@@ -576,8 +578,22 @@ class WorkflowService:
 
         manifest = load_domain_manifest(pack.slug())
         plan = self.draft_ingestion_plan(run_id, revision_id, pack=pack)
+        retrieval_plan = self.draft_retrieval_plan(run_id, revision_id, pack=pack)
+        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         candidate_categories = plan.missing_evidence_categories or manifest.evidence_categories
         category_terms = manifest.category_terms()
+        fallback_category = classify_text(
+            compact_query([intake.event_framing, intake.current_development, intake.current_stage]),
+            category_terms={category: category_terms.get(category, [category]) for category in candidate_categories},
+        )
+        fallback_terms = [
+            *retrieval_plan.query_variants,
+            *intake.focus_entities,
+            intake.current_development,
+            intake.event_framing,
+        ]
+        existing_source_ids = {str(document.get("source_id", "")) for document in self.corpus_registry.list_documents()}
+        existing_paths = {str(document.get("path", "")) for document in self.corpus_registry.list_documents()}
 
         recommendations: list[IngestionRecommendation] = []
         for candidate in sorted(path.iterdir()):
@@ -590,25 +606,34 @@ class WorkflowService:
 
             document = ingest_file(candidate)
             resolved_source_id = self.corpus_registry.resolve_source_id(document.source_id, document.path)
+            resolved_path = str(candidate.resolve())
+            if resolved_source_id in existing_source_ids or resolved_path in existing_paths:
+                continue
             content_text = compact_query([document.title, " ".join(chunk.content for chunk in document.chunks)])
             scores = category_match_scores(
                 content_text,
                 category_terms={category: category_terms.get(category, [category]) for category in candidate_categories},
             )
             matched_categories = [category for category in candidate_categories if category in scores]
+            fallback_overlap = sum(term_match_score(content_text, term) for term in fallback_terms if term)
             if not matched_categories:
-                continue
+                inferred_category = fallback_category or (candidate_categories[0] if candidate_categories else None)
+                if inferred_category is None or fallback_overlap <= 0:
+                    continue
+                matched_categories = [inferred_category]
 
             source = select_source_role(manifest, text=content_text, matched_categories=matched_categories)
             priority_score = 0.0
             for index, category in enumerate(candidate_categories):
                 if category in scores:
                     priority_score += float((len(candidate_categories) - index) * scores[category])
+            if priority_score == 0.0:
+                priority_score = float(fallback_overlap)
             recommended_tags = {"domain": pack.slug(), "source_role": source.kind, "run_id": run_id}
             recommended_tags["evidence_category"] = matched_categories[0]
             recommendations.append(
                 IngestionRecommendation(
-                    path=str(candidate.resolve()),
+                    path=resolved_path,
                     source_id=resolved_source_id,
                     title=document.title,
                     source_type=document.source_type,
@@ -641,6 +666,7 @@ class WorkflowService:
         selected_paths = {item.path for item in selected}
         skipped_count = 0
         ingested_source_ids: list[str] = []
+        skipped_files: list[dict[str, str]] = []
 
         for candidate in sorted(path.iterdir()):
             if not candidate.is_file():
@@ -649,9 +675,11 @@ class WorkflowService:
                 detect_source_type(candidate)
             except ValueError:
                 skipped_count += 1
+                skipped_files.append({"path": str(candidate.resolve()), "reason": "unsupported-source-type"})
                 continue
             if str(candidate.resolve()) not in selected_paths:
                 skipped_count += 1
+                skipped_files.append({"path": str(candidate.resolve()), "reason": "not-recommended"})
                 continue
 
             recommendation = next(item for item in selected if item.path == str(candidate.resolve()))
@@ -683,6 +711,7 @@ class WorkflowService:
             ingested_count=len(ingested_source_ids),
             skipped_count=skipped_count,
             ingested_source_ids=ingested_source_ids,
+            skipped_files=skipped_files,
         )
 
     def curate_evidence_draft(self, run_id: str, revision_id: str, evidence_ids: list[str]) -> EvidencePacket:
@@ -1139,7 +1168,7 @@ class WorkflowService:
                 run_id=run_id,
                 revision_id=revision_id,
                 pack=pack,
-                iterations=iterations,
+                iterations=_ADAPTER_RUNTIME_DEFAULT_ITERATIONS if iterations is None else iterations,
             )
         elif action == "begin-revision-update":
             if parent_revision_id is None:

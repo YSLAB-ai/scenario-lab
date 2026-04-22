@@ -1134,7 +1134,8 @@ def generate_report(
         evidence_count=len(evidence.items),
         unsupported_count=len(assumptions.summary),
     )
-    print(f"reported {revision_id}")
+    report_path = repo.run_dir(run_id) / "reports" / f"{revision_id}.report.md"
+    print(f"reported {revision_id} {report_path}")
 
 
 @app.command("summarize-run")

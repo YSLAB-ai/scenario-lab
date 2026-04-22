@@ -285,6 +285,8 @@ def test_start_run_and_simulate_interstate_workflow(tmp_path: Path) -> None:
         ],
     )
     assert report_result.exit_code == 0
+    assert "reported r1 " in report_result.stdout
+    assert str(root / "runs" / "crisis-1" / "reports" / "r1.report.md") in report_result.stdout
 
     run_dir = root / "runs" / "crisis-1"
     assert (run_dir / "belief-state" / "r1.approved.json").exists()

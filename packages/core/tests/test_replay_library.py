@@ -65,10 +65,12 @@ def test_builtin_replay_suite_and_calibration_summary_are_structured(tmp_path: P
     assert result.case_count == 40
     assert isinstance(summary, CalibrationSummary)
     assert summary.case_count == 40
+    assert summary.overall_top_branch_accuracy == 1.0
     assert summary.overall_root_strategy_accuracy == 1.0
+    assert summary.overall_evidence_source_accuracy == 0.895
     assert summary.domains_needing_attention == []
-    assert summary.attention_items == []
-    assert summary.failure_type_counts == {}
+    assert {item.run_id for item in summary.attention_items} == {"south-africa-gnu-2024", "taiwan-drills-2022"}
+    assert summary.failure_type_counts == {"evidence_source_mismatch": 2}
     assert summary.historically_anchored_case_count == 28
     assert summary.domain_breakdown["interstate-crisis"]["count"] == 6
     assert summary.domain_breakdown["company-action"]["count"] == 7
@@ -93,7 +95,8 @@ def test_builtin_replay_cli_commands_emit_structured_payloads(tmp_path: Path) ->
     assert summary_payload.case_count == 40
     assert summary_payload.domains_needing_attention == []
     assert summary_payload.historically_anchored_case_count == 28
-    assert summary_payload.failure_type_counts == {}
+    assert summary_payload.overall_evidence_source_accuracy == 0.895
+    assert summary_payload.failure_type_counts == {"evidence_source_mismatch": 2}
 
     corpus_result = runner.invoke(app, ["summarize-builtin-replay-corpus"])
     assert corpus_result.exit_code == 0

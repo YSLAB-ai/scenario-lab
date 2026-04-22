@@ -68,7 +68,8 @@ def test_codex_adapter_smoke_script_runs_end_to_end(tmp_path: Path) -> None:
     assert payload["run_summary"]["current_revision_id"] == "r1"
     assert payload["revision_summary"]["revision_id"] == "r1"
     assert "simulation" in payload["revision_summary"]["available_sections"]
-    assert payload["report_result"] == "reported r1"
+    assert payload["report_result"].startswith("reported r1 ")
+    assert payload["report_result"].endswith("/r1.report.md")
     assert payload["report_exists"] is True
 
 
@@ -95,5 +96,6 @@ def test_claude_adapter_smoke_script_runs_end_to_end(tmp_path: Path) -> None:
     assert payload["run_summary"]["current_revision_id"] == "r1"
     assert payload["revision_summary"]["revision_id"] == "r1"
     assert "simulation" in payload["revision_summary"]["available_sections"]
-    assert payload["report_result"] == "reported r1"
+    assert payload["report_result"].startswith("reported r1 ")
+    assert payload["report_result"].endswith("/r1.report.md")
     assert payload["report_exists"] is True

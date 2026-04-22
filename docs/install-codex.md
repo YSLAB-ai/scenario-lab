@@ -1,11 +1,13 @@
 # Install in Codex
 
 1. From the checked-out forecasting harness repo root, create and activate `packages/core/.venv` with a Python 3.12+ interpreter.
-   - `python3.12 -m venv packages/core/.venv`
+   - `PYTHON=/path/to/python3.12`
+   - `"$PYTHON" -m venv packages/core/.venv`
    - `source packages/core/.venv/bin/activate`
 2. Run `pip install -e 'packages/core[dev]'`.
-3. Install the packaged local Codex bundle into your Codex plugin root:
-   - `python adapters/codex/forecast-harness/install.py --target-dir <codex-plugin-root>`
+3. Install the packaged local Codex bundle into your Codex plugin root. For a disposable local test root, use `/tmp/codex-plugins`.
+   - `packages/core/.venv/bin/python adapters/codex/forecast-harness/install.py --target-dir /tmp/codex-plugins`
+   - optional: add `--link` to symlink the bundle instead of copying it while iterating locally
 4. Run the packaged adapter smoke from the same virtualenv:
    - `packages/core/.venv/bin/python adapters/codex/forecast-harness/smoke.py`
 5. Verify the shared CLI query-style commands are available:

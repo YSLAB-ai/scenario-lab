@@ -1585,7 +1585,7 @@ def test_batch_ingest_recommended_files_registers_prioritized_sources_with_role_
         "# Deployment\nForce posture and readiness changed near the theater.\n",
         encoding="utf-8",
     )
-    (source_dir / "ignore.txt").write_text("general note without useful signal\n", encoding="utf-8")
+    (source_dir / "ignore.zip").write_text("general note without useful signal\n", encoding="utf-8")
 
     service.start_run(run_id="crisis-1", domain_pack=pack.slug())
     service.save_intake_draft(
@@ -1612,6 +1612,7 @@ def test_batch_ingest_recommended_files_registers_prioritized_sources_with_role_
     assert result.ingested_count == 2
     assert result.skipped_count == 1
     assert set(result.ingested_source_ids) == {"official-warning", "deployment-notes"}
+    assert result.skipped_files == [{"path": str((source_dir / "ignore.zip").resolve()), "reason": "unsupported-source-type"}]
 
     documents = corpus.list_documents()
     assert documents[0]["tags"]["source_role"] == "force and capability references"

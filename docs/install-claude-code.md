@@ -1,11 +1,13 @@
 # Install in Claude Code
 
 1. From the checked-out forecasting harness repo root, create and activate `packages/core/.venv` with a Python 3.12+ interpreter.
-   - `python3.12 -m venv packages/core/.venv`
+   - `PYTHON=/path/to/python3.12`
+   - `"$PYTHON" -m venv packages/core/.venv`
    - `source packages/core/.venv/bin/activate`
 2. Run `pip install -e 'packages/core[dev]'`.
-3. Install the packaged local Claude bundle into the target Claude root:
-   - `python adapters/claude/forecast-harness/install.py --target-dir <claude-root>`
+3. Install the packaged local Claude bundle into the target Claude root. For a disposable local test root, use `/tmp/claude-root`.
+   - `packages/core/.venv/bin/python adapters/claude/forecast-harness/install.py --target-dir /tmp/claude-root`
+   - optional: add `--link` to symlink the bundle instead of copying it while iterating locally
 4. Run the packaged adapter smoke from the same virtualenv:
    - `packages/core/.venv/bin/python adapters/claude/forecast-harness/smoke.py`
 5. Verify the shared CLI query-style commands are available:
