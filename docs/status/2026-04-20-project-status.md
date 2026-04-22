@@ -103,7 +103,7 @@ Date: 2026-04-22
   which can rebuild an existing corpus with the chosen local embedding backend and persist that preference in the corpus DB.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - A prior full-suite verification in this worktree on 2026-04-21 ran:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
   - Result: `273 passed in 5.28s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
@@ -130,7 +130,7 @@ Date: 2026-04-22
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
 - A direct end-to-end rerun of the checked-in smoke campaign on the actor-utility branch on 2026-04-21 also verified:
-  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - Result: `16 passed in 0.63s`
   - Direct branch outputs:
     - `Pandemic first wave` -> `Containment push (coordination holds)`
