@@ -1,6 +1,6 @@
 # Forecasting Harness Status
 
-Date: 2026-04-21
+Date: 2026-04-22
 
 ## Context
 
@@ -28,6 +28,13 @@ Date: 2026-04-21
 - Grouped approval packets now also expose inferred `actor_preferences` plus a `recommended_run_lens`, including focal-actor metadata when the recommended lens is actor-centered.
 - Actor-aware scoring and run-lens recommendation now exist as shared `DomainPack` defaults, so domain packs inherit actor-aware behavior even when they do not implement custom hooks.
 - The shared actor-aware default now explicitly depends on `score_state()` exposing `escalation`, `negotiation`, and `economic_stress` whenever actor preferences are present.
+- On 2026-04-22, the local verification baseline was rebuilt in the root `.venv` with `/Users/yiwen/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3` (`Python 3.12.13`), then verified with:
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pip install -e 'packages/core[dev]'`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - results:
+    - `273 passed in 5.18s`
+    - `16 passed in 0.75s`
 - The workflow can now draft deterministic conversation turns so adapters can advance the approval flow by asking the core what stage comes next.
 - The conversation-turn surface now acts as the native adapter loop contract by embedding ordered `actions` plus evidence-stage planning and ingestion payloads.
 - The repo now also supports domain-scoped self-improvement through:
@@ -96,7 +103,7 @@ Date: 2026-04-21
   which can rebuild an existing corpus with the chosen local embedding backend and persist that preference in the corpus DB.
 - The `generic-event`, `interstate-crisis`, and the new template packs all perform deterministic phase-changing transitions instead of replaying the input state unchanged.
 - The latest full-suite verification in this worktree on 2026-04-21 ran:
-  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
   - Result: `273 passed in 5.28s`
 - A realistic 12-scenario smoke campaign on 2026-04-21 verified successful end-to-end runs for:
   - `us-iran-gulf`
@@ -123,7 +130,7 @@ Date: 2026-04-21
   - `Apple CEO transition` -> `Stakeholder reset`
   - `Boeing post-reporting` -> `Contain message (message lands)`
 - A direct end-to-end rerun of the checked-in smoke campaign on the actor-utility branch on 2026-04-21 also verified:
-  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - Result: `16 passed in 0.63s`
   - Direct branch outputs:
     - `Pandemic first wave` -> `Containment push (coordination holds)`
@@ -353,22 +360,17 @@ Date: 2026-04-21
 
 ## Current Gaps
 
-- The current analyst workflow now has a packaged deterministic adapter runtime at the core and CLI layer, but the Codex and Claude integrations are still thin local scaffolding rather than marketplace-distributed plugin runtimes.
-- Some broader bulk-edit workflows still rely on file-backed JSON inputs, but direct evidence-packet replacement no longer does.
-- The simulation engine is now deterministic MCTS, but it does not yet implement:
-  - calibrated real-world probabilities
-- The built-in domain packs are templates rather than mature validated models.
-- The manifests now guide retrieval planning, ingestion-gap reporting, and local ingestion orchestration, but they do not yet drive automatic acquisition or ingestion scheduling.
-- The system does not yet implement:
-  - OCR-backed PDF ingestion
-  - spreadsheet or web archive ingestion
-  - rule extraction / knowledge compiler
-- The replay suite infrastructure now exists and includes a 22-case built-in corpus with a source-attributed historical slice, and the repo now supports both one-domain and built-in multi-domain automatic retuning from replay misses, but it still does not include a large curated historical replay library.
-- Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline does not yet synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
+- Spreadsheet ingestion and web-archive ingestion are still missing.
+- Some broader bulk-edit workflows still rely on file-backed JSON inputs instead of structured CLI/runtime inputs end to end.
+- The simulation engine still reports raw ranking instead of calibrated probability or confidence outputs.
+- The built-in replay corpus is still at `22` cases rather than the frozen `40`-case target.
+- The system still does not implement a rule-extraction / knowledge compiler pass.
+- Domain evolution can improve existing domains through manifest-owned overlays, and new-domain synthesis can scaffold template-backed starter packs, but the pipeline still does not synthesize richer bespoke Python behavior for a new domain beyond that generated template runtime.
+- Codex and Claude local integrations are still thin repository wrappers rather than fully packaged local runtimes.
+- OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.
 
 ## Known Issues and Risks
 
-- The existing local virtual environment at `packages/core/.venv` is Python 3.11. It can run the current tests, but it does not satisfy the documented Python `>=3.12` package requirement for a clean install.
 - The clean package install and CLI workflow run were verified separately with `/usr/local/bin/python3.13`.
 - Local git identity is currently configured as:
   - `user.name = Codex`

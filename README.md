@@ -10,10 +10,10 @@ Local-first forecasting harness for scenario analysis. The repo contains a share
 Verified on `main` on 2026-04-22:
 
 - Full suite:
-  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q`
   - `273 passed in 5.28s`
 - Checked-in smoke campaign:
-  - `PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
+  - `PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
   - `16 passed in 0.63s`
 
 ## Repository Layout
@@ -271,13 +271,13 @@ Future ingests into that same corpus will reuse the stored backend preference au
 Full suite:
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core -q
+PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core -q
 ```
 
 Checked-in smoke campaign:
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q
+PYTHONPATH=packages/core/src .venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q
 ```
 
 Built-in replay and calibration checks:
@@ -330,7 +330,9 @@ Current boundary:
 
 ## Current Gaps
 
-- The built-in domain packs are templates, not mature validated forecasting models.
-- The replay corpus is broader than before and now has `22` built-in cases, but it is still modest rather than a large historical library.
-- Some broader bulk-edit workflows remain file-backed, but direct evidence-packet replacement is now available through structured CLI/runtime inputs.
-- OCR-backed PDF ingestion is still missing for image-only PDFs, although text-extractable PDFs already work and Codex/Claude can inspect PDFs through their own tooling.
+- Spreadsheet ingestion and web-archive ingestion are still missing.
+- Some broader bulk-edit workflows remain file-backed instead of using structured CLI/runtime inputs end to end.
+- The simulation engine still reports raw ranking rather than calibrated probability or confidence outputs.
+- The built-in replay corpus still has `22` cases rather than the frozen `40`-case calibration target.
+- Knowledge compiler / rule extraction, richer new-domain synthesis, and packaged Codex/Claude local integrations are still pending.
+- OCR-backed PDF ingestion is deferred rather than open-ended; text-extractable PDFs already work, and adapter-side PDF handling covers image-heavy cases for now.
