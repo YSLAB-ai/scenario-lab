@@ -73,14 +73,14 @@ This program is **done** only when all of these are true on accepted `main`:
 - Test: `packages/core/tests/test_cli_workflow.py`
 - Test: `packages/core/tests/test_domain_evolution_cli.py`
 
-- [ ] Audit every CLI path that still requires a JSON file for structured edits instead of direct flags or repeated JSON payloads.
-- [ ] Convert active analyst-facing flows first:
+- [x] Audit every CLI path that still requires a JSON file for structured edits instead of direct flags or repeated JSON payloads.
+- [x] Convert active analyst-facing flows first:
   - replay suite input
   - domain blueprint input
   - domain suggestion / weakness / retuning surfaces
-- [ ] Preserve file input only for true import/export use cases, not for routine workflow mutation.
-- [ ] Extend the packaged runtime where needed so the same structured surfaces are available there too.
-- [ ] Update docs so the “normal path” examples no longer rely on intermediary JSON files.
+- [x] Preserve file input only for true import/export use cases, not for routine workflow mutation.
+- [x] Extend the packaged runtime where needed so the same structured surfaces are available there too.
+- [x] Update docs so the “normal path” examples no longer rely on intermediary JSON files.
 
 ### Task 4: Expand Replay Library To A Real Calibration Base
 
