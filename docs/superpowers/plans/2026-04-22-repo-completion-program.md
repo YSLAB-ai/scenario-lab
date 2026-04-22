@@ -91,8 +91,8 @@ This program is **done** only when all of these are true on accepted `main`:
 - Modify: `packages/core/tests/test_replay.py`
 - Test: replay CLI commands and calibration summaries
 
-- [ ] Expand the built-in replay corpus from `22` to at least `40` cases.
-- [ ] Guarantee minimum coverage for the active built-in domains:
+- [x] Expand the built-in replay corpus from `22` to at least `40` cases.
+- [x] Guarantee minimum coverage for the active built-in domains:
   - `company-action`
   - `election-shock`
   - `interstate-crisis`
@@ -100,9 +100,9 @@ This program is **done** only when all of these are true on accepted `main`:
   - `pandemic-response`
   - `regulatory-enforcement`
   - `supply-chain-disruption`
-- [ ] Keep each added case time-anchored and source-attributed.
-- [ ] Use the replay expansion to expose weak domains instead of hiding misses by loosening expectations.
-- [ ] Re-run calibration after each domain batch and tune only when a failure reflects a real model issue.
+- [x] Keep each added case time-anchored and source-attributed.
+- [x] Use the replay expansion to expose weak domains instead of hiding misses by loosening expectations.
+- [x] Re-run calibration after each domain batch and tune only when a failure reflects a real model issue.
 
 ### Task 5: Add Probability Calibration V1
 

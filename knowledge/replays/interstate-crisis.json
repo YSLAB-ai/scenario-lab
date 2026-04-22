@@ -224,5 +224,135 @@
       "military_posture",
       "tension_index"
     ]
+  },
+  {
+    "run_id": "philippines-ayungin-2024",
+    "domain_pack": "interstate-crisis",
+    "case_title": "Ayungin Shoal June 2024 resupply clash and alliance consultation",
+    "time_anchor": "2024-06",
+    "historical_outcome": "After the June 2024 Ayungin Shoal clash, the crisis stayed in a coercive but bounded lane shaped by Philippine protest, alliance consultation, and continued calls for dialogue rather than immediate open conflict.",
+    "sources": [
+      {
+        "title": "DFA Statement on the RORE Incident on 17 June 2024",
+        "publisher": "Department of Foreign Affairs of the Philippines",
+        "url": "https://dfa.gov.ph/authentication-functions/113-newsroom/public-advisory/34933-dfa-statement-on-the-rore-incident-on-17-june-2024"
+      },
+      {
+        "title": "DOD Officials Underscore 'Ironclad' Commitment to Philippines After China's Unsafe Maneuvers",
+        "publisher": "U.S. Department of Defense",
+        "url": "https://www.defense.gov/serve-from-netstorage/News/News-Stories/Article/Article/3613695/dod-officials-underscore-ironclad-commitment-to-philippines-after-chinas-unsafe/index.html"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess 21-day crisis dynamics after the June 2024 Ayungin Shoal resupply clash between the Philippines and China.",
+      "focus_entities": [
+        "Philippines",
+        "China"
+      ],
+      "current_development": "A Chinese interdiction effort injures Philippine personnel during an Ayungin Shoal resupply mission, Manila lodges a formal protest, and U.S. alliance consultation intensifies.",
+      "current_stage": "trigger",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "Both sides want to avoid immediate open naval conflict",
+        "Alliance commitments and regional stability are under visible pressure"
+      ],
+      "known_unknowns": [
+        "Whether another resupply mission will trigger a more dangerous intercept cycle"
+      ],
+      "suggested_entities": [
+        "United States",
+        "ASEAN"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Alliance signaling and bounded coercion are more likely than immediate major-war escalation"
+      ],
+      "suggested_actors": [
+        "United States",
+        "ASEAN"
+      ]
+    },
+    "documents": {
+      "ayungin-protest.md": "The Philippines said Chinese actions during the Ayungin Shoal resupply mission caused injury and vessel damage and called for compliance with international law.",
+      "alliance-consultation.md": "The United States reiterated its ironclad commitment to the Philippines and emphasized close consultation after unsafe Chinese maneuvers."
+    },
+    "expected_top_branch": "Alliance consultation (coordinated restraint)",
+    "expected_root_strategy": "Alliance consultation",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "alliance_pressure",
+      "diplomatic_channel",
+      "geographic_flashpoint",
+      "leader_style",
+      "mediation_window",
+      "military_posture",
+      "tension_index"
+    ]
+  },
+  {
+    "run_id": "red-sea-strikes-2024",
+    "domain_pack": "interstate-crisis",
+    "case_title": "Red Sea shipping attacks and coalition strikes on the Houthis",
+    "time_anchor": "2024-02",
+    "historical_outcome": "The Red Sea crisis moved through coalition signaling, limited strikes, and maritime security coordination to contain shipping threats rather than becoming a direct great-power war.",
+    "sources": [
+      {
+        "title": "Readout of Secretary of Defense Lloyd J. Austin III's Virtual Conference on Red Sea Maritime Security",
+        "publisher": "U.S. Department of Defense",
+        "url": "https://www.defense.gov/News/Releases/Release/Article/3621292/readout-of-secretary-of-defense-lloyd-j-austin-iiis-virtual-conference-on-red-s/"
+      },
+      {
+        "title": "Joint Statement From Australia, Bahrain, Denmark, Canada, the Netherlands, New Zealand, United Kingdom, and United States on Additional Strikes Against the Houthis in Yemen",
+        "publisher": "U.S. Department of Defense",
+        "url": "https://www.defense.gov/News/Releases/Release/Article/3686190/joint-statement-from-australia-bahrain-denmark-canada-the-netherlands-new-zeala/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess 30-day crisis dynamics after continued Houthi attacks on Red Sea shipping prompt coalition maritime security coordination and additional strikes.",
+      "focus_entities": [
+        "United States",
+        "Houthis"
+      ],
+      "current_development": "Continued attacks on commercial shipping in the Red Sea trigger coalition maritime security coordination, warnings, and additional strikes against Houthi targets.",
+      "current_stage": "trigger",
+      "time_horizon": "30d",
+      "known_constraints": [
+        "Commercial shipping must keep moving through the region",
+        "Coalition members want to contain the threat without widening the conflict unnecessarily"
+      ],
+      "known_unknowns": [
+        "Whether continued shipping attacks will force a broader escalation cycle"
+      ],
+      "suggested_entities": [
+        "United Kingdom",
+        "Commercial Shipping"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Coalition members will prioritize maritime security coordination and bounded military pressure over a larger regional war"
+      ],
+      "suggested_actors": [
+        "United Kingdom",
+        "Commercial Shipping"
+      ]
+    },
+    "documents": {
+      "red-sea-coordination.md": "Defense officials said a multinational effort was needed to restore security in the Red Sea and deter continued attacks on commercial shipping.",
+      "additional-strikes.md": "Coalition governments said additional strikes against Houthi targets were a response to continued attacks on commercial and naval vessels in the Red Sea."
+    },
+    "expected_top_branch": "Alliance consultation (coordinated restraint)",
+    "expected_root_strategy": "Alliance consultation",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "alliance_pressure",
+      "diplomatic_channel",
+      "geographic_flashpoint",
+      "leader_style",
+      "mediation_window",
+      "military_posture",
+      "tension_index"
+    ]
   }
 ]

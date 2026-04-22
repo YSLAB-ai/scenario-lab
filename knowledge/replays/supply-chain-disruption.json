@@ -164,5 +164,197 @@
       "supplier_concentration",
       "transport_reliability"
     ]
+  },
+  {
+    "run_id": "suez-blockage-2021",
+    "domain_pack": "supply-chain-disruption",
+    "case_title": "Suez Canal blockage and rerouting pressure in 2021",
+    "time_anchor": "2021-03",
+    "historical_outcome": "Shippers first relied on rerouting, schedule visibility, and reserve logistics after the Suez blockage rather than solving the disruption through rapid source substitution.",
+    "sources": [
+      {
+        "title": "Update to Vessel blockage in the Suez Canal",
+        "publisher": "Maersk",
+        "url": "https://www.maersk.com/news/articles/2021/03/24/vessel-blockage-in-the-suez-canal"
+      },
+      {
+        "title": "Navigation in the Suez Canal is back in both directions",
+        "publisher": "Suez Canal Authority",
+        "url": "https://www.suezcanal.gov.eg/English/MediaCenter/News/Pages/31-3-2021.aspx"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess supply-chain responses after the March 2021 Suez Canal blockage disrupts global shipping schedules.",
+      "focus_entities": [
+        "Global Shippers",
+        "Logistics Network"
+      ],
+      "current_development": "The Ever Given blocks the Suez Canal, vessels queue on both sides, and shippers scramble to reroute or absorb schedule delays.",
+      "current_stage": "trigger",
+      "time_horizon": "45d",
+      "known_constraints": [
+        "The disruption is in transport, not product design or supplier capability",
+        "Freight must keep moving through alternate routes or delayed schedules"
+      ],
+      "known_unknowns": [
+        "How long the blockage and clearing effort will keep networks out of balance"
+      ],
+      "suggested_entities": [
+        "Alternate Ports",
+        "Logistics Partners"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Operators will prioritize rerouting and reserve logistics over immediate supplier substitution"
+      ],
+      "suggested_actors": [
+        "Alternate Ports",
+        "Logistics Partners"
+      ]
+    },
+    "documents": {
+      "maersk-suez.md": "Maersk said the Suez Canal was blocked in both directions and customers should expect rerouting pressure and schedule disruption.",
+      "sca-reopening.md": "The Suez Canal Authority later said navigation resumed in both directions after the canal was reopened."
+    },
+    "expected_top_branch": "Reserve logistics",
+    "expected_root_strategy": "Reserve logistics",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "customer_penalty_pressure",
+      "disruption_mode",
+      "inventory_cover_days",
+      "substitution_flexibility",
+      "supplier_concentration",
+      "transport_reliability"
+    ]
+  },
+  {
+    "run_id": "red-sea-rerouting-2023",
+    "domain_pack": "supply-chain-disruption",
+    "case_title": "Red Sea shipping rerouting and Cape diversion in late 2023",
+    "time_anchor": "2023-12",
+    "historical_outcome": "Major carriers responded to the late-2023 Red Sea attacks by pausing transit, rerouting around the Cape of Good Hope, and leaning on logistics contingencies.",
+    "sources": [
+      {
+        "title": "Maersk Operations through Red Sea / Gulf of Aden",
+        "publisher": "Maersk",
+        "url": "https://www.maersk.com/ja-jp/news/articles/2023/12/15/maersk-operations-through-red-sea-gulf-of-aden"
+      },
+      {
+        "title": "Readout of Secretary of Defense Lloyd J. Austin III's Virtual Conference on Red Sea Maritime Security",
+        "publisher": "U.S. Department of Defense",
+        "url": "https://www.defense.gov/News/Releases/Release/Article/3621292/readout-of-secretary-of-defense-lloyd-j-austin-iiis-virtual-conference-on-red-s/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess supply-chain responses after late-2023 Red Sea attacks push carriers toward Cape rerouting.",
+      "focus_entities": [
+        "Ocean Carrier",
+        "Global Shippers"
+      ],
+      "current_development": "Escalating attacks on commercial vessels in the Red Sea push carriers to pause transits and divert around the Cape of Good Hope while maritime security coordination ramps up.",
+      "current_stage": "trigger",
+      "time_horizon": "60d",
+      "known_constraints": [
+        "The immediate binding problem is transport-route safety and predictability",
+        "Cargo owners need continuity even if transit times lengthen"
+      ],
+      "known_unknowns": [
+        "Whether security measures will restore enough confidence for normal Red Sea transit to resume quickly"
+      ],
+      "suggested_entities": [
+        "Logistics Partners",
+        "Commercial Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Carriers will favor diversion and contingency logistics rather than wait for perfect route security"
+      ],
+      "suggested_actors": [
+        "Logistics Partners",
+        "Commercial Customers"
+      ]
+    },
+    "documents": {
+      "maersk-red-sea.md": "Maersk said it paused Red Sea transits, diverted around the Cape of Good Hope, and treated that route as the faster and more predictable outcome for customers.",
+      "red-sea-security.md": "Defense officials said multinational maritime security coordination was needed because attacks on shipping were threatening the global economy."
+    },
+    "expected_top_branch": "Reserve logistics",
+    "expected_root_strategy": "Reserve logistics",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "customer_penalty_pressure",
+      "disruption_mode",
+      "inventory_cover_days",
+      "substitution_flexibility",
+      "supplier_concentration",
+      "transport_reliability"
+    ]
+  },
+  {
+    "run_id": "colonial-pipeline-2021",
+    "domain_pack": "supply-chain-disruption",
+    "case_title": "Colonial Pipeline ransomware disruption and East Coast fuel stress",
+    "time_anchor": "2021-05",
+    "historical_outcome": "The Colonial Pipeline incident triggered emergency logistics and resilience measures to keep fuel moving rather than a clean supplier-side substitution solution.",
+    "sources": [
+      {
+        "title": "Pipeline Cybersecurity: Protecting Critical Infrastructure",
+        "publisher": "Transportation Security Administration",
+        "url": "https://www.tsa.gov/news/press/testimony/2021/07/27/pipeline-cybersecurity-protecting-critical-infrastructure"
+      },
+      {
+        "title": "DHS announces new cybersecurity requirements for critical pipeline owners and operators",
+        "publisher": "Transportation Security Administration",
+        "url": "https://www.tsa.gov/news/press/releases/2021/07/20/dhs-announces-new-cybersecurity-requirements-critical-pipeline"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess supply-chain responses after the 2021 Colonial Pipeline ransomware incident disrupts fuel flows on the U.S. East Coast.",
+      "focus_entities": [
+        "Fuel Distributor",
+        "Pipeline Operator"
+      ],
+      "current_development": "A cyberattack disrupts a major fuel pipeline, creating transport bottlenecks and forcing emergency resilience and logistics measures.",
+      "current_stage": "trigger",
+      "time_horizon": "45d",
+      "known_constraints": [
+        "Fuel distribution continuity matters more than supplier substitution in the acute phase",
+        "Transport resilience and recovery planning are the immediate bottlenecks"
+      ],
+      "known_unknowns": [
+        "How quickly operators can restore secure operations without prolonged downstream shortages"
+      ],
+      "suggested_entities": [
+        "Regulator",
+        "Logistics Partners"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The acute response will emphasize resilience, contingency logistics, and restoration of network function"
+      ],
+      "suggested_actors": [
+        "Regulator",
+        "Logistics Partners"
+      ]
+    },
+    "documents": {
+      "tsa-pipeline.md": "TSA said the Colonial Pipeline incident temporarily disrupted critical supplies of gasoline and refined petroleum products along the East Coast.",
+      "cybersecurity-directive.md": "TSA said new pipeline security directives required operators to implement urgent cybersecurity and resilience measures after the incident."
+    },
+    "expected_top_branch": "Reserve logistics",
+    "expected_root_strategy": "Reserve logistics",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "customer_penalty_pressure",
+      "disruption_mode",
+      "inventory_cover_days",
+      "substitution_flexibility",
+      "supplier_concentration",
+      "transport_reliability"
+    ]
   }
 ]

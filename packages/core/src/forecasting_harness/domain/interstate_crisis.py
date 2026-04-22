@@ -166,7 +166,20 @@ class InterstateCrisisPack(DomainPack):
         alliance_pressure = 0.08
         alliance_pressure += 0.14 * count_term_matches(
             text,
-            ["allies", "alliance commitments", "security commitments", "treaty", "coalition", "joint statement"],
+            [
+                "allies",
+                "alliance commitments",
+                "security commitments",
+                "treaty",
+                "coalition",
+                "joint statement",
+                "ironclad commitment",
+                "close consultation",
+                "consultation intensifies",
+                "multinational effort",
+                "maritime security coordination",
+                "security guarantee",
+            ],
         )
         alliance_pressure += 0.08 * count_term_matches(text, ["united states", "israel", "gulf states", "taiwan"])
         alliance_pressure -= 0.04 * count_term_matches(text, ["independent", "unilateral"])
@@ -247,6 +260,15 @@ class InterstateCrisisPack(DomainPack):
         diplomacy = _numeric_field(state, "diplomatic_channel", 0.3)
         hawkish_adjustment = 0.1 if leader_style == "hawkish" else 0.0
         posture_adjustment = 0.08 if military_posture in {"high-alert", "forward-deployed", "contested"} else 0.0
+        coordination_signal = count_term_matches(
+            state_signal_text(state),
+            [
+                "ironclad commitment",
+                "close consultation",
+                "consultation intensifies",
+                "security guarantee",
+            ],
+        )
 
         if phase == "trigger":
             actions = [
@@ -275,14 +297,28 @@ class InterstateCrisisPack(DomainPack):
                     "action_id": "alliance-consultation",
                     "branch_id": "alliance-consultation",
                     "label": "Alliance consultation",
-                    "prior": bounded(0.03 + alliance * 0.45 + posture_adjustment * 0.1 + max(0.0, tension - 0.5) * 0.06 - mediation * 0.05),
+                    "prior": bounded(
+                        0.03
+                        + alliance * 0.47
+                        + posture_adjustment * 0.1
+                        + max(0.0, tension - 0.5) * 0.06
+                        + coordination_signal * 0.12
+                        - mediation * 0.05
+                    ),
                     "dependencies": {"fields": ["alliance_pressure", "diplomatic_channel", "mediation_window", "military_posture", "tension_index"]},
                 },
                 {
                     "action_id": "open-negotiation",
                     "branch_id": "open-negotiation",
                     "label": "Open negotiation",
-                    "prior": bounded(0.1 + diplomacy * 0.22 + mediation * 0.32 - hawkish_adjustment * 0.35 - max(0.0, tension - 0.7) * 0.1),
+                    "prior": bounded(
+                        0.1
+                        + diplomacy * 0.22
+                        + mediation * 0.32
+                        - hawkish_adjustment * 0.35
+                        - max(0.0, tension - 0.7) * 0.1
+                        - coordination_signal * 0.16
+                    ),
                     "dependencies": {"fields": ["diplomatic_channel", "leader_style", "mediation_window", "tension_index"]},
                 },
             ]

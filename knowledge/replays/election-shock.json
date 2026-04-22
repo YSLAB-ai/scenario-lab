@@ -114,5 +114,194 @@
       "poll_margin",
       "turnout_energy"
     ]
+  },
+  {
+    "run_id": "germany-traffic-light-2021",
+    "domain_pack": "election-shock",
+    "case_title": "Germany 2021 election and traffic-light coalition formation",
+    "time_anchor": "2021-10",
+    "historical_outcome": "After the 2021 election produced no outright majority, Germany moved toward a negotiated SPD-Greens-FDP traffic-light coalition rather than a simple messaging contest.",
+    "sources": [
+      {
+        "title": "2021 Bundestag Election: final result",
+        "publisher": "The Federal Returning Officer",
+        "url": "https://www.bundeswahlleiterin.de/en/info/presse/mitteilungen/bundestagswahl-2021/52_21_endgueltiges-ergebnis.html"
+      },
+      {
+        "title": "11",
+        "publisher": "Federal Government of Germany",
+        "url": "https://www.bundesregierung.de/breg-en/service/archive/11-2156766"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess coalition-shaping dynamics after Germany's 2021 federal election produces no single-party governing majority.",
+      "focus_entities": [
+        "SPD",
+        "CDU/CSU"
+      ],
+      "current_development": "Germany's 2021 election produces a fragmented parliament, SPD finishes first, and coalition bargaining shifts toward a possible traffic-light coalition with the Greens and FDP.",
+      "current_stage": "coalition-shaping",
+      "time_horizon": "45d",
+      "known_constraints": [
+        "A workable governing coalition has to be assembled quickly enough to preserve stability",
+        "Party leaders need coalition arithmetic and message discipline to line up at the same time"
+      ],
+      "known_unknowns": [
+        "Whether coalition partners can align on a durable governing program"
+      ],
+      "suggested_entities": [
+        "Greens",
+        "FDP"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Elite dealmaking and coalition bargaining matter more than fresh persuasion at this stage"
+      ],
+      "suggested_actors": [
+        "Greens",
+        "FDP"
+      ]
+    },
+    "documents": {
+      "bundestag-result.md": "Germany's 2021 federal election produced no outright majority and left coalition formation dependent on post-election bargaining.",
+      "traffic-light-summary.md": "The Federal Government later described the first federal traffic-light coalition as the outcome of that bargaining process."
+    },
+    "expected_top_branch": "Targeted deal",
+    "expected_root_strategy": "Targeted deal",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "coalition_fragility",
+      "donor_confidence",
+      "message_discipline",
+      "poll_margin",
+      "turnout_energy"
+    ]
+  },
+  {
+    "run_id": "uk-confidence-supply-2017",
+    "domain_pack": "election-shock",
+    "case_title": "UK 2017 hung parliament and DUP confidence-and-supply deal",
+    "time_anchor": "2017-06",
+    "historical_outcome": "The 2017 UK election produced a hung parliament that ended in a negotiated Conservative-DUP confidence-and-supply deal rather than an immediate fresh election.",
+    "sources": [
+      {
+        "title": "Results and turnout at the 2017 UK general election",
+        "publisher": "Electoral Commission",
+        "url": "https://www.electoralcommission.org.uk/research-reports-and-data/our-reports-and-data-past-elections-and-referendums/results-and-turnout-2017-uk-general-election"
+      },
+      {
+        "title": "PM statement on Confidence and Supply Agreement with the DUP",
+        "publisher": "Prime Minister's Office, 10 Downing Street",
+        "url": "https://www.gov.uk/government/news/pm-statement-on-confidence-and-supply-agreement-with-the-dup"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess coalition-shaping dynamics after the 2017 UK general election produces a hung parliament.",
+      "focus_entities": [
+        "Conservative Party",
+        "Labour Party"
+      ],
+      "current_development": "The 2017 UK election produces a hung parliament and pushes the Conservatives toward confidence-and-supply negotiations with the DUP.",
+      "current_stage": "coalition-shaping",
+      "time_horizon": "21d",
+      "known_constraints": [
+        "The government needs a workable parliamentary arrangement quickly",
+        "Party leaders must stabilize confidence without reopening the campaign immediately"
+      ],
+      "known_unknowns": [
+        "Whether a support arrangement can be secured without a broader coalition deal"
+      ],
+      "suggested_entities": [
+        "DUP",
+        "Party Leadership"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Parliamentary bargaining and elite negotiation now matter more than mass persuasion"
+      ],
+      "suggested_actors": [
+        "DUP",
+        "Party Leadership"
+      ]
+    },
+    "documents": {
+      "hung-parliament.md": "The 2017 UK general election produced a hung parliament, forcing immediate bargaining over who could command confidence in the Commons.",
+      "dup-agreement.md": "Downing Street said a confidence-and-supply agreement had been made with the DUP to support the government on key votes."
+    },
+    "expected_top_branch": "Targeted deal",
+    "expected_root_strategy": "Targeted deal",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "coalition_fragility",
+      "donor_confidence",
+      "message_discipline",
+      "poll_margin",
+      "turnout_energy"
+    ]
+  },
+  {
+    "run_id": "netherlands-schoof-2024",
+    "domain_pack": "election-shock",
+    "case_title": "Dutch coalition negotiations leading to the Schoof government",
+    "time_anchor": "2024-07",
+    "historical_outcome": "The Dutch post-election shock resolved through a negotiated coalition that produced the Schoof government, not through a simple winner-take-all narrative fight.",
+    "sources": [
+      {
+        "title": "Schoof government sworn in",
+        "publisher": "Government of the Netherlands",
+        "url": "https://www.government.nl/government/news/2024/07/02/schoof-government-sworn-in"
+      },
+      {
+        "title": "Government statement of policy on taking office, 3 July 2024",
+        "publisher": "Government of the Netherlands",
+        "url": "https://www.government.nl/binaries/government/documenten/publications/2024/07/02/government-statement-of-policy-on-taking-office/government-statement-of-policy-on-taking-office-3-july-2024.pdf"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess coalition-shaping dynamics after Dutch election fragmentation leads to the 2024 Schoof government.",
+      "focus_entities": [
+        "PVV",
+        "VVD"
+      ],
+      "current_development": "After prolonged negotiations following the Dutch election, coalition partners move toward a government led by Dick Schoof with multiple parties sharing cabinet control.",
+      "current_stage": "coalition-shaping",
+      "time_horizon": "30d",
+      "known_constraints": [
+        "The coalition has to convert a fragmented result into a workable governing arrangement",
+        "Public and investor confidence depend on a stable government taking office"
+      ],
+      "known_unknowns": [
+        "Whether the parties can maintain enough discipline to launch the coalition successfully"
+      ],
+      "suggested_entities": [
+        "NSC",
+        "BBB"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Coalition agreement mechanics and elite bargaining dominate over fresh persuasion at this stage"
+      ],
+      "suggested_actors": [
+        "NSC",
+        "BBB"
+      ]
+    },
+    "documents": {
+      "schoof-swearing-in.md": "The Dutch government said the Schoof government was sworn in as a coalition of PVV, VVD, NSC, and BBB.",
+      "policy-statement.md": "The new Dutch government's statement of policy tied its program to the coalition agreement reached after the election negotiations."
+    },
+    "expected_top_branch": "Targeted deal",
+    "expected_root_strategy": "Targeted deal",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "coalition_fragility",
+      "donor_confidence",
+      "message_discipline",
+      "poll_margin",
+      "turnout_energy"
+    ]
   }
 ]

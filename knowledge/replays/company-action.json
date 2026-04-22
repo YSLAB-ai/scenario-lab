@@ -225,5 +225,191 @@
       "operational_stability",
       "regulatory_pressure"
     ]
+  },
+  {
+    "run_id": "crowdstrike-outage-2024",
+    "domain_pack": "company-action",
+    "case_title": "CrowdStrike July 2024 outage and customer trust reset",
+    "time_anchor": "2024-07",
+    "historical_outcome": "CrowdStrike moved into transparent remediation, customer restoration, and trust-rebuilding after the July 2024 outage rather than defending the status quo.",
+    "sources": [
+      {
+        "title": "To Our Customers and Partners",
+        "publisher": "CrowdStrike",
+        "url": "https://www.crowdstrike.com/en-us/blog/to-our-customers-and-partners/"
+      },
+      {
+        "title": "Falcon Content Update Preliminary Post Incident Report",
+        "publisher": "CrowdStrike",
+        "url": "https://www.crowdstrike.com/en-us/blog/falcon-content-update-preliminary-post-incident-report/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess CrowdStrike strategy after the July 2024 Falcon sensor outage disrupted customer systems and forced an immediate trust-repair campaign.",
+      "focus_entities": [
+        "CrowdStrike"
+      ],
+      "current_development": "A faulty Falcon content update crashes Windows systems, forces emergency remediation, and creates customer pressure for transparency and operational reassurance.",
+      "current_stage": "trigger",
+      "time_horizon": "120d",
+      "known_constraints": [
+        "Enterprise customers need rapid system restoration and credible prevention steps",
+        "The company must preserve brand trust while managing operational recovery"
+      ],
+      "known_unknowns": [
+        "Whether transparency and remediation will stabilize customer confidence quickly"
+      ],
+      "suggested_entities": [
+        "Board",
+        "Enterprise Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Management will prioritize customer restoration, transparency, and trust repair over aggressive strategic change"
+      ],
+      "suggested_actors": [
+        "Board",
+        "Enterprise Customers"
+      ]
+    },
+    "documents": {
+      "ceo-apology.md": "CrowdStrike apologized directly to customers, said it identified the issue and deployed a fix, and pledged transparency and support during restoration.",
+      "post-incident-report.md": "CrowdStrike published a preliminary post-incident report describing the failed content update, the reversion window, and changes to testing and deployment controls."
+    },
+    "expected_top_branch": "Stakeholder reset",
+    "expected_root_strategy": "Stakeholder reset",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
+  },
+  {
+    "run_id": "intel-cost-reset-2024",
+    "domain_pack": "company-action",
+    "case_title": "Intel 2024 cost reduction and operating model reset",
+    "time_anchor": "2024-08",
+    "historical_outcome": "Intel responded to its 2024 pressure point with major cost cuts, headcount reduction, and capital discipline rather than defending the prior operating model.",
+    "sources": [
+      {
+        "title": "Intel Reports Second-Quarter 2024 Financial Results; Announces $10 Billion Cost Reduction Plan to Increase Efficiency and Market Competitiveness",
+        "publisher": "Intel",
+        "url": "https://www.intc.com/news-events/press-releases/detail/1704/intel-reports-second-quarter-2024-financial-results"
+      },
+      {
+        "title": "Actions to Accelerate our Progress",
+        "publisher": "Intel",
+        "url": "https://www.intc.com/news-events/press-releases/detail/1712/actions-to-accelerate-our-progress"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Intel strategy after its August 2024 cost-reduction announcement and operating model reset.",
+      "focus_entities": [
+        "Intel"
+      ],
+      "current_development": "Weak financial performance triggers a 10 billion dollar cost-reduction plan, significant headcount actions, and cuts to capital spending as management resets the operating model.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "The company still needs to fund its long-term technology roadmap",
+        "Investors and customers need evidence that execution is stabilizing"
+      ],
+      "known_unknowns": [
+        "Whether the cost reset can improve operating stability without worsening confidence"
+      ],
+      "suggested_entities": [
+        "Board",
+        "Lead Lenders"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Management will emphasize operating discipline and execution repair before any broader growth narrative regains traction"
+      ],
+      "suggested_actors": [
+        "Board",
+        "Lead Lenders"
+      ]
+    },
+    "documents": {
+      "intel-results.md": "Intel said it was pursuing a 10 billion dollar cost reduction plan to increase efficiency and align spending with market conditions.",
+      "intel-operating-model.md": "Pat Gelsinger said Intel had to fundamentally change how it operates, reduce headcount, and cut capital expenditures to fit the new operating model."
+    },
+    "expected_top_branch": "Operational pivot",
+    "expected_root_strategy": "Operational pivot",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
+  },
+  {
+    "run_id": "southwest-meltdown-2022",
+    "domain_pack": "company-action",
+    "case_title": "Southwest operational meltdown and resiliency reset",
+    "time_anchor": "2022-12",
+    "historical_outcome": "Southwest moved into an operational resiliency and modernization response after the 2022 holiday meltdown rather than treating it as a narrow messaging problem.",
+    "sources": [
+      {
+        "title": "DOT Penalizes Southwest Airlines $140 Million for 2022 Holiday Meltdown",
+        "publisher": "U.S. Department of Transportation",
+        "url": "https://www.transportation.gov/briefing-room/dot-penalizes-southwest-airlines-140-million-2022-holiday-meltdown"
+      },
+      {
+        "title": "Southwest Airlines Plans to Boost Operational Resiliency to Enhance Support for Employees and Customers",
+        "publisher": "Southwest Airlines",
+        "url": "https://www.southwestairlinesinvestorrelations.com/news-events/press-releases/detail/172/southwest-airlines-plans-to-boost-operational-resiliency-to-enhance-support-for-employees-and-customers"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Southwest strategy after the 2022 holiday operational meltdown and subsequent resiliency overhaul.",
+      "focus_entities": [
+        "Southwest Airlines"
+      ],
+      "current_development": "The 2022 holiday collapse strands passengers, triggers regulatory scrutiny, and forces Southwest to announce a broader operational resiliency plan.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "Operational reliability must improve under public and regulatory scrutiny",
+        "Customer trust and scheduling credibility need repair"
+      ],
+      "known_unknowns": [
+        "Whether the resiliency program can restore stable operations quickly enough to calm customers and regulators"
+      ],
+      "suggested_entities": [
+        "Regulator",
+        "Key Customers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The company will prioritize operational recovery and systems resilience over a narrow communications response"
+      ],
+      "suggested_actors": [
+        "Regulator",
+        "Key Customers"
+      ]
+    },
+    "documents": {
+      "dot-meltdown.md": "DOT said Southwest's operational failures during the 2022 holiday period stranded over two million passengers and triggered a record consumer protection penalty.",
+      "resiliency-plan.md": "Southwest said it would boost operational resiliency through technology, network coordination, and support improvements for employees and customers."
+    },
+    "expected_top_branch": "Operational pivot",
+    "expected_root_strategy": "Operational pivot",
+    "expected_evidence_sources": [],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
   }
 ]
