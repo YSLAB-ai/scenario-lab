@@ -266,8 +266,8 @@ Date: 2026-04-22
     - branch-mode synthesis still commits `feat: synthesize <slug> domain`
 - The final repo-completion closeout on 2026-04-22 then verified:
   - `packages/core/.venv/bin/python --version` -> `Python 3.12.13`
-  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q` -> `313 passed in 11.75s`
-  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q` -> `20 passed in 3.35s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q` -> `313 passed in 11.26s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q` -> `20 passed in 3.22s`
   - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli summarize-replay-calibration` -> `case_count = 40`, `historically_anchored_case_count = 28`, all overall replay metrics `1.0`
   - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-builtin-replay-retuning --workspace-root /tmp/repo-completion-phase10-retuning --no-branch` -> `domain_count = 7`, `case_count = 40`, `weak_domain_count = 0`, `generated_suggestion_count = 0`
   - final note: `docs/status/2026-04-22-repo-completion-final.md`
