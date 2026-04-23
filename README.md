@@ -4,6 +4,8 @@
 
 Scenario Lab helps you turn a developing situation into a structured scenario run, gather and approve evidence, simulate multiple branches, and generate readable reports.
 
+![Scenario Lab workflow](docs/assets/scenario-lab-workflow.png)
+
 ## Quickstart
 
 Start with the first-use setup and demo flow in [docs/quickstart.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/quickstart.md).
