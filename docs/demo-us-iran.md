@@ -209,9 +209,15 @@ Exact observed search summary:
 
 Exact observed top-three branches:
 
-1. `Alliance consultation (coordinated signaling)` with score `0.2894457915831681`
-2. `Signal resolve (managed signal)` with score `0.2887236102403397`
-3. `Open negotiation` with score `0.28652269436203087`
+1. `Coordinated consultation with allies` with score `0.2894457915831681`
+   Engine label: `Alliance consultation (coordinated signaling)`
+   What this means: the next phase is led by allied consultation and coordinated public signaling.
+2. `A controlled show of resolve` with score `0.2887236102403397`
+   Engine label: `Signal resolve (managed signal)`
+   What this means: the next phase centers on a managed signal of firmness rather than a runaway escalation.
+3. `Open negotiations` with score `0.28652269436203087`
+   Engine label: `Open negotiation`
+   What this means: the next phase is driven by open negotiation.
 
 All three carried the same replay-backed calibration surface in this run:
 
@@ -222,11 +228,17 @@ All three carried the same replay-backed calibration surface in this run:
 
 Exact observed scenario-family ranking:
 
-1. `Alliance consultation -> settlement-stalemate`
-2. `Signal resolve -> settlement-stalemate`
-3. `Open negotiation -> settlement-stalemate`
+1. `Allied consultation followed by a stalled settlement track`
+   Engine label: `Alliance consultation -> settlement-stalemate`
+   Plain-English reading: this family starts with coordinated allied consultation and then moves into a settlement effort that stalls.
+2. `A controlled signal followed by a stalled settlement track`
+   Engine label: `Signal resolve -> settlement-stalemate`
+   Plain-English reading: this family starts with a managed signal of resolve and then moves into a settlement effort that stalls.
+3. `Open negotiations followed by a stalled settlement track`
+   Engine label: `Open negotiation -> settlement-stalemate`
+   Plain-English reading: this family starts with open negotiation and then moves into a settlement effort that stalls.
 
-That means the engine slightly favored a coordination-and-signaling path over a managed signal or direct negotiation path, but the top of the ranking stayed tight rather than decisive.
+That means the engine slightly favored coordinated consultation with allies over a controlled show of resolve or open negotiations, but the top of the ranking stayed tight rather than decisive.
 
 ## 6. What the engine inferred about third parties
 

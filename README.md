@@ -117,13 +117,25 @@ Verified deeper `U.S.-Iran` example:
   - node count: `133`
   - transposition hits: `111`
 - top ranked scenarios:
-  1. `Alliance consultation (coordinated signaling)` with score `0.289`
-  2. `Signal resolve (managed signal)` with score `0.289`
-  3. `Open negotiation` with score `0.287`
+  1. `Coordinated consultation with allies` with score `0.289`
+     Engine label: `Alliance consultation (coordinated signaling)`
+     What this means: the next phase is led by allied consultation and coordinated public signaling.
+  2. `A controlled show of resolve` with score `0.289`
+     Engine label: `Signal resolve (managed signal)`
+     What this means: the next phase centers on a managed signal of firmness rather than a runaway escalation.
+  3. `Open negotiations` with score `0.287`
+     Engine label: `Open negotiation`
+     What this means: the next phase is driven by open negotiation.
 - leading scenario families:
-  - `Alliance consultation -> settlement-stalemate`
-  - `Signal resolve -> settlement-stalemate`
-  - `Open negotiation -> settlement-stalemate`
+  - `Allied consultation followed by a stalled settlement track`
+    Engine label: `Alliance consultation -> settlement-stalemate`
+    Plain-English reading: this family starts with coordinated allied consultation and then moves into a settlement effort that stalls.
+  - `A controlled signal followed by a stalled settlement track`
+    Engine label: `Signal resolve -> settlement-stalemate`
+    Plain-English reading: this family starts with a managed signal of resolve and then moves into a settlement effort that stalls.
+  - `Open negotiations followed by a stalled settlement track`
+    Engine label: `Open negotiation -> settlement-stalemate`
+    Plain-English reading: this family starts with open negotiation and then moves into a settlement effort that stalls.
 - inferred third-party actor pressures from the approved evidence and assumptions:
   - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
   - `Israel`: `domestic_sensitivity=0.73`, `reputational_sensitivity=0.55`
@@ -133,7 +145,7 @@ Verified deeper `U.S.-Iran` example:
 - report path from the rechecked run:
   - `/tmp/scenario-lab-us-iran-deeper-main/run/runs/us-iran-deeper/reports/r1.report.md`
 
-In that verified `U.S.-Iran` run, **`Alliance consultation (coordinated signaling)` was the highest-ranked scenario**, but the top three branches were very close together. The engine slightly favored coordinated signaling over managed signaling or direct negotiation; it did not find a runaway winner.
+In that verified `U.S.-Iran` run, **coordinated consultation with allies** ranked first, but the top three branches were very close together. The engine slightly favored that path over a controlled show of resolve or open negotiations; it did not find a runaway winner. Engine label: `Alliance consultation (coordinated signaling)`
 
 The shorter phase-by-phase workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 

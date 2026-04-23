@@ -16,7 +16,20 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "U.S.-Iran" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
-    assert "Alliance consultation (coordinated signaling)" in readme
+    assert "Coordinated consultation with allies" in readme
+    assert "Engine label: `Alliance consultation (coordinated signaling)`" in readme
+    assert "A controlled show of resolve" in readme
+    assert "Engine label: `Signal resolve (managed signal)`" in readme
+    assert "Open negotiations" in readme
+    assert "Engine label: `Open negotiation`" in readme
+    assert "Allied consultation followed by a stalled settlement track" in readme
+    assert "Engine label: `Alliance consultation -> settlement-stalemate`" in readme
+    assert "A controlled signal followed by a stalled settlement track" in readme
+    assert "Engine label: `Signal resolve -> settlement-stalemate`" in readme
+    assert "Open negotiations followed by a stalled settlement track" in readme
+    assert "Engine label: `Open negotiation -> settlement-stalemate`" in readme
+    assert "the top three branches were very close together" in readme
+    assert "it did not find a runaway winner" in readme
     assert "third-party actors carried into the run" in readme
     assert "[docs/quickstart.md](docs/quickstart.md)" in readme
     assert (
@@ -32,7 +45,14 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Actual runtime phases" in workflow
     assert "batch-ingest-recommended" in workflow
     assert "intake -> evidence -> approval -> simulation -> report" in workflow
-    assert "Alliance consultation (coordinated signaling)" in workflow
+    assert "Coordinated consultation with allies" in workflow
+    assert "Engine label: `Alliance consultation (coordinated signaling)`" in workflow
+    assert "A controlled show of resolve" in workflow
+    assert "Engine label: `Signal resolve (managed signal)`" in workflow
+    assert "Open negotiations" in workflow
+    assert "Engine label: `Open negotiation`" in workflow
+    assert "The top three scores stayed very close together" in workflow
+    assert "the engine did not find a runaway winner" in workflow
     assert "scenario-lab" in metadata
     assert "YSLAB-ai" in metadata
 
@@ -63,7 +83,18 @@ def test_public_docs_and_assets_exist() -> None:
     assert "run-adapter-action" in demo_doc
     assert "<json-for-one-evidence-item>" not in demo_doc
     assert "AP Apr. 23, 2026: U.S. threat posture around Hormuz shipping attacks" in demo_doc
-    assert "Alliance consultation (coordinated signaling)" in demo_doc
-    assert "Open negotiation" in demo_doc
+    assert "Coordinated consultation with allies" in demo_doc
+    assert "Engine label: `Alliance consultation (coordinated signaling)`" in demo_doc
+    assert "A controlled show of resolve" in demo_doc
+    assert "Engine label: `Signal resolve (managed signal)`" in demo_doc
+    assert "Open negotiations" in demo_doc
+    assert "Engine label: `Open negotiation`" in demo_doc
+    assert "Allied consultation followed by a stalled settlement track" in demo_doc
+    assert "Engine label: `Alliance consultation -> settlement-stalemate`" in demo_doc
+    assert "A controlled signal followed by a stalled settlement track" in demo_doc
+    assert "Engine label: `Signal resolve -> settlement-stalemate`" in demo_doc
+    assert "Open negotiations followed by a stalled settlement track" in demo_doc
+    assert "Engine label: `Open negotiation -> settlement-stalemate`" in demo_doc
+    assert "the top of the ranking stayed tight rather than decisive" in demo_doc
     assert "scenario-lab" in metadata_doc
     assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc

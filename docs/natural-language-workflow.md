@@ -46,9 +46,16 @@ This phase sequence was rechecked on a verified `U.S.-Iran` run in [docs/demo-us
   - `node_count = 133`
   - `transposition_hits = 111`
 - verified top scenario ranking:
-  1. `Alliance consultation (coordinated signaling)` at `0.289`
-  2. `Signal resolve (managed signal)` at `0.289`
-  3. `Open negotiation` at `0.287`
+  1. `Coordinated consultation with allies` at `0.289`
+     Engine label: `Alliance consultation (coordinated signaling)`
+     What this means: the next phase is led by allied consultation and coordinated public signaling.
+  2. `A controlled show of resolve` at `0.289`
+     Engine label: `Signal resolve (managed signal)`
+     What this means: the next phase centers on a managed signal of firmness rather than a runaway escalation.
+  3. `Open negotiations` at `0.287`
+     Engine label: `Open negotiation`
+     What this means: the next phase is driven by open negotiation.
+  The top three scores stayed very close together, so the ranking was tight rather than decisive and the engine did not find a runaway winner.
 - verified third-party actor pressures:
   - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
   - `Israel`: `domestic_sensitivity=0.73`, `reputational_sensitivity=0.55`
