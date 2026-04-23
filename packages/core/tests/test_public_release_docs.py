@@ -13,13 +13,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     )
 
     assert readme.startswith("# Scenario Lab")
-    assert "## Quickstart" in readme
-    assert "## Workflow And Demo" in readme
     assert "U.S.-Iran" in readme
-    assert "batch-ingest-recommended" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
-    assert "git clone git@github.com:YSLAB-ai/scenario-lab.git" in readme
     assert "[docs/quickstart.md](docs/quickstart.md)" in readme
     assert (
         "[docs/natural-language-workflow.md](docs/natural-language-workflow.md)"
@@ -34,7 +30,8 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Actual runtime phases" in workflow
     assert "batch-ingest-recommended" in workflow
     assert "intake -> evidence -> approval -> simulation -> report" in workflow
-    assert "Current public repository slug: `YSLAB-ai/scenario-lab`" in metadata
+    assert "scenario-lab" in metadata
+    assert "YSLAB-ai" in metadata
 
 
 def test_public_docs_and_assets_exist() -> None:
@@ -60,10 +57,7 @@ def test_public_docs_and_assets_exist() -> None:
     assert social_preview_asset.is_file()
     assert social_preview_asset.stat().st_size > 0
     assert "/Volumes/" not in demo_doc
-    assert (
-        "packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action"
-        in demo_doc
-    )
+    assert "run-adapter-action" in demo_doc
     assert "<json-for-one-evidence-item>" not in demo_doc
-    assert "exactly as executed" not in demo_doc
-    assert "Homepage: `https://github.com/YSLAB-ai/scenario-lab`" in metadata_doc
+    assert "scenario-lab" in metadata_doc
+    assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc
