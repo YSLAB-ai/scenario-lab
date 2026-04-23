@@ -147,3 +147,24 @@ def test_adapter_docs_mention_new_workflow_commands() -> None:
     assert "forecast-harness summarize-run" in claude_skill
     assert "forecast-harness summarize-revision" in claude_skill
     assert "forecast-harness generate-report" in claude_skill
+
+
+def test_adapter_docs_reference_scenario_lab_branding() -> None:
+    root = Path(__file__).resolve().parents[3]
+    docs_root = root / "docs"
+
+    codex_doc = (docs_root / "install-codex.md").read_text(encoding="utf-8")
+    claude_doc = (docs_root / "install-claude-code.md").read_text(encoding="utf-8")
+    codex_bundle = (root / "adapters" / "codex" / "forecast-harness" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    claude_bundle = (root / "adapters" / "claude" / "forecast-harness" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Scenario Lab" in codex_doc
+    assert "Scenario Lab" in claude_doc
+    assert "Scenario Lab" in codex_bundle
+    assert "Scenario Lab" in claude_bundle
+    assert "U.S.-Iran" in codex_doc
+    assert "U.S.-Iran" in claude_doc
