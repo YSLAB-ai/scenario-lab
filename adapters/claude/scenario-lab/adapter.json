@@ -3,6 +3,10 @@
   "adapter": "claude",
   "install_entries": [
     {
+      "source": "commands/scenario.md",
+      "target": "commands/scenario-lab/scenario.md"
+    },
+    {
       "source": "skills/scenario-lab",
       "target": "skills/scenario-lab"
     }

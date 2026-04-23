@@ -580,6 +580,32 @@ def test_scenario_command_bootstraps_a_real_workflow_turn(tmp_path: Path) -> Non
     }
 
 
+def test_scenario_command_can_infer_pack_and_run_id_from_prompt_only(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    result = runner.invoke(
+        app,
+        [
+            "scenario",
+            "--root",
+            str(root),
+            "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["command"] == "scenario"
+    assert payload["prompt"].startswith("/scenario ")
+    assert payload["intake"]["focus_entities"] == ["US", "Iran"]
+    assert payload["turn"]["stage"] == "evidence"
+    assert payload["turn"]["recommended_runtime_action"] in {
+        "batch-ingest-recommended",
+        "draft-evidence-packet",
+    }
+
+
 def test_scenario_command_rejects_mismatched_pack_for_existing_run(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

@@ -20,6 +20,7 @@ def test_adapter_install_docs_use_scenario_lab_branding_and_public_links() -> No
     assert "adapters/claude/scenario-lab/install.py" in claude_doc
     assert "adapters/codex/scenario-lab/smoke.py" in codex_doc
     assert "adapters/claude/scenario-lab/smoke.py" in claude_doc
+    assert "/scenario" in claude_doc
     assert "docs/quickstart.md" in codex_doc
     assert "docs/natural-language-workflow.md" in codex_doc
     assert "docs/demo-us-iran.md" in codex_doc

@@ -280,6 +280,99 @@ _SCENARIO_FOCUS_ENTITY_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (r"\bu\.s\.\s+iran\b", ("US", "Iran")),
     (r"\bunited states\s+and\s+iran\b", ("US", "Iran")),
 )
+_SCENARIO_PACK_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "interstate-crisis",
+        (
+            "conflict",
+            "retaliation",
+            "gulf",
+            "strait",
+            "naval",
+            "missile",
+            "military",
+            "sanctions",
+            "shipping lane",
+            "shipping",
+            "allies urge restraint",
+            "u.s.-iran",
+            "us-iran",
+        ),
+    ),
+    (
+        "market-shock",
+        (
+            "stock market",
+            "selloff",
+            "bond market",
+            "yield",
+            "rate shock",
+            "bank rescue",
+            "liquidity",
+            "market stress",
+        ),
+    ),
+    (
+        "election-shock",
+        (
+            "election",
+            "debate",
+            "hung parliament",
+            "coalition",
+            "vote",
+            "ballot",
+            "campaign",
+        ),
+    ),
+    (
+        "pandemic-response",
+        (
+            "pandemic",
+            "outbreak",
+            "variant",
+            "vaccine",
+            "hospital",
+            "public health",
+            "virus",
+        ),
+    ),
+    (
+        "regulatory-enforcement",
+        (
+            "regulator",
+            "antitrust",
+            "settlement",
+            "probe",
+            "fine",
+            "enforcement",
+            "investigation",
+        ),
+    ),
+    (
+        "supply-chain-disruption",
+        (
+            "supply chain",
+            "port closure",
+            "shipping disruption",
+            "supplier",
+            "factory",
+            "logistics",
+            "rare earth",
+        ),
+    ),
+    (
+        "company-action",
+        (
+            "board",
+            "ceo",
+            "earnings",
+            "product recall",
+            "customer loss",
+            "stakeholder",
+            "company",
+        ),
+    ),
+)
 
 
 def _parse_scenario_prompt(prompt: str) -> tuple[str, str]:
@@ -301,6 +394,21 @@ def _extract_focus_entities_from_prompt(prompt_body: str) -> list[str]:
                 if entity not in focus_entities:
                     focus_entities.append(entity)
     return focus_entities
+
+
+def _infer_domain_pack_from_prompt(prompt_body: str) -> str:
+    normalized = prompt_body.lower()
+    for pack_slug, hints in _SCENARIO_PACK_HINTS:
+        if any(hint in normalized for hint in hints):
+            return pack_slug
+    return "generic-event"
+
+
+def _auto_run_id_for_prompt(prompt_body: str, *, pack_slug: str) -> str:
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    compact_prompt = re.sub(r"[^a-z0-9]+", "-", prompt_body.lower()).strip("-")
+    prompt_fragment = "-".join([part for part in compact_prompt.split("-") if part][:4]) or "run"
+    return f"{pack_slug}-{prompt_fragment}-{timestamp}"
 
 
 def _scenario_intake_payload_from_prompt(prompt_body: str, focus_entities: list[str], *, current_stage: str) -> dict[str, object]:
@@ -1054,23 +1162,25 @@ def draft_conversation_turn(
 @app.command("scenario")
 def scenario_command(
     root: Path = typer.Option(Path(".forecast")),
-    run_id: str = typer.Option(...),
+    run_id: str | None = typer.Option(None),
     revision_id: str = typer.Option("r1"),
-    domain_pack: str = typer.Option(...),
+    domain_pack: str | None = typer.Option(None),
     prompt: str = typer.Argument(...),
 ) -> None:
     parsed_prompt, prompt_body = _parse_scenario_prompt(prompt)
+    resolved_domain_pack = domain_pack or _infer_domain_pack_from_prompt(prompt_body)
+    resolved_run_id = run_id or _auto_run_id_for_prompt(prompt_body, pack_slug=resolved_domain_pack)
     service = _service(root)
     repo = service.repository
     try:
-        existing_run = repo.load_run_record(run_id)
+        existing_run = repo.load_run_record(resolved_run_id)
     except FileNotFoundError:
-        pack = _pack_for_slug(domain_pack)
-        service.start_run(run_id=run_id, domain_pack=pack.slug())
+        pack = _pack_for_slug(resolved_domain_pack)
+        service.start_run(run_id=resolved_run_id, domain_pack=pack.slug())
     else:
-        if existing_run.domain_pack != domain_pack:
+        if existing_run.domain_pack != resolved_domain_pack:
             raise typer.BadParameter(
-                f"run {run_id!r} already uses domain_pack {existing_run.domain_pack!r}",
+                f"run {resolved_run_id!r} already uses domain_pack {existing_run.domain_pack!r}",
                 param_hint="domain_pack",
             )
         pack = _pack_for_slug(existing_run.domain_pack)
@@ -1083,12 +1193,12 @@ def scenario_command(
     if validation_errors:
         print(
             json.dumps(
-                _scenario_validation_failure_payload(
-                    root=root,
-                    run_id=run_id,
-                    revision_id=revision_id,
-                    prompt=prompt,
-                    parsed_prompt=parsed_prompt,
+                    _scenario_validation_failure_payload(
+                        root=root,
+                        run_id=resolved_run_id,
+                        revision_id=revision_id,
+                        prompt=prompt,
+                        parsed_prompt=parsed_prompt,
                     intake=intake_payload,
                     validation_errors=validation_errors,
                     suggested_focus_entities=focus_entities,
@@ -1098,13 +1208,16 @@ def scenario_command(
         return
 
     intake = IntakeDraft.model_validate(intake_payload)
-    service.save_intake_draft(run_id=run_id, revision_id=revision_id, intake=intake)
-    turn = service.draft_conversation_turn(run_id, revision_id)
+    service.save_intake_draft(run_id=resolved_run_id, revision_id=revision_id, intake=intake)
+    turn = service.draft_conversation_turn(resolved_run_id, revision_id)
     print(
         json.dumps(
             {
                 "command": "scenario",
                 "prompt": prompt,
+                "run_id": resolved_run_id,
+                "revision_id": revision_id,
+                "domain_pack": pack.slug(),
                 "intake": intake.model_dump(mode="json"),
                 "turn": turn.model_dump(mode="json"),
             }

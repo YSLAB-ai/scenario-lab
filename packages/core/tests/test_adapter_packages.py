@@ -43,6 +43,7 @@ def test_claude_adapter_bundle_installs_into_target_dir(tmp_path: Path) -> None:
 
     assert payload["adapter"] == "claude"
     assert (target_dir / "skills" / "scenario-lab" / "SKILL.md").exists()
+    assert (target_dir / "commands" / "scenario-lab" / "scenario.md").exists()
 
 
 def test_codex_adapter_smoke_script_runs_end_to_end(tmp_path: Path) -> None:

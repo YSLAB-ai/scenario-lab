@@ -21,6 +21,16 @@ packages/core/.venv/bin/python adapters/claude/scenario-lab/install.py --target-
 
 Add `--link` to symlink the bundle instead of copying it while iterating locally.
 
+When you install into a real Claude root such as `~/.claude`, the bundle now includes a native Claude project/user command at `commands/scenario-lab/scenario.md`. That gives you a chat-level `/scenario` command in Claude Code.
+
+Example use in Claude Code:
+
+```text
+/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
+```
+
+That command uses the repo’s `scenario-lab scenario` bootstrap, summarizes the inferred actors and next stage, and then stops for approval instead of silently running the whole workflow.
+
 ## Smoke the packaged bundle
 
 ```bash

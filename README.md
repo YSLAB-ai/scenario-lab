@@ -38,13 +38,19 @@ You should see `demo-run complete`, then artifacts under `.forecast/runs/demo-ru
 For a repo-owned bootstrap that parses a literal scenario prompt and returns the normal next workflow turn instead of running the full simulation immediately, use:
 
 ```bash
-scenario-lab scenario --root .forecast --run-id us-iran-1 --domain-pack interstate-crisis "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days"
+scenario-lab scenario --root .forecast "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days"
 ```
 
 Scenario Lab is packaged to run with:
 
 - `Codex`: [docs/install-codex.md](docs/install-codex.md)
 - `Claude Code`: [docs/install-claude-code.md](docs/install-claude-code.md)
+
+In Claude Code specifically, this repo now also ships a native project slash command at `.claude/commands/scenario.md`, so inside Claude you can start with:
+
+```text
+/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
+```
 
 If you want to use another coding agent, share this repo with that agent and tell it to follow [README.md](README.md), [docs/quickstart.md](docs/quickstart.md), and the linked docs for the natural-language workflow.
 

@@ -53,7 +53,13 @@ The packaged adapter smokes in this repo reached the stage sequence `intake -> e
 Use the repo-owned bootstrap when you want a literal scenario prompt to produce the normal next workflow turn without immediately running the full simulation:
 
 ```bash
-scenario-lab scenario --root .forecast --run-id us-iran-1 --domain-pack interstate-crisis "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days"
+scenario-lab scenario --root .forecast "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days"
 ```
 
 When the input validates, it saves the intake draft and returns the next workflow turn. When validation fails, it returns an intake-stage turn with guidance and validation errors instead of saving an invalid draft.
+
+In Claude Code, the repo also ships `.claude/commands/scenario.md`, so the same bootstrap can be started natively as:
+
+```text
+/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
+```
