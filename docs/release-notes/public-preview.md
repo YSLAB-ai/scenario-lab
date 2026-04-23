@@ -9,3 +9,5 @@ This preview includes:
 - protected domain evolution and synthesis
 
 Social preview image: `docs/assets/scenario-lab-social-preview.png`
+
+The tracked GitHub metadata package for this release lives in `docs/github-public-metadata.md`.
