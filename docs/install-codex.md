@@ -16,7 +16,7 @@ pip install -e 'packages/core[dev]'
 For a disposable local Codex plugin root:
 
 ```bash
-packages/core/.venv/bin/python adapters/codex/forecast-harness/install.py --target-dir /tmp/codex-plugins
+packages/core/.venv/bin/python adapters/codex/scenario-lab/install.py --target-dir /tmp/codex-plugins
 ```
 
 Add `--link` to symlink the bundle instead of copying it while iterating locally.
@@ -24,7 +24,7 @@ Add `--link` to symlink the bundle instead of copying it while iterating locally
 ## Smoke the packaged bundle
 
 ```bash
-packages/core/.venv/bin/python adapters/codex/forecast-harness/smoke.py --work-dir /tmp/scenario-lab-codex-smoke
+packages/core/.venv/bin/python adapters/codex/scenario-lab/smoke.py --work-dir /tmp/scenario-lab-codex-smoke
 ```
 
 ## Next docs

@@ -1,8 +1,0 @@
-{
-  "name": "forecast-harness",
-  "version": "0.1.0",
-  "description": "Codex adapter for the forecasting harness",
-  "interface": {
-    "displayName": "Forecast Harness"
-  }
-}

@@ -1,0 +1,10 @@
+{
+  "name": "scenario-lab",
+  "adapter": "claude",
+  "install_entries": [
+    {
+      "source": "skills/scenario-lab",
+      "target": "skills/scenario-lab"
+    }
+  ]
+}

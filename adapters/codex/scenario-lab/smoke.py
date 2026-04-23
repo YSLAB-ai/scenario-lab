@@ -11,11 +11,11 @@ from forecasting_harness.cli import app
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the packaged Codex adapter smoke flow.")
+    parser = argparse.ArgumentParser(description="Run the packaged Scenario Lab Codex smoke flow.")
     parser.add_argument("--work-dir")
     args = parser.parse_args()
 
-    work_dir = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="forecast-harness-codex-smoke-"))
+    work_dir = Path(args.work_dir) if args.work_dir else Path(tempfile.mkdtemp(prefix="scenario-lab-codex-smoke-"))
     root = work_dir / ".forecast"
     corpus_db = work_dir / "corpus.db"
     source_dir = work_dir / "incoming"

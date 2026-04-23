@@ -15,7 +15,7 @@ def _copy_entry(source: Path, target: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Install the local Codex forecasting-harness bundle.")
+    parser = argparse.ArgumentParser(description="Install the local Scenario Lab Codex bundle.")
     parser.add_argument("--target-dir", required=True)
     parser.add_argument("--link", action="store_true")
     args = parser.parse_args()

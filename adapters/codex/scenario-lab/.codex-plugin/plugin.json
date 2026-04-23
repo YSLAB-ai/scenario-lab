@@ -1,0 +1,8 @@
+{
+  "name": "scenario-lab",
+  "version": "0.1.0",
+  "description": "Codex adapter for Scenario Lab",
+  "interface": {
+    "displayName": "Scenario Lab"
+  }
+}
