@@ -17,10 +17,16 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
 def test_public_docs_and_assets_exist() -> None:
     root = Path(__file__).resolve().parents[3]
 
-    assert (root / "docs" / "quickstart.md").exists()
-    assert (root / "docs" / "natural-language-workflow.md").exists()
-    assert (root / "docs" / "demo-us-iran.md").exists()
-    assert (root / "docs" / "limitations.md").exists()
-    assert (root / "docs" / "release-notes" / "public-preview.md").exists()
-    assert (root / "docs" / "assets" / "scenario-lab-social-preview.png").exists()
-    assert (root / "docs" / "assets" / "scenario-lab-workflow.png").exists()
+    assert (root / "docs" / "quickstart.md").is_file()
+    assert (root / "docs" / "natural-language-workflow.md").is_file()
+    assert (root / "docs" / "demo-us-iran.md").is_file()
+    assert (root / "docs" / "limitations.md").is_file()
+    assert (root / "docs" / "release-notes" / "public-preview.md").is_file()
+
+    social_preview = root / "docs" / "assets" / "scenario-lab-social-preview.png"
+    workflow_preview = root / "docs" / "assets" / "scenario-lab-workflow.png"
+
+    assert social_preview.is_file()
+    assert social_preview.stat().st_size > 0
+    assert workflow_preview.is_file()
+    assert workflow_preview.stat().st_size > 0
