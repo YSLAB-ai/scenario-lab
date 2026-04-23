@@ -14,7 +14,16 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
 
     assert readme.startswith("# Scenario Lab")
     assert "Experimental preview" in readme
+    assert "## What Is It" in readme
+    assert "## Quickstart" in readme
+    assert "## Workflow And Demo" in readme
+    assert "## What Makes It Effective" in readme
+    assert "## Current Limits" in readme
+    assert "## Others" in readme
     assert "U.S.-Iran" in readme
+    assert "Monte Carlo tree search" in readme
+    assert "Claude Code" in readme
+    assert "git clone git@github.com:YSLAB-ai/scenario-lab.git" in readme
     assert "[docs/quickstart.md](docs/quickstart.md)" in readme
     assert (
         "[docs/natural-language-workflow.md](docs/natural-language-workflow.md)"

@@ -2,70 +2,92 @@
 
 > Experimental preview: Monte Carlo simulation for real-world events you can run locally with Codex or Claude.
 
-Scenario Lab is a Monte Carlo simulation engine for real-world events such as regional conflict, markets, and politics.
+Scenario Lab is a Monte Carlo simulation engine for real-world events such as regional conflict, markets, politics, and company decision-making.
 
 ![Scenario Lab workflow](docs/assets/scenario-lab-workflow.png)
 
+## What Is It
+
+Scenario Lab turns a developing situation into a structured simulation run. You give it the actors, the current development, and the evidence you want to approve. It then explores many branching futures with Monte Carlo tree search and ranks the branches it finds.
+
+At a high level, the engine works like this:
+
+- A domain pack defines the actors, phases, and action space for a type of event such as an interstate crisis, a market shock, or a company decision.
+- The approved evidence packet and the case framing are compiled into a belief state with actor behavior profiles and domain-specific fields.
+- The simulation engine runs `mcts` over that state, proposing actions, sampling transitions, and scoring resulting branches.
+- Reports turn the searched branches into readable outcomes, scenario families, and calibrated confidence labels.
+
+The same runtime can be used for regional conflict, market stress, political bargaining, and company-response cases because the domain packs carry different rules and state fields.
+
 ## Quickstart
 
-Start with the first-use setup and demo flow in [docs/quickstart.md](docs/quickstart.md).
-
-If you want the shortest local smoke test, run the built-in demo:
+The full first-use flow is in [docs/quickstart.md](docs/quickstart.md). The shortest local setup is:
 
 ```bash
+git clone git@github.com:YSLAB-ai/scenario-lab.git
+cd scenario-lab
+PYTHON=/path/to/python3.12
+"$PYTHON" -m venv packages/core/.venv
 source packages/core/.venv/bin/activate
+pip install -e 'packages/core[dev]'
 forecast-harness demo-run --root .forecast
 ```
 
-Expected:
+You should see `demo-run complete`, then artifacts under `.forecast/runs/demo-run`.
 
-- `demo-run complete`
-- generated run artifacts under `.forecast/runs/demo-run`
-- open `.forecast/runs/demo-run/report.md` for the first report summary
+Scenario Lab is packaged to run with:
 
-## Natural-Language Workflow
+- `Codex`: [docs/install-codex.md](docs/install-codex.md)
+- `Claude Code`: [docs/install-claude-code.md](docs/install-claude-code.md)
 
-The prompt-style workflow examples and runtime-action note are documented in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
+If you want to use another coding agent, share this repo with that agent and tell it to follow [README.md](README.md), [docs/quickstart.md](docs/quickstart.md), and the linked docs for the natural-language workflow.
+
+## Workflow And Demo
+
+Scenario Lab is a natural-language-based interactive engine. A normal run is conversational: start a run, draft intake, gather or replace evidence, approve the revision, simulate, then update the run when the situation changes.
+
+The public `U.S.-Iran` example uses a Strait of Hormuz crisis framing. The verified end-to-end run is documented in [docs/demo-us-iran.md](docs/demo-us-iran.md): the real `/tmp/scenario-lab-us-iran` run reached `report`, used the default `10000` simulation iterations, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, and reported `Open negotiation` as the top branch.
+
+Example prompts:
 
 - `Start a U.S.-Iran scenario run for the next 30 days`
 - `Draft the evidence packet`
 - `Approve and simulate`
 - `Update the run with a new Strait of Hormuz development`
 
-## What it does
+The prompt-style workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
-Scenario Lab is a local-first scenario workflow built on the repo's verified forecasting harness CLI and packaged adapter runtime. It lets you create a run, save structured intake, curate evidence, approve a revision, simulate branches, and generate a report from local artifacts under `.forecast/`.
+## What Makes It Effective
 
-## U.S.-Iran demo
+Scenario Lab does not treat every branch as equally plausible. The branch search is shaped by domain rules, actor behavior profiles, and the evidence you approve for the case.
 
-The public `U.S.-Iran` example now includes a verified end-to-end run in [docs/demo-us-iran.md](docs/demo-us-iran.md): the real `/tmp/scenario-lab-us-iran` run reached `report`, used the default `10000` simulation iterations, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, and reported `Open negotiation` as the top branch.
+- Actor actions are constrained by domain packs. For example, the `company-action` pack tracks fields such as `cash_runway_months`, `brand_sentiment`, `operational_stability`, and `regulatory_pressure`.
+- Those fields change the action priors and branch outcomes. In the company pack, weaker operations or higher regulatory pressure make moves like `operational-pivot`, `cost-program`, or `asset-sales` more competitive, while the state scoring also raises `economic_stress` and `escalation` when sentiment or operational stability deteriorate.
+- Negative consequences are therefore punished in the ranking. A company branch that improves runway but damages brand sentiment or increases pressure can still rank worse because the downstream state becomes more fragile.
+- The same pattern applies in other domains: stronger actor evidence and stronger domain knowledge produce better branch differentiation.
 
-## Install with Codex / Claude
+The repo ships with prebuilt domain knowledge, replay-backed calibration, and protected domain-evolution tools, but users should still add or modify evidence and domain assumptions for unusual scenarios.
 
-- Codex install notes: [docs/install-codex.md](docs/install-codex.md)
-- Claude install notes: [docs/install-claude-code.md](docs/install-claude-code.md)
-
-## What's included in this preview
-
-The current preview surface is summarized in [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md):
-
-- local-first scenario workflow
-- replay-backed calibration
-- packaged local Codex and Claude integrations
-- spreadsheet and web-archive ingestion
-- protected domain evolution and synthesis
-
-## Current limits
+## Current Limits
 
 The current limitations are documented in [docs/limitations.md](docs/limitations.md).
 
 - Output quality depends heavily on the approved evidence packet.
 - Output quality depends heavily on the depth and quality of the domain pack.
+- Community contribution is part of the design: replay coverage, evidence quality, and domain knowledge all improve the results over time.
 - OCR-backed PDF ingestion is intentionally deferred in the current public preview.
 
-## Minimal builder section
+## Others
 
-If you want a minimal runnable surface instead of the higher-level adapter workflow, use the built-in demo and inspect the files it writes:
+Other useful entry points:
+
+- public quickstart: [docs/quickstart.md](docs/quickstart.md)
+- natural-language workflow notes: [docs/natural-language-workflow.md](docs/natural-language-workflow.md)
+- verified `U.S.-Iran` demo: [docs/demo-us-iran.md](docs/demo-us-iran.md)
+- current limitations: [docs/limitations.md](docs/limitations.md)
+- preview summary: [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md)
+
+If you want the smallest runnable surface instead of the higher-level interactive workflow, use the built-in demo and inspect the generated files:
 
 ```bash
 source packages/core/.venv/bin/activate
