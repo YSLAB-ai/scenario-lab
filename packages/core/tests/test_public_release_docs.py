@@ -16,6 +16,8 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "U.S.-Iran" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
+    assert "Alliance consultation (coordinated signaling)" in readme
+    assert "third-party actors carried into the run" in readme
     assert "[docs/quickstart.md](docs/quickstart.md)" in readme
     assert (
         "[docs/natural-language-workflow.md](docs/natural-language-workflow.md)"
@@ -30,6 +32,7 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Actual runtime phases" in workflow
     assert "batch-ingest-recommended" in workflow
     assert "intake -> evidence -> approval -> simulation -> report" in workflow
+    assert "Alliance consultation (coordinated signaling)" in workflow
     assert "scenario-lab" in metadata
     assert "YSLAB-ai" in metadata
 
@@ -59,5 +62,8 @@ def test_public_docs_and_assets_exist() -> None:
     assert "/Volumes/" not in demo_doc
     assert "run-adapter-action" in demo_doc
     assert "<json-for-one-evidence-item>" not in demo_doc
+    assert "AP Apr. 23, 2026: U.S. threat posture around Hormuz shipping attacks" in demo_doc
+    assert "Alliance consultation (coordinated signaling)" in demo_doc
+    assert "Open negotiation" in demo_doc
     assert "scenario-lab" in metadata_doc
     assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc

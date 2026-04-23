@@ -27,20 +27,34 @@ This phase sequence was rechecked on a verified `U.S.-Iran` run in [docs/demo-us
 
 - broad question:
   - `How would a U.S.-Iran conflict at the Strait of Hormuz develop for the next 30 days?`
-- short user correction:
-  - `Consider China. Go ahead.`
 - verified phase flow:
   - `intake -> evidence -> approval -> simulation -> report`
+- verified intake locked:
+  - main actors `United States`, `Iran`
+  - third-party actors `China`, `Israel`, `Gulf States`, `United Kingdom`, `France`
 - verified evidence plan categories:
   - `force posture`
   - `diplomatic signaling`
   - `alliance commitments`
   - `leader behavior`
   - `economic constraints`
+- approved packet size:
+  - evidence items `7`
+  - assumptions `5`
 - verified simulation facts:
   - `iterations = 10000`
-  - `node_count = 129`
-  - top branch `Open negotiation`
+  - `node_count = 133`
+  - `transposition_hits = 111`
+- verified top scenario ranking:
+  1. `Alliance consultation (coordinated signaling)` at `0.289`
+  2. `Signal resolve (managed signal)` at `0.289`
+  3. `Open negotiation` at `0.287`
+- verified third-party actor pressures:
+  - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
+  - `Israel`: `domestic_sensitivity=0.73`, `reputational_sensitivity=0.55`
+  - `Gulf States`: `alliance_dependence=0.86`
+  - `United Kingdom`: `alliance_dependence=0.97`
+  - `France`: `alliance_dependence=0.97`
 
 ## Runtime actions
 

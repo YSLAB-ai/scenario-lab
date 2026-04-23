@@ -79,37 +79,61 @@ Scenario Lab is a natural-language-based interactive engine. A normal run moves 
 
 The public `U.S.-Iran` example follows that exact repo workflow. A longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md).
 
-Verified `U.S.-Iran` example:
+Verified deeper `U.S.-Iran` example:
 
 - broad question:
   - `How would a U.S.-Iran conflict at the Strait of Hormuz develop for the next 30 days?`
-- intake guidance then asked exactly two follow-up questions:
-  - `Which outside actor has the most leverage over the next phase?`
-  - `What constraint most limits immediate escalation?`
-- short user correction:
-  - `Consider China. Go ahead.`
-- saved intake then moved the run into `evidence`
-- the evidence plan targeted:
+- intake then locked:
+  - main actors: `United States`, `Iran`
+  - third-party actors carried into the run: `China`, `Israel`, `Gulf States`, `United Kingdom`, `France`
+  - time horizon: `30d`
+  - stage: `trigger`
+- the evidence packet approved `7` curated items covering:
+  - U.S. force posture around shipping attacks
+  - UK-France maritime security coordination
+  - Iran's negotiating posture under pressure
+  - China's oil dependence on the Strait staying open
+  - Gulf export vulnerability if Hormuz closes
+  - market stress from retaliation threats
+  - Israel's readiness to resume strikes
+- the retrieval/evidence plan still centered the same evidence categories:
   - `force posture`
   - `diplomatic signaling`
   - `alliance commitments`
   - `leader behavior`
   - `economic constraints`
-- the approval packet carried:
-  - `suggested external entity: China`
-  - `no evidence drafted yet`
+- the approval step carried `5` explicit assumptions:
+  - China prefers negotiation and backchannel pressure to prolonged closure
+  - Israel's deterrence credibility can pull the crisis toward strikes
+  - Gulf States want protected shipping but also de-escalation
+  - the United Kingdom supports a defensive escort mission
+  - France supports a defensive escort mission
 - approved revision counts:
-  - evidence items: `0`
-  - assumptions: `1`
+  - evidence items: `7`
+  - assumptions: `5`
 - simulation facts:
   - search mode: `mcts`
   - iterations: `10000`
-  - node count: `129`
-  - top branch: `Open negotiation`
+  - node count: `133`
+  - transposition hits: `111`
+- top ranked scenarios:
+  1. `Alliance consultation (coordinated signaling)` with score `0.289`
+  2. `Signal resolve (managed signal)` with score `0.289`
+  3. `Open negotiation` with score `0.287`
+- leading scenario families:
+  - `Alliance consultation -> settlement-stalemate`
+  - `Signal resolve -> settlement-stalemate`
+  - `Open negotiation -> settlement-stalemate`
+- inferred third-party actor pressures from the approved evidence and assumptions:
+  - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
+  - `Israel`: `domestic_sensitivity=0.73`, `reputational_sensitivity=0.55`
+  - `Gulf States`: `alliance_dependence=0.86`
+  - `United Kingdom`: `alliance_dependence=0.97`
+  - `France`: `alliance_dependence=0.97`
 - report path from the rechecked run:
-  - `/tmp/scenario-lab-us-iran-convo/run/runs/us-iran-convo/reports/r1.report.md`
+  - `/tmp/scenario-lab-us-iran-deeper-main/run/runs/us-iran-deeper/reports/r1.report.md`
 
-In that verified `U.S.-Iran` run, **`Open negotiation` was the highest-ranked scenario**.
+In that verified `U.S.-Iran` run, **`Alliance consultation (coordinated signaling)` was the highest-ranked scenario**, but the top three branches were very close together. The engine slightly favored coordinated signaling over managed signaling or direct negotiation; it did not find a runaway winner.
 
 The shorter phase-by-phase workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
