@@ -8,11 +8,15 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert readme.startswith("# Scenario Lab")
     assert "Experimental preview" in readme
     assert "U.S.-Iran" in readme
-    assert "docs/quickstart.md" in readme
-    assert "docs/natural-language-workflow.md" in readme
-    assert "docs/demo-us-iran.md" in readme
-    assert "docs/limitations.md" in readme
+    assert "[docs/quickstart.md](docs/quickstart.md)" in readme
+    assert (
+        "[docs/natural-language-workflow.md](docs/natural-language-workflow.md)"
+        in readme
+    )
+    assert "[docs/demo-us-iran.md](docs/demo-us-iran.md)" in readme
+    assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
+    assert "/Volumes/" not in readme
 
 
 def test_public_docs_and_assets_exist() -> None:

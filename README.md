@@ -8,7 +8,7 @@ Scenario Lab helps you turn a developing situation into a structured scenario ru
 
 ## Quickstart
 
-Start with the first-use setup and demo flow in [docs/quickstart.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/quickstart.md).
+Start with the first-use setup and demo flow in [docs/quickstart.md](docs/quickstart.md).
 
 If you want the shortest local smoke test, run the built-in demo:
 
@@ -23,7 +23,7 @@ Expected:
 
 ## Natural-Language Workflow
 
-The prompt-style workflow examples and runtime-action note are documented in [docs/natural-language-workflow.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/natural-language-workflow.md).
+The prompt-style workflow examples and runtime-action note are documented in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
 - `Start a U.S.-Iran scenario run for the next 30 days`
 - `Draft the evidence packet`
@@ -36,16 +36,16 @@ Scenario Lab is a local-first scenario workflow built on the repo's verified for
 
 ## U.S.-Iran demo
 
-The public `U.S.-Iran` example now includes a verified end-to-end run in [docs/demo-us-iran.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/demo-us-iran.md): the real `/tmp/scenario-lab-us-iran` run reached `report`, used the default `10000` simulation iterations, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, and reported `Open negotiation` as the top branch.
+The public `U.S.-Iran` example now includes a verified end-to-end run in [docs/demo-us-iran.md](docs/demo-us-iran.md): the real `/tmp/scenario-lab-us-iran` run reached `report`, used the default `10000` simulation iterations, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, and reported `Open negotiation` as the top branch.
 
 ## Install with Codex / Claude
 
-- Codex install notes: [docs/install-codex.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/install-codex.md)
-- Claude install notes: [docs/install-claude-code.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/install-claude-code.md)
+- Codex install notes: [docs/install-codex.md](docs/install-codex.md)
+- Claude install notes: [docs/install-claude-code.md](docs/install-claude-code.md)
 
 ## What's included in this preview
 
-The current preview surface is summarized in [docs/release-notes/public-preview.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/release-notes/public-preview.md):
+The current preview surface is summarized in [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md):
 
 - local-first scenario workflow
 - replay-backed calibration
@@ -55,7 +55,7 @@ The current preview surface is summarized in [docs/release-notes/public-preview.
 
 ## Current limits
 
-The current limitations are documented in [docs/limitations.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/limitations.md).
+The current limitations are documented in [docs/limitations.md](docs/limitations.md).
 
 - Output quality depends heavily on the approved evidence packet.
 - Output quality depends heavily on the depth and quality of the domain pack.
