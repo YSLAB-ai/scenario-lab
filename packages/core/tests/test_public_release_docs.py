@@ -21,6 +21,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Current Limits" in readme
     assert "## Others" in readme
     assert "U.S.-Iran" in readme
+    assert "intake -> evidence -> approval -> simulation -> report" in readme
+    assert "force posture" in readme
+    assert "Open negotiation" in readme
     assert "Monte Carlo tree search" in readme
     assert "Claude Code" in readme
     assert "git clone git@github.com:YSLAB-ai/scenario-lab.git" in readme

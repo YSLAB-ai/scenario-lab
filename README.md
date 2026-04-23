@@ -44,18 +44,34 @@ If you want to use another coding agent, share this repo with that agent and tel
 
 ## Workflow And Demo
 
-Scenario Lab is a natural-language-based interactive engine. A normal run is conversational: start a run, draft intake, gather or replace evidence, approve the revision, simulate, then update the run when the situation changes.
+Scenario Lab is a natural-language-based interactive engine. The workflow is not separate from the demo: a real run moves through the same phases a user would use in practice, `intake -> evidence -> approval -> simulation -> report`.
 
-The public `U.S.-Iran` example uses a Strait of Hormuz crisis framing. The verified end-to-end run is documented in [docs/demo-us-iran.md](docs/demo-us-iran.md): the real `/tmp/scenario-lab-us-iran` run reached `report`, used the default `10000` simulation iterations, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, and reported `Open negotiation` as the top branch.
+The verified public example asks:
+
+`How would a U.S.-Iran conflict at the Strait of Hormuz develop for the next 30 days?`
+
+That run works like this:
+
+1. Define the question and actors.
+   The verified intake used `United States` and `Iran` as the focus actors, with the development `Shipping and retaliation threats intensify around the Gulf as allies urge restraint.` This specific public run did not auto-suggest third-party actors, so the run stayed focused on the two primary actors.
+2. Build the evidence packet.
+   The interstate-crisis pack translated that intake into an evidence plan with categories `force posture`, `diplomatic signaling`, `alliance commitments`, `leader behavior`, and `economic constraints`. In the verified public run, `draft-evidence-packet` returned an empty packet and carried the evidence gap forward as a warning instead of inventing sources.
+3. Approve the revision.
+   The approval packet froze the intake and the evidence state for simulation. In this verified run, approval explicitly preserved the warning that no cited evidence had been approved yet.
+4. Simulate the next 30 days.
+   The runtime then simulated the approved revision with the default `10000` iterations for adapter-driven runs.
+5. Read the result and update if the situation changes.
+   The verified run reached `report`, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, explored `129` nodes, and ranked `Open negotiation` as the top branch.
 
 Example prompts:
 
 - `Start a U.S.-Iran scenario run for the next 30 days`
+- `Save the intake draft with United States and Iran as the focus actors`
 - `Draft the evidence packet`
-- `Approve and simulate`
+- `Approve the revision and simulate it`
 - `Update the run with a new Strait of Hormuz development`
 
-The prompt-style workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
+The full verified transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md), and the prompt-style workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
 ## What Makes It Effective
 
