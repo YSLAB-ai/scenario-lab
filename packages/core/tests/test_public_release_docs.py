@@ -21,6 +21,10 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
 
 def test_public_docs_and_assets_exist() -> None:
     root = Path(__file__).resolve().parents[3]
+    demo_doc = (root / "docs" / "demo-us-iran.md").read_text(encoding="utf-8")
+    metadata_doc = (root / "docs" / "github-public-metadata.md").read_text(
+        encoding="utf-8"
+    )
     workflow_asset = root / "docs" / "assets" / "scenario-lab-workflow.png"
     social_preview_asset = root / "docs" / "assets" / "scenario-lab-social-preview.png"
 
@@ -29,7 +33,16 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "demo-us-iran.md").is_file()
     assert (root / "docs" / "limitations.md").is_file()
     assert (root / "docs" / "release-notes" / "public-preview.md").is_file()
+    assert (root / "docs" / "github-public-metadata.md").is_file()
     assert workflow_asset.is_file()
     assert workflow_asset.stat().st_size > 0
     assert social_preview_asset.is_file()
     assert social_preview_asset.stat().st_size > 0
+    assert "/Volumes/" not in demo_doc
+    assert (
+        "packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action"
+        in demo_doc
+    )
+    assert "<json-for-one-evidence-item>" not in demo_doc
+    assert "exactly as executed" not in demo_doc
+    assert "Homepage target after rename:" in metadata_doc

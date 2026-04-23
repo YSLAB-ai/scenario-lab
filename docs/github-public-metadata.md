@@ -4,7 +4,7 @@
 - Repository rename target: `scenario-lab`
 - Product name: `Scenario Lab`
 - Description: `Experimental local-first scenario analysis for natural-language forecasting with Codex or Claude`
-- Homepage: `https://github.com/YSLAB-ai/scenario-lab`
+- Homepage target after rename: `https://github.com/YSLAB-ai/scenario-lab`
 - Topics:
   - `scenario-analysis`
   - `forecasting`

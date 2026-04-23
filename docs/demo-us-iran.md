@@ -1,6 +1,6 @@
 # Scenario Lab Demo: U.S.-Iran
 
-Verified on April 23, 2026 in the isolated worktree at `/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release`.
+Verified on April 23, 2026 in an isolated worktree of this repository.
 
 ## Verified environment note
 
@@ -10,7 +10,7 @@ Current worktree behavior, rechecked after the original run:
 packages/core/.venv/bin/python -m forecasting_harness.cli --help
 ```
 
-This command succeeds in this worktree. The transcript below documents the original verified run exactly as executed from `/tmp/scenario-lab-us-iran/transcript.txt`, which used the repo-root Python interpreter in each recorded command.
+This command succeeds in this worktree. The output blocks below are the exact observed results from the verified `/tmp/scenario-lab-us-iran` run. The command blocks use the repo-relative `packages/core/.venv/bin/python` form, and I rechecked that same `/tmp/scenario-lab-us-iran` workflow in this worktree with the same key facts: `evidence_items = 0`, `iterations = 10000`, `node_count = 129`, top branch `Open negotiation`, and a generated report under `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`.
 
 ## Verified workflow
 
@@ -26,7 +26,7 @@ mkdir -p "$WORKDIR"
 ### 1. Start the run
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
   --root '/tmp/scenario-lab-us-iran/run' \
   --run-id us-iran-public \
   --revision-id r1 \
@@ -73,7 +73,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 ### 2. Save intake
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
   --root '/tmp/scenario-lab-us-iran/run' \
   --corpus-db '/tmp/scenario-lab-us-iran/corpus.db' \
   --run-id us-iran-public \
@@ -382,7 +382,7 @@ This verified run did not surface `batch-ingest-recommended`. With no candidate 
 ### 3. Draft evidence through the packaged runtime
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
   --root '/tmp/scenario-lab-us-iran/run' \
   --corpus-db '/tmp/scenario-lab-us-iran/corpus.db' \
   --run-id us-iran-public \
@@ -570,31 +570,12 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 }
 ```
 
-For this run, `draft-evidence-packet` returned an empty packet. The verified fallback path is to save a hand-edited evidence packet with direct structured input instead of inventing evidence:
-
-```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli save-evidence-draft \
-  --root '/tmp/scenario-lab-us-iran/run' \
-  --run-id us-iran-public \
-  --revision-id r1 \
-  --item-json '<json-for-one-evidence-item>'
-```
-
-The same fallback is also exposed through the packaged runtime:
-
-```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
-  --root '/tmp/scenario-lab-us-iran/run' \
-  --run-id us-iran-public \
-  --revision-id r1 \
-  --action save-evidence-draft \
-  --item-json '<json-for-one-evidence-item>'
-```
+For this run, `draft-evidence-packet` returned an empty packet. The repo also exposes a direct `save-evidence-draft` fallback for hand-edited structured evidence, but this specific public demo keeps the verified no-evidence path instead of inventing evidence.
 
 ### 4. Approve the revision
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
   --root '/tmp/scenario-lab-us-iran/run' \
   --run-id us-iran-public \
   --revision-id r1 \
@@ -654,7 +635,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 ### 5. Simulate
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli run-adapter-action \
   --root '/tmp/scenario-lab-us-iran/run' \
   --run-id us-iran-public \
   --revision-id r1 \
@@ -7131,7 +7112,7 @@ Verified defaults from this run:
 ### 6. Generate the report
 
 ```bash
-PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python -m forecasting_harness.cli generate-report \
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli generate-report \
   --root '/tmp/scenario-lab-us-iran/run' \
   --run-id us-iran-public \
   --revision-id r1
