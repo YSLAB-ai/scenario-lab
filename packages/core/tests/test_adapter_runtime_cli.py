@@ -578,3 +578,45 @@ def test_scenario_command_bootstraps_a_real_workflow_turn(tmp_path: Path) -> Non
         "batch-ingest-recommended",
         "draft-evidence-packet",
     }
+
+
+def test_scenario_command_rejects_mismatched_pack_for_existing_run(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    assert (
+        runner.invoke(
+            app,
+            [
+                "scenario",
+                "--root",
+                str(root),
+                "--run-id",
+                "us-iran-1",
+                "--revision-id",
+                "r1",
+                "--domain-pack",
+                "interstate-crisis",
+                "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days",
+            ],
+        ).exit_code
+        == 0
+    )
+
+    mismatch_result = runner.invoke(
+        app,
+        [
+            "scenario",
+            "--root",
+            str(root),
+            "--run-id",
+            "us-iran-1",
+            "--domain-pack",
+            "generic-event",
+            "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days",
+        ],
+    )
+
+    assert mismatch_result.exit_code != 0
+    assert "Invalid value for domain_pack" in mismatch_result.stderr
+    assert "already uses domain_pack" in mismatch_result.stderr

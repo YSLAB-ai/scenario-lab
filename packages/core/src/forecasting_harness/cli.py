@@ -1052,13 +1052,20 @@ def scenario_command(
     prompt: str = typer.Argument(...),
 ) -> None:
     parsed_prompt, prompt_body = _parse_scenario_prompt(prompt)
-    pack = _pack_for_slug(domain_pack)
     service = _service(root)
     repo = service.repository
     try:
-        repo.load_run_record(run_id)
+        existing_run = repo.load_run_record(run_id)
     except FileNotFoundError:
+        pack = _pack_for_slug(domain_pack)
         service.start_run(run_id=run_id, domain_pack=pack.slug())
+    else:
+        if existing_run.domain_pack != domain_pack:
+            raise typer.BadParameter(
+                f"run {run_id!r} already uses domain_pack {existing_run.domain_pack!r}",
+                param_hint="domain_pack",
+            )
+        pack = _pack_for_slug(existing_run.domain_pack)
 
     focus_entities = _extract_focus_entities_from_prompt(prompt_body)
     initial_stage = _scenario_initial_stage(pack)
