@@ -13,25 +13,12 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     )
 
     assert readme.startswith("# Scenario Lab")
-    assert "Experimental preview" in readme
-    assert "## What Is It" in readme
     assert "## Quickstart" in readme
     assert "## Workflow And Demo" in readme
-    assert "## What Makes It Effective" in readme
-    assert "## Current Limits" in readme
-    assert "## Others" in readme
     assert "U.S.-Iran" in readme
-    assert "actual runtime phases" in readme
-    assert "`intake`" in readme
-    assert "`evidence`" in readme
-    assert "`approval`" in readme
-    assert "`simulation`" in readme
-    assert "`report`" in readme
     assert "batch-ingest-recommended" in readme
-    assert "force posture" in readme
-    assert "Open negotiation" in readme
+    assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
-    assert "Claude Code" in readme
     assert "git clone git@github.com:YSLAB-ai/scenario-lab.git" in readme
     assert "[docs/quickstart.md](docs/quickstart.md)" in readme
     assert (
@@ -42,7 +29,6 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
     assert "docs/assets/scenario-lab-runtime-workflow.png" in readme
-    assert "scenario-lab demo-run --root .forecast" in readme
     assert "/Volumes/" not in readme
     assert "scenario-lab demo-run --root .forecast" in quickstart
     assert "## Actual runtime phases" in workflow

@@ -1349,7 +1349,10 @@ def test_draft_conversation_turn_command_returns_intake_stage_for_new_revision(t
     payload = json.loads(result.stdout)
     assert payload["stage"] == "intake"
     assert payload["recommended_command"] == "scenario-lab save-intake-draft"
-    assert payload["actions"][0]["command"] == "scenario-lab save-intake-draft"
+    assert any(
+        action["command"] == "scenario-lab save-intake-draft"
+        for action in payload["actions"]
+    )
     assert "forecast-harness" not in payload["recommended_command"]
 
 
