@@ -44,7 +44,7 @@ If you want to use another coding agent, share this repo with that agent and tel
 
 ## Workflow And Demo
 
-Scenario Lab is a natural-language-based interactive engine. Below is the verified public `U.S.-Iran` run rewritten as a condensed conversation based on the actual saved run facts in [docs/demo-us-iran.md](docs/demo-us-iran.md).
+Scenario Lab is a natural-language-based interactive engine. Below is a condensed conversation based on a verified `U.S.-Iran` run. A longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md).
 
 **User**
 
@@ -52,25 +52,28 @@ Scenario Lab is a natural-language-based interactive engine. Below is the verifi
 
 **Scenario Lab**
 
-`Revision is ready for intake. Capture the event framing and core entities first.`
+`I can frame this as an interstate crisis in the trigger stage over a 30-day horizon. The default lens is balanced-system. Before I lock the intake, two follow-ups matter: Which outside actor has the most leverage over the next phase? What constraint most limits immediate escalation?`
 
 **User**
 
-`Use the interstate-crisis pack. Focus actors: United States and Iran. Current development: Shipping and retaliation threats intensify around the Gulf as allies urge restraint. Current stage: trigger. Horizon: 30d.`
+`Consider China. Go ahead.`
 
 **Scenario Lab**
 
-`Intake draft saved. Review suggested entities and follow-up questions, then draft evidence.`
+`Intake draft saved. I treated this as a U.S.-Iran Strait of Hormuz escalation scenario with United States and Iran as the focus actors, and I carried China forward as a suggested external actor. I also prepared an evidence plan for force posture, diplomatic signaling, alliance commitments, leader behavior, and economic constraints.`
 
 Verified details from this step:
 
 - the run moved into `evidence`
+- `draft-intake-guidance` asked exactly two follow-up questions:
+  - `Which outside actor has the most leverage over the next phase?`
+  - `What constraint most limits immediate escalation?`
+- in the rechecked conversation-style run, the approval packet carried `suggested external entity: China`
 - the evidence plan targeted `force posture`, `diplomatic signaling`, `alliance commitments`, `leader behavior`, and `economic constraints`
-- suggested entities stayed empty in this verified run, so no third-party actors were auto-filled
 
 **User**
 
-`Draft the evidence packet.`
+`Draft the evidence. If it stays exploratory, continue anyway.`
 
 **Scenario Lab**
 
@@ -79,16 +82,16 @@ Verified details from this step:
 Verified details from this step:
 
 - `draft-evidence-packet` returned `items: []`
-- the approval packet carried forward the warnings `no evidence drafted yet` and `no suggested entities included yet`
+- the approval packet carried forward the warning `no evidence drafted yet`
 - the run did not invent sources to fill the gap
 
 **User**
 
-`Approve the revision with the assumption that both sides seek to avoid immediate full-scale war while preserving deterrent signaling.`
+`Approve.`
 
 **Scenario Lab**
 
-`Revision is approved and ready to simulate.`
+`Revision is approved and ready to simulate. I’m carrying one explicit assumption: both sides seek to avoid immediate full-scale war while preserving deterrent signaling.`
 
 Verified details from this step:
 
@@ -98,7 +101,7 @@ Verified details from this step:
 
 **User**
 
-`Simulate it.`
+`Go ahead.`
 
 **Scenario Lab**
 
@@ -113,15 +116,15 @@ Verified details from this step:
 
 **User**
 
-`Generate the report.`
+`Show me the result.`
 
 **Scenario Lab**
 
 `reported r1 /tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`
 
-That report ranked `Open negotiation` first and recorded this as a low-credibility exploratory run because the approved evidence count stayed at `0`.
+In the rechecked conversation-style run, the report path was `/tmp/scenario-lab-us-iran-convo/run/runs/us-iran-convo/reports/r1.report.md`. Both verified public U.S.-Iran runs ranked `Open negotiation` first and recorded the result as exploratory because the approved evidence count stayed at `0`.
 
-The full verified transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md), and the shorter prompt-style workflow notes remain in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
+The longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md), and the shorter conversational workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
 ## What Makes It Effective
 
