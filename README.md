@@ -44,87 +44,58 @@ If you want to use another coding agent, share this repo with that agent and tel
 
 ## Workflow And Demo
 
-Scenario Lab is a natural-language-based interactive engine. Below is a condensed conversation based on a verified `U.S.-Iran` run. A longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md).
+Scenario Lab is a natural-language-based interactive engine. A normal run moves through these actual runtime phases.
 
-**User**
+1. `intake`
+   Runtime action: `save-intake-draft`
+   What it does: captures the event framing, focus actors, current development, stage, and horizon. The repo’s guidance surface can also ask follow-up questions before the intake is locked.
+2. `evidence`
+   Runtime action: usually `draft-evidence-packet`
+   Optional runtime action: `batch-ingest-recommended` when local candidate files exist and the workflow finds recommended ingestion targets
+   What it does: shows suggested entities, follow-up questions, retrieval planning, and evidence-category coverage, then drafts or saves the evidence packet.
+3. `approval`
+   Runtime action: `approve-revision`
+   What it does: freezes the intake, evidence, and assumptions for simulation and surfaces warnings before the revision is approved.
+4. `simulation`
+   Runtime action: `simulate`
+   What it does: runs deterministic Monte Carlo tree search on the approved revision.
+5. `report`
+   Runtime action: `begin-revision-update`
+   What it does: shows the top branches, scenario families, and the next step if you want to continue the run as a child revision.
 
-`How would a U.S.-Iran conflict at the Strait of Hormuz develop for the next 30 days?`
+The public `U.S.-Iran` example follows that exact repo workflow. A longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md).
 
-**Scenario Lab**
+Verified `U.S.-Iran` example:
 
-`I can frame this as an interstate crisis in the trigger stage over a 30-day horizon. The default lens is balanced-system. Before I lock the intake, two follow-ups matter: Which outside actor has the most leverage over the next phase? What constraint most limits immediate escalation?`
-
-**User**
-
-`Consider China. Go ahead.`
-
-**Scenario Lab**
-
-`Intake draft saved. I treated this as a U.S.-Iran Strait of Hormuz escalation scenario with United States and Iran as the focus actors, and I carried China forward as a suggested external actor. I also prepared an evidence plan for force posture, diplomatic signaling, alliance commitments, leader behavior, and economic constraints.`
-
-Verified details from this step:
-
-- the run moved into `evidence`
-- `draft-intake-guidance` asked exactly two follow-up questions:
+- broad question:
+  - `How would a U.S.-Iran conflict at the Strait of Hormuz develop for the next 30 days?`
+- intake guidance then asked exactly two follow-up questions:
   - `Which outside actor has the most leverage over the next phase?`
   - `What constraint most limits immediate escalation?`
-- in the rechecked conversation-style run, the approval packet carried `suggested external entity: China`
-- the evidence plan targeted `force posture`, `diplomatic signaling`, `alliance commitments`, `leader behavior`, and `economic constraints`
+- short user correction:
+  - `Consider China. Go ahead.`
+- saved intake then moved the run into `evidence`
+- the evidence plan targeted:
+  - `force posture`
+  - `diplomatic signaling`
+  - `alliance commitments`
+  - `leader behavior`
+  - `economic constraints`
+- the approval packet carried:
+  - `suggested external entity: China`
+  - `no evidence drafted yet`
+- approved revision counts:
+  - evidence items: `0`
+  - assumptions: `1`
+- simulation facts:
+  - search mode: `mcts`
+  - iterations: `10000`
+  - node count: `129`
+  - top branch: `Open negotiation`
+- report path from the rechecked run:
+  - `/tmp/scenario-lab-us-iran-convo/run/runs/us-iran-convo/reports/r1.report.md`
 
-**User**
-
-`Draft the evidence. If it stays exploratory, continue anyway.`
-
-**Scenario Lab**
-
-`Evidence draft is ready. Review warnings, assumptions, and evidence summary before approval.`
-
-Verified details from this step:
-
-- `draft-evidence-packet` returned `items: []`
-- the approval packet carried forward the warning `no evidence drafted yet`
-- the run did not invent sources to fill the gap
-
-**User**
-
-`Approve.`
-
-**Scenario Lab**
-
-`Revision is approved and ready to simulate. I’m carrying one explicit assumption: both sides seek to avoid immediate full-scale war while preserving deterrent signaling.`
-
-Verified details from this step:
-
-- approved evidence item count: `0`
-- approved assumption count: `1`
-- the run moved into `simulation`
-
-**User**
-
-`Go ahead.`
-
-**Scenario Lab**
-
-`Simulation complete.`
-
-Verified details from this step:
-
-- search mode: `mcts`
-- iterations: `10000`
-- node count: `129`
-- top branch: `Open negotiation`
-
-**User**
-
-`Show me the result.`
-
-**Scenario Lab**
-
-`reported r1 /tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`
-
-In the rechecked conversation-style run, the report path was `/tmp/scenario-lab-us-iran-convo/run/runs/us-iran-convo/reports/r1.report.md`. Both verified public U.S.-Iran runs ranked `Open negotiation` first and recorded the result as exploratory because the approved evidence count stayed at `0`.
-
-The longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md), and the shorter conversational workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
+The shorter phase-by-phase workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
 ## What Makes It Effective
 

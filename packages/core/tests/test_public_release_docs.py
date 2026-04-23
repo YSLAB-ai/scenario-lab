@@ -21,11 +21,13 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Current Limits" in readme
     assert "## Others" in readme
     assert "U.S.-Iran" in readme
-    assert "condensed conversation based on a verified `U.S.-Iran` run" in readme
-    assert "**User**" in readme
-    assert "**Scenario Lab**" in readme
-    assert "Consider China. Go ahead." in readme
-    assert "Use the interstate-crisis pack." not in readme
+    assert "actual runtime phases" in readme
+    assert "`intake`" in readme
+    assert "`evidence`" in readme
+    assert "`approval`" in readme
+    assert "`simulation`" in readme
+    assert "`report`" in readme
+    assert "batch-ingest-recommended" in readme
     assert "force posture" in readme
     assert "Open negotiation" in readme
     assert "Monte Carlo tree search" in readme
@@ -42,8 +44,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "forecast-harness demo-run --root .forecast" in readme
     assert "/Volumes/" not in readme
     assert "forecast-harness demo-run --root .forecast" in quickstart
-    assert "5-minute conversational path" in workflow
-    assert "Consider China. Go ahead." in workflow
+    assert "## Actual runtime phases" in workflow
+    assert "batch-ingest-recommended" in workflow
+    assert "intake -> evidence -> approval -> simulation -> report" in workflow
     assert "Current public repository slug: `YSLAB-ai/scenario-lab`" in metadata
 
 
