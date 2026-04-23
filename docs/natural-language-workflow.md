@@ -6,20 +6,20 @@ These are the actual adapter-runtime phases exposed by the repo.
 
 1. `intake`
    Next action: `save-intake-draft`
-   Meaning: capture the event framing and core entities first.
+   Meaning: understand the problem, define the main actors, and set the time horizon.
 2. `evidence`
    Next action: usually `draft-evidence-packet`
    Optional next action: `batch-ingest-recommended` if local candidate files are available and recommended
-   Meaning: review guidance, retrieval planning, and evidence coverage, then build the evidence packet.
+   Meaning: review what evidence is missing, what sources to pull in, and then build the evidence packet.
 3. `approval`
    Next action: `approve-revision`
-   Meaning: review warnings, assumptions, and evidence summary before freezing the revision.
+   Meaning: review warnings and assumptions, then lock the setup before search.
 4. `simulation`
    Next action: `simulate`
-   Meaning: run deterministic Monte Carlo search on the approved revision.
+   Meaning: explore many possible paths with deterministic Monte Carlo search.
 5. `report`
    Next action: `begin-revision-update`
-   Meaning: review top branches and decide whether to continue with a child revision.
+   Meaning: review the main outcomes and decide whether to continue with an updated revision.
 
 ## Verified U.S.-Iran walkthrough
 

@@ -46,22 +46,24 @@ If you want to use another coding agent, share this repo with that agent and tel
 
 Scenario Lab is a natural-language-based interactive engine. A normal run moves through these actual runtime phases.
 
+![Scenario Lab runtime workflow](docs/assets/scenario-lab-runtime-workflow.png)
+
 1. `intake`
    Runtime action: `save-intake-draft`
-   What it does: captures the event framing, focus actors, current development, stage, and horizon. The repo’s guidance surface can also ask follow-up questions before the intake is locked.
+   What it does: understand the problem, identify the main actors, and set the time horizon. The repo can also ask follow-up questions before this setup is locked.
 2. `evidence`
    Runtime action: usually `draft-evidence-packet`
    Optional runtime action: `batch-ingest-recommended` when local candidate files exist and the workflow finds recommended ingestion targets
-   What it does: shows suggested entities, follow-up questions, retrieval planning, and evidence-category coverage, then drafts or saves the evidence packet.
+   What it does: review what outside actors matter, what evidence is missing, and what sources to pull in, then draft or save the evidence packet.
 3. `approval`
    Runtime action: `approve-revision`
-   What it does: freezes the intake, evidence, and assumptions for simulation and surfaces warnings before the revision is approved.
+   What it does: lock the setup, assumptions, and evidence before search, while surfacing any warnings that still matter.
 4. `simulation`
    Runtime action: `simulate`
-   What it does: runs deterministic Monte Carlo tree search on the approved revision.
+   What it does: explore many possible paths with deterministic Monte Carlo tree search.
 5. `report`
    Runtime action: `begin-revision-update`
-   What it does: shows the top branches, scenario families, and the next step if you want to continue the run as a child revision.
+   What it does: show the top outcomes, explain the main branches, and let you continue the run if the situation changes.
 
 The public `U.S.-Iran` example follows that exact repo workflow. A longer verified CLI transcript is in [docs/demo-us-iran.md](docs/demo-us-iran.md).
 

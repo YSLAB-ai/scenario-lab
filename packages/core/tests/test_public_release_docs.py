@@ -41,6 +41,7 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "[docs/demo-us-iran.md](docs/demo-us-iran.md)" in readme
     assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
+    assert "docs/assets/scenario-lab-runtime-workflow.png" in readme
     assert "forecast-harness demo-run --root .forecast" in readme
     assert "/Volumes/" not in readme
     assert "forecast-harness demo-run --root .forecast" in quickstart
@@ -57,6 +58,7 @@ def test_public_docs_and_assets_exist() -> None:
         encoding="utf-8"
     )
     workflow_asset = root / "docs" / "assets" / "scenario-lab-workflow.png"
+    runtime_workflow_asset = root / "docs" / "assets" / "scenario-lab-runtime-workflow.png"
     social_preview_asset = root / "docs" / "assets" / "scenario-lab-social-preview.png"
 
     assert (root / "docs" / "quickstart.md").is_file()
@@ -67,6 +69,8 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "github-public-metadata.md").is_file()
     assert workflow_asset.is_file()
     assert workflow_asset.stat().st_size > 0
+    assert runtime_workflow_asset.is_file()
+    assert runtime_workflow_asset.stat().st_size > 0
     assert social_preview_asset.is_file()
     assert social_preview_asset.stat().st_size > 0
     assert "/Volumes/" not in demo_doc
