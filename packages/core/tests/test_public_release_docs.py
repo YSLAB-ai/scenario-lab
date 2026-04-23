@@ -16,6 +16,11 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "U.S.-Iran" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
+    assert "## License And Disclaimer" in readme
+    assert "PolyForm Noncommercial License 1.0.0" in readme
+    assert "Required Notice: Copyright Heuristic Search Group LLC" in readme
+    assert "not a prediction product" in readme
+    assert "financial losses" in readme
     assert "No full-scale war; allies step in and talks stay alive." in readme
     assert "Engine label: `Alliance consultation (coordinated signaling)`" in readme
     assert "More warning signals, but still no break into war." in readme
@@ -38,6 +43,8 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     )
     assert "[docs/demo-us-iran.md](docs/demo-us-iran.md)" in readme
     assert "[docs/limitations.md](docs/limitations.md)" in readme
+    assert "[LICENSE](LICENSE)" in readme
+    assert "[NOTICE](NOTICE)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
     assert "docs/assets/scenario-lab-runtime-workflow.png" in readme
     assert "/Volumes/" not in readme
@@ -63,6 +70,7 @@ def test_public_docs_and_assets_exist() -> None:
     metadata_doc = (root / "docs" / "github-public-metadata.md").read_text(
         encoding="utf-8"
     )
+    limitations_doc = (root / "docs" / "limitations.md").read_text(encoding="utf-8")
     workflow_asset = root / "docs" / "assets" / "scenario-lab-workflow.png"
     runtime_workflow_asset = root / "docs" / "assets" / "scenario-lab-runtime-workflow.png"
     social_preview_asset = root / "docs" / "assets" / "scenario-lab-social-preview.png"
@@ -71,6 +79,8 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "natural-language-workflow.md").is_file()
     assert (root / "docs" / "demo-us-iran.md").is_file()
     assert (root / "docs" / "limitations.md").is_file()
+    assert (root / "LICENSE").is_file()
+    assert (root / "NOTICE").is_file()
     assert (root / "docs" / "release-notes" / "public-preview.md").is_file()
     assert (root / "docs" / "github-public-metadata.md").is_file()
     assert workflow_asset.is_file()
@@ -96,5 +106,9 @@ def test_public_docs_and_assets_exist() -> None:
     assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in demo_doc
     assert "Engine label: `Open negotiation -> settlement-stalemate`" in demo_doc
     assert "the top of the ranking stayed tight rather than decisive" in demo_doc
+    assert "PolyForm Noncommercial License 1.0.0" in limitations_doc
+    assert "Required Notice: Copyright Heuristic Search Group LLC" in limitations_doc
+    assert "not a prediction product" in limitations_doc
+    assert "financial losses" in limitations_doc
     assert "scenario-lab" in metadata_doc
     assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc

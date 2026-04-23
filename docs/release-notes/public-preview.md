@@ -7,6 +7,7 @@ This preview includes:
 - packaged local Codex and Claude integrations
 - spreadsheet and web-archive ingestion
 - protected domain evolution and synthesis
+- PolyForm Noncommercial licensing for the public repository
 
 Social preview image: `docs/assets/scenario-lab-social-preview.png`
 
