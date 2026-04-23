@@ -1,8 +1,8 @@
 # Scenario Lab
 
-> Experimental preview: local-first scenario analysis you can run in natural language with Codex or Claude.
+> Experimental preview: Monte Carlo simulation for real-world events you can run locally with Codex or Claude.
 
-Scenario Lab helps you turn a developing situation into a structured scenario run, gather and approve evidence, simulate multiple branches, and generate readable reports.
+Scenario Lab is a Monte Carlo simulation engine for real-world events such as regional conflict, markets, and politics.
 
 ![Scenario Lab workflow](docs/assets/scenario-lab-workflow.png)
 
