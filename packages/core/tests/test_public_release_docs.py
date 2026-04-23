@@ -21,7 +21,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Current Limits" in readme
     assert "## Others" in readme
     assert "U.S.-Iran" in readme
-    assert "intake -> evidence -> approval -> simulation -> report" in readme
+    assert "condensed conversation based on the actual saved run facts" in readme
+    assert "**User**" in readme
+    assert "**Scenario Lab**" in readme
     assert "force posture" in readme
     assert "Open negotiation" in readme
     assert "Monte Carlo tree search" in readme
