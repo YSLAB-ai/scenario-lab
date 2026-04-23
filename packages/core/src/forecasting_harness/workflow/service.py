@@ -134,7 +134,7 @@ def _validated_assumptions(assumptions: AssumptionSummary) -> AssumptionSummary:
 def _runtime_action_from_command(command: str | None) -> str | None:
     if command is None:
         return None
-    prefix = "forecast-harness "
+    prefix = "scenario-lab "
     if command.startswith(prefix):
         return command[len(prefix) :]
     return None
@@ -988,12 +988,12 @@ class WorkflowService:
                 stage="report",
                 headline="Review simulation report",
                 user_message="Simulation is complete. Review the top branches and decide whether to update the revision.",
-                recommended_command="forecast-harness begin-revision-update",
+                recommended_command="scenario-lab begin-revision-update",
                 recommended_runtime_action="begin-revision-update",
                 available_sections=available_sections,
                 actions=[
                     self._adapter_action(
-                        "forecast-harness begin-revision-update",
+                        "scenario-lab begin-revision-update",
                         "Start revision update",
                         "Create a child revision from the current approved revision and continue the conversation loop.",
                     )
@@ -1017,12 +1017,12 @@ class WorkflowService:
                 stage="simulation",
                 headline="Ready to simulate",
                 user_message="Revision is approved and ready to simulate.",
-                recommended_command="forecast-harness simulate",
+                recommended_command="scenario-lab simulate",
                 recommended_runtime_action="simulate",
                 available_sections=available_sections,
                 actions=[
                     self._adapter_action(
-                        "forecast-harness simulate",
+                        "scenario-lab simulate",
                         "Run simulation",
                         "Execute deterministic search for the approved revision.",
                     )
@@ -1039,12 +1039,12 @@ class WorkflowService:
                 stage="approval",
                 headline="Review approval packet",
                 user_message="Evidence draft is ready. Review warnings, assumptions, and evidence summary before approval.",
-                recommended_command="forecast-harness approve-revision",
+                recommended_command="scenario-lab approve-revision",
                 recommended_runtime_action="approve-revision",
                 available_sections=available_sections,
                 actions=[
                     self._adapter_action(
-                        "forecast-harness approve-revision",
+                        "scenario-lab approve-revision",
                         "Approve revision",
                         "Freeze the intake, evidence, and assumptions for simulation.",
                     )
@@ -1057,7 +1057,7 @@ class WorkflowService:
             guidance_payload = guidance.model_dump(mode="json")
             context: dict[str, object] = {**guidance_payload, "intake_guidance": guidance_payload}
             actions: list[AdapterAction] = []
-            recommended_command = "forecast-harness draft-evidence-packet"
+            recommended_command = "scenario-lab draft-evidence-packet"
 
             if self.corpus_registry is not None:
                 pack = self._pack_for_run(run_id)
@@ -1080,10 +1080,10 @@ class WorkflowService:
                     context["ingestion_recommendations"] = [
                         item.model_dump(mode="json") for item in recommendations
                     ]
-                    recommended_command = "forecast-harness batch-ingest-recommended"
+                    recommended_command = "scenario-lab batch-ingest-recommended"
                     actions.append(
                         self._adapter_action(
-                            "forecast-harness batch-ingest-recommended",
+                            "scenario-lab batch-ingest-recommended",
                             "Batch ingest recommended files",
                             "Ingest the highest-priority local files that cover missing evidence categories.",
                             required_options=["corpus_db", "candidate_path"],
@@ -1092,7 +1092,7 @@ class WorkflowService:
 
             actions.append(
                 self._adapter_action(
-                    "forecast-harness draft-evidence-packet",
+                    "scenario-lab draft-evidence-packet",
                     "Draft evidence packet",
                     "Draft a grouped evidence packet from the current corpus and manifest-driven retrieval plan.",
                     required_options=["corpus_db"] if self.corpus_registry is not None else [],
@@ -1100,7 +1100,7 @@ class WorkflowService:
             )
             actions.append(
                 self._adapter_action(
-                    "forecast-harness save-evidence-draft",
+                    "scenario-lab save-evidence-draft",
                     "Save evidence draft",
                     "Persist a hand-edited evidence packet directly without going through a file-backed JSON handoff.",
                 )
@@ -1124,12 +1124,12 @@ class WorkflowService:
             stage="intake",
             headline="Draft intake",
             user_message="Revision is ready for intake. Capture the event framing and core entities first.",
-            recommended_command="forecast-harness save-intake-draft",
+            recommended_command="scenario-lab save-intake-draft",
             recommended_runtime_action="save-intake-draft",
             available_sections=available_sections,
             actions=[
                 self._adapter_action(
-                    "forecast-harness save-intake-draft",
+                    "scenario-lab save-intake-draft",
                     "Save intake draft",
                     "Capture the normalized intake fields for the revision.",
                 )

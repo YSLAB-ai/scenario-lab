@@ -23,7 +23,7 @@ semantic-local = [
 ]
 
 [project.scripts]
-forecast-harness = "forecasting_harness.cli:main"
+scenario-lab = "forecasting_harness.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

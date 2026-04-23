@@ -44,6 +44,6 @@ This phase sequence was rechecked on a verified `U.S.-Iran` run in [docs/demo-us
 
 ## Runtime actions
 
-Scenario Lab exposes a packaged adapter runtime through `forecast-harness run-adapter-action`.
+Scenario Lab exposes a packaged adapter runtime through `scenario-lab run-adapter-action`.
 
 The packaged adapter smokes in this repo reached the stage sequence `intake -> evidence -> approval -> simulation -> report`.

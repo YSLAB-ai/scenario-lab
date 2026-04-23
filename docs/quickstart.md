@@ -12,7 +12,7 @@ pip install -e 'packages/core[dev]'
 ## 2. Run the built-in demo
 
 ```bash
-forecast-harness demo-run --root .forecast
+scenario-lab demo-run --root .forecast
 ```
 
 ## 3. Inspect the generated artifacts

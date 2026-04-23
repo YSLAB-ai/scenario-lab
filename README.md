@@ -30,7 +30,7 @@ PYTHON=/path/to/python3.12
 "$PYTHON" -m venv packages/core/.venv
 source packages/core/.venv/bin/activate
 pip install -e 'packages/core[dev]'
-forecast-harness demo-run --root .forecast
+scenario-lab demo-run --root .forecast
 ```
 
 You should see `demo-run complete`, then artifacts under `.forecast/runs/demo-run`.
@@ -135,7 +135,7 @@ If you want the smallest runnable surface instead of the higher-level interactiv
 
 ```bash
 source packages/core/.venv/bin/activate
-forecast-harness demo-run --root .forecast
+scenario-lab demo-run --root .forecast
 ls .forecast/runs/demo-run
 cat .forecast/runs/demo-run/report.md
 cat .forecast/runs/demo-run/workbench.md
