@@ -65,7 +65,18 @@ def _actor_aliases(name: str) -> set[tuple[str, ...]]:
             }
         )
     elif actor_id == "china":
-        aliases.update({_normalized_tokens("chinese"), _normalized_tokens("beijing")})
+        aliases.update(
+            {
+                _normalized_tokens("chinese"),
+                _normalized_tokens("beijing"),
+                _normalized_tokens("prc"),
+                _normalized_tokens("pla"),
+                _normalized_tokens("people's liberation army"),
+                _normalized_tokens("peoples liberation army"),
+            }
+        )
+    elif actor_id == "japan":
+        aliases.update({_normalized_tokens("japanese"), _normalized_tokens("tokyo")})
     elif actor_id == "taiwan":
         aliases.update({_normalized_tokens("taiwanese"), _normalized_tokens("taipei")})
     return {alias for alias in aliases if alias}
@@ -88,14 +99,12 @@ def _count_term_matches(text: str, terms: tuple[str, ...]) -> int:
     return sum(lowered.count(term) for term in terms)
 
 
-def _relevant_actor_text(
-    actor_name: str,
+def _behavior_segments(
     intake: IntakeDraft,
     assumptions: AssumptionSummary,
     approved_evidence_items: list[EvidencePacketItem],
-) -> str:
-    aliases = _actor_aliases(actor_name)
-    segments = [
+) -> list[str]:
+    return [
         intake.event_framing,
         intake.current_development,
         *intake.known_constraints,
@@ -103,17 +112,62 @@ def _relevant_actor_text(
         *assumptions.summary,
         *(passage for item in approved_evidence_items for passage in item.raw_passages),
     ]
-    matching_segments = [segment for segment in segments if _contains_alias(segment, aliases)]
-    return " ".join(matching_segments)
 
 
-def _infer_behavior_profile(
-    actor_name: str,
+def _segment_clauses(segment: str) -> list[str]:
+    parts = re.split(r"[;!?]\s+|\b(?:while|whereas|but|however)\b", segment)
+    return [part.strip(" ,.;") for part in parts if part.strip(" ,.;")]
+
+
+def _first_anchor_actor_family(
+    clause: str,
+    actor_aliases: dict[str, set[tuple[str, ...]]],
+) -> str | None:
+    tokens = _normalized_tokens(clause)
+    if not tokens:
+        return None
+
+    best_match: tuple[int, int, str] | None = None
+    for actor_family, aliases in actor_aliases.items():
+        for alias in aliases:
+            alias_length = len(alias)
+            for index in range(len(tokens) - alias_length + 1):
+                if tokens[index : index + alias_length] != alias:
+                    continue
+                candidate = (index, -alias_length, actor_family)
+                if best_match is None or candidate < best_match:
+                    best_match = candidate
+                break
+    return None if best_match is None else best_match[2]
+
+
+def _relevant_actor_texts(
+    actor_names: list[str],
     intake: IntakeDraft,
     assumptions: AssumptionSummary,
     approved_evidence_items: list[EvidencePacketItem],
+) -> dict[str, str]:
+    alias_map = {
+        _canonical_actor_family(name): _actor_aliases(name)
+        for name in actor_names
+    }
+    anchored_segments: dict[str, list[str]] = {actor_family: [] for actor_family in alias_map}
+    for segment in _behavior_segments(intake, assumptions, approved_evidence_items):
+        for clause in _segment_clauses(segment):
+            actor_family = _first_anchor_actor_family(clause, alias_map)
+            if actor_family is None:
+                continue
+            anchored_segments[actor_family].append(clause)
+    return {
+        actor_family: " ".join(segments).strip()
+        for actor_family, segments in anchored_segments.items()
+        if segments
+    }
+
+
+def _infer_behavior_profile_from_text(
+    actor_text: str,
 ) -> BehaviorProfile | None:
-    actor_text = _relevant_actor_text(actor_name, intake, assumptions, approved_evidence_items)
     if not actor_text:
         return None
 
@@ -150,6 +204,21 @@ def _infer_behavior_profile(
     return None
 
 
+def _infer_behavior_profiles(
+    actor_names: list[str],
+    intake: IntakeDraft,
+    assumptions: AssumptionSummary,
+    approved_evidence_items: list[EvidencePacketItem],
+) -> dict[str, BehaviorProfile | None]:
+    actor_texts = _relevant_actor_texts(actor_names, intake, assumptions, approved_evidence_items)
+    return {
+        _canonical_actor_family(name): _infer_behavior_profile_from_text(
+            actor_texts.get(_canonical_actor_family(name), "")
+        )
+        for name in actor_names
+    }
+
+
 def compile_belief_state(
     *,
     run_id: str,
@@ -169,6 +238,7 @@ def compile_belief_state(
     actor_names = _dedupe_actor_names(
         [*intake.focus_entities, *intake.suggested_entities, *assumptions.suggested_actors]
     )
+    behavior_profiles = _infer_behavior_profiles(actor_names, intake, assumptions, approved_evidence_items or [])
     now = datetime.now(timezone.utc)
     fields = {
         "event_framing": BeliefField(
@@ -214,7 +284,7 @@ def compile_belief_state(
         Actor(
             actor_id=_canonical_actor_family(name),
             name=name,
-            behavior_profile=_infer_behavior_profile(name, intake, assumptions, approved_evidence_items or []),
+            behavior_profile=behavior_profiles.get(_canonical_actor_family(name)),
         )
         for name in actor_names
     ]

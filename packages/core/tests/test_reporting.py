@@ -211,7 +211,8 @@ def test_render_report_marks_fallback_calibration_and_rounds_scores() -> None:
                     "label": "Signal resolve",
                     "score": 0.15468599999999996,
                     "confidence_signal": 0.21999999999999997,
-                    "confidence_bucket": "medium",
+                    "confidence_bucket": "fallback",
+                    "confidence_bucket_label": "Fallback baseline",
                     "calibrated_confidence": 0.875,
                     "calibration_case_count": 0,
                     "calibration_fallback_used": True,
@@ -237,7 +238,7 @@ def test_render_report_marks_fallback_calibration_and_rounds_scores() -> None:
         unsupported_count=0,
     )
 
-    assert "Signal resolve (0.155); calibrated confidence: medium (0.875, fallback - 0 replay cases)" in report
+    assert "Signal resolve (0.155); calibrated confidence: fallback baseline (0.875, 0 replay cases)" in report
     assert "Crisis talks (-0.272); calibrated confidence: low (0.875 from 6 replay cases)" in report
     assert "- Confidence signal: 0.22" in report
 

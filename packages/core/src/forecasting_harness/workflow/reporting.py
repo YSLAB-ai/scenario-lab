@@ -20,13 +20,17 @@ def _format_metric_map(metrics: dict[str, object]) -> str:
 
 def _format_calibrated_confidence(branch: dict[str, object]) -> str:
     bucket = str(branch.get("confidence_bucket") or "unavailable")
+    bucket_label = str(
+        branch.get("confidence_bucket_label")
+        or ("Fallback baseline" if bucket == "fallback" else bucket)
+    )
     confidence = float(branch.get("calibrated_confidence", 0.0) or 0.0)
     case_count = int(branch.get("calibration_case_count", 0) or 0)
     fallback_used = bool(branch.get("calibration_fallback_used", False))
     if case_count > 0:
         return f"{bucket} ({_format_float(confidence)} from {case_count} replay cases)"
     if fallback_used:
-        return f"{bucket} ({_format_float(confidence)}, fallback - 0 replay cases)"
+        return f"{bucket_label.lower()} ({_format_float(confidence)}, 0 replay cases)"
     return f"{bucket} ({_format_float(confidence)})"
 
 

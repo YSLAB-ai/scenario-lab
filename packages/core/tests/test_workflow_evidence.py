@@ -252,6 +252,67 @@ def test_compile_belief_state_infers_company_pack_fields_from_intake_and_evidenc
     assert float(state.fields["brand_sentiment"].normalized_value) < 0.6
 
 
+def test_compile_belief_state_assigns_behavior_traits_to_anchor_actor_not_any_mentioned_actor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from forecasting_harness.workflow import compiler as workflow_compiler
+
+    monkeypatch.setattr(workflow_compiler, "datetime", _FrozenDateTime)
+
+    state = compile_belief_state(
+        run_id="crisis-1",
+        revision_id="r1",
+        pack=StubPack(),
+        intake=IntakeDraft(
+            event_framing="Assess how actor incentives shift during a Taiwan Strait crisis.",
+            focus_entities=["China", "Japan", "Taiwan"],
+            current_development="PLA missile exercises around Taiwan intensify the standoff.",
+            current_stage="trigger",
+            time_horizon="30d",
+        ),
+        assumptions=AssumptionSummary(
+            summary=[
+                "Japanese coalition leaders coordinated alliance messaging and security support to deter China.",
+                "Chinese leaders framed PLA exercises as a domestic resolve signal.",
+            ]
+        ),
+        approved_evidence_ids=["ev-1", "ev-2"],
+        approved_evidence_items=[
+            EvidencePacketItem(
+                evidence_id="ev-1",
+                source_id="src-1",
+                source_title="Alliance messaging",
+                reason="Describes Japan's coalition coordination",
+                raw_passages=[
+                    "Japanese coalition leaders coordinated alliance messaging and security support to deter China."
+                ],
+            ),
+            EvidencePacketItem(
+                evidence_id="ev-2",
+                source_id="src-2",
+                source_title="PLA drills",
+                reason="Describes China's coercive signaling",
+                raw_passages=[
+                    "PLA commanders described the missile exercise as a domestic resolve signal from Beijing."
+                ],
+            ),
+        ],
+    )
+
+    actors = {actor.name: actor for actor in state.actors}
+
+    assert actors["Japan"].behavior_profile is not None
+    assert actors["Japan"].behavior_profile.alliance_dependence is not None
+    assert actors["Japan"].behavior_profile.alliance_dependence > 0.6
+
+    assert actors["China"].behavior_profile is not None
+    assert actors["China"].behavior_profile.coercive_bias is not None
+    assert actors["China"].behavior_profile.coercive_bias > 0.4
+    assert actors["China"].behavior_profile.alliance_dependence is None
+
+    assert actors["Taiwan"].behavior_profile is None
+
+
 def test_domain_pack_workflow_hooks_default_to_empty_collections() -> None:
     pack = StubPack()
     intake = IntakeDraft(

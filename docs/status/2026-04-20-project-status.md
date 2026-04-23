@@ -5,6 +5,10 @@ Date: 2026-04-22
 ## Context
 
 - Start with [README.md](../../README.md) for the concise repo handoff, then use this file and [2026-04-21-actor-utility-pass.md](2026-04-21-actor-utility-pass.md) for detailed verification.
+- The accepted 2026-04-23 follow-up fixed the two highest-risk runtime defects from the latest hands-on review and recorded the remaining verified issues in [2026-04-23-runtime-known-issues.md](2026-04-23-runtime-known-issues.md).
+- The accepted 2026-04-23 follow-up verified:
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q` -> `325 passed in 13.60s`
+  - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q` -> `20 passed in 3.08s`
 
 ## Verified Progress
 

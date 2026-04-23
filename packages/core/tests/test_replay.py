@@ -17,6 +17,7 @@ from forecasting_harness.replay import (
     ReplayCaseResult,
     ReplaySource,
     ReplaySuiteResult,
+    calibrate_confidence_signal,
     run_replay_suite,
     summarize_calibration,
 )
@@ -315,6 +316,52 @@ def test_summarize_calibration_includes_replay_backed_confidence_profiles() -> N
     assert buckets["high"].case_count == 0
     assert buckets["high"].fallback_used is True
     assert buckets["high"].calibrated_confidence == profile.baseline_accuracy
+
+
+def test_calibrate_confidence_signal_marks_fallback_as_non_ranked_baseline() -> None:
+    profile = DomainConfidenceCalibration(
+        domain_pack="company-action",
+        case_count=3,
+        baseline_accuracy=0.875,
+        buckets=[
+            ConfidenceCalibrationBucket(
+                bucket_id="low",
+                label="Low",
+                lower_bound=0.0,
+                upper_bound=0.34,
+                case_count=2,
+                observed_accuracy=0.5,
+                calibrated_confidence=0.75,
+            ),
+            ConfidenceCalibrationBucket(
+                bucket_id="medium",
+                label="Medium",
+                lower_bound=0.34,
+                upper_bound=0.67,
+                case_count=1,
+                observed_accuracy=0.0,
+                calibrated_confidence=0.333,
+            ),
+            ConfidenceCalibrationBucket(
+                bucket_id="high",
+                label="High",
+                lower_bound=0.67,
+                upper_bound=1.0,
+                case_count=0,
+                observed_accuracy=0.0,
+                calibrated_confidence=0.875,
+                fallback_used=True,
+            ),
+        ],
+    )
+
+    calibrated = calibrate_confidence_signal(0.82, profile)
+
+    assert calibrated["confidence_bucket"] == "fallback"
+    assert calibrated["confidence_bucket_label"] == "Fallback baseline"
+    assert calibrated["calibrated_confidence"] == 0.875
+    assert calibrated["calibration_case_count"] == 0
+    assert calibrated["calibration_fallback_used"] is True
 
 
 def test_run_replay_suite_command_outputs_structured_metrics(tmp_path: Path) -> None:

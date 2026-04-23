@@ -209,8 +209,8 @@ def calibrate_confidence_signal(
     )
     if profile is None:
         return {
-            "confidence_bucket": default_bucket_id,
-            "confidence_bucket_label": default_label,
+            "confidence_bucket": "fallback",
+            "confidence_bucket_label": "Fallback baseline",
             "calibrated_confidence": bounded_signal,
             "calibration_case_count": 0,
             "calibration_observed_accuracy": 0.0,
@@ -220,8 +220,18 @@ def calibrate_confidence_signal(
     bucket = next((item for item in profile.buckets if item.bucket_id == bucket_id), None)
     if bucket is None:
         return {
-            "confidence_bucket": default_bucket_id,
-            "confidence_bucket_label": default_label,
+            "confidence_bucket": "fallback",
+            "confidence_bucket_label": "Fallback baseline",
+            "calibrated_confidence": profile.baseline_accuracy,
+            "calibration_case_count": 0,
+            "calibration_observed_accuracy": 0.0,
+            "calibration_fallback_used": True,
+        }
+
+    if bucket.fallback_used:
+        return {
+            "confidence_bucket": "fallback",
+            "confidence_bucket_label": "Fallback baseline",
             "calibrated_confidence": profile.baseline_accuracy,
             "calibration_case_count": 0,
             "calibration_observed_accuracy": 0.0,

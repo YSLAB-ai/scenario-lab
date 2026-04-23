@@ -7,14 +7,14 @@ Local-first forecasting harness for scenario analysis. The repo contains a share
 - `main` is the accepted baseline branch.
 - This README describes the accepted `main` state, including the actor-utility defaults, replay calibration improvements, and local neural embedding support.
 
-Verified on `main` on 2026-04-22:
+Verified on `main` on 2026-04-23:
 
 - Full suite:
   - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core -q`
-  - `313 passed in 11.26s`
+  - `325 passed in 13.60s`
 - Checked-in smoke campaign:
   - `PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m pytest packages/core/tests/test_smoke_campaign.py -q`
-  - `20 passed in 3.22s`
+  - `20 passed in 3.08s`
 
 ## Repository Layout
 
@@ -71,6 +71,8 @@ Recent correctness fixes included in `main`:
 - `US`, `U.S.`, and `United States` now persist as the same canonical actor id
 - behavior-profile changes now block unsafe warm-start reuse
 - report and query summaries preserve the engine’s explored-before-unexplored branch ordering
+- behavior-profile inference now anchors trait extraction to actor-led clauses instead of any passage that merely mentions the actor, reducing coalition/support leakage into the wrong actor
+- fallback replay confidence now renders as an explicit fallback baseline instead of a normal calibrated `low` / `medium` / `high` bucket
 
 ### Phase 2 ingestion additions
 
@@ -91,6 +93,8 @@ Detailed recent notes:
 - [2026-04-22-knowledge-compiler-v1.md](docs/status/2026-04-22-knowledge-compiler-v1.md)
 - [2026-04-22-domain-retuning-v1.md](docs/status/2026-04-22-domain-retuning-v1.md)
 - [2026-04-22-domain-synthesis-v2.md](docs/status/2026-04-22-domain-synthesis-v2.md)
+- [2026-04-23-priority-review-fixes.md](docs/status/2026-04-23-priority-review-fixes.md)
+- [2026-04-23-runtime-known-issues.md](docs/status/2026-04-23-runtime-known-issues.md)
 
 ## Install
 
