@@ -16,7 +16,7 @@ pip install -e 'packages/core[dev]'
 For a disposable local Claude root:
 
 ```bash
-packages/core/.venv/bin/python adapters/claude/scenario-lab/install.py --target-dir /tmp/claude-root
+packages/core/.venv/bin/python adapters/claude/forecast-harness/install.py --target-dir /tmp/claude-root
 ```
 
 Add `--link` to symlink the bundle instead of copying it while iterating locally.
@@ -24,7 +24,7 @@ Add `--link` to symlink the bundle instead of copying it while iterating locally
 ## Smoke the packaged bundle
 
 ```bash
-packages/core/.venv/bin/python adapters/claude/scenario-lab/smoke.py --work-dir /tmp/scenario-lab-claude-smoke
+packages/core/.venv/bin/python adapters/claude/forecast-harness/smoke.py --work-dir /tmp/scenario-lab-claude-smoke
 ```
 
 ## Next docs
