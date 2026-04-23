@@ -38,7 +38,7 @@ The prompt-style workflow examples and runtime-action note are documented in [do
 
 ## U.S.-Iran demo
 
-The public `U.S.-Iran` example starter page lives in [docs/demo-us-iran.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/demo-us-iran.md). Task 3 replaces that starter content with the exact verified workflow captured from the repo.
+The public `U.S.-Iran` example now includes a verified end-to-end run in [docs/demo-us-iran.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/demo-us-iran.md): the real `/tmp/scenario-lab-us-iran` run reached `report`, used the default `10000` simulation iterations, wrote `/tmp/scenario-lab-us-iran/run/runs/us-iran-public/reports/r1.report.md`, and reported `Open negotiation` as the top branch.
 
 ## Install with Codex / Claude
 
