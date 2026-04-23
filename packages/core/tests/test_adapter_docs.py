@@ -2,10 +2,17 @@ from pathlib import Path
 
 
 def test_adapter_install_docs_use_scenario_lab_branding_and_public_links() -> None:
-    docs_root = Path(__file__).resolve().parents[3] / "docs"
+    root = Path(__file__).resolve().parents[3]
+    docs_root = root / "docs"
 
     codex_doc = (docs_root / "install-codex.md").read_text(encoding="utf-8")
     claude_doc = (docs_root / "install-claude-code.md").read_text(encoding="utf-8")
+    codex_bundle = (
+        root / "adapters" / "codex" / "forecast-harness" / "README.md"
+    ).read_text(encoding="utf-8")
+    claude_bundle = (
+        root / "adapters" / "claude" / "forecast-harness" / "README.md"
+    ).read_text(encoding="utf-8")
 
     assert "Python 3.12+" in codex_doc
     assert "Python 3.12+" in claude_doc
@@ -31,3 +38,11 @@ def test_adapter_install_docs_use_scenario_lab_branding_and_public_links() -> No
     assert "docs/quickstart.md" in claude_doc
     assert "docs/natural-language-workflow.md" in claude_doc
     assert "docs/demo-us-iran.md" in claude_doc
+    assert "# Scenario Lab Codex Bundle" in codex_bundle
+    assert "# Scenario Lab Claude Bundle" in claude_bundle
+    assert "Scenario Lab" in codex_bundle
+    assert "Scenario Lab" in claude_bundle
+    assert "packaged local bundle" in codex_bundle
+    assert "packaged local bundle" in claude_bundle
+    assert "runtime path" in codex_bundle
+    assert "runtime path" in claude_bundle
