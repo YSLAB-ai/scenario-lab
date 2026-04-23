@@ -1,6 +1,6 @@
 # Scenario Lab Demo: U.S.-Iran
 
-This page is the starter surface for the verified `U.S.-Iran` demo that Task 3 will complete on accepted `main`.
+This page is the starter surface for the `U.S.-Iran` demo. Verification is still pending, and Task 3 will supply the verified commands and outputs captured from accepted `main`.
 
 ## Commands
 
