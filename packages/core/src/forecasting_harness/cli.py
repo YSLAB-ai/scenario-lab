@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -270,6 +271,91 @@ def _load_json_payload(raw_value: str, *, param_hint: str) -> object:
         return json.loads(raw_value)
     except json.JSONDecodeError as exc:
         raise ValueError(f"invalid {param_hint} JSON: {exc}") from exc
+
+
+_SCENARIO_PROMPT_RE = re.compile(r"^\s*/scenario\s+(?P<body>.+?)\s*$", re.DOTALL)
+_SCENARIO_FOCUS_ENTITY_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (r"\bu\.s\.-iran\b", ("US", "Iran")),
+    (r"\bus-iran\b", ("US", "Iran")),
+    (r"\bu\.s\.\s+iran\b", ("US", "Iran")),
+    (r"\bunited states\s+and\s+iran\b", ("US", "Iran")),
+)
+
+
+def _parse_scenario_prompt(prompt: str) -> tuple[str, str]:
+    match = _SCENARIO_PROMPT_RE.match(prompt)
+    if match is None:
+        raise typer.BadParameter("prompt must start with /scenario ", param_hint="prompt")
+    body = match.group("body").strip()
+    if not body:
+        raise typer.BadParameter("prompt must include a scenario question", param_hint="prompt")
+    return prompt, body
+
+
+def _extract_focus_entities_from_prompt(prompt_body: str) -> list[str]:
+    normalized = prompt_body.lower()
+    focus_entities: list[str] = []
+    for alias, entities in _SCENARIO_FOCUS_ENTITY_ALIASES:
+        if re.search(alias, normalized):
+            for entity in entities:
+                if entity not in focus_entities:
+                    focus_entities.append(entity)
+    return focus_entities
+
+
+def _scenario_intake_from_prompt(prompt_body: str, focus_entities: list[str]) -> IntakeDraft:
+    return IntakeDraft(
+        event_framing=prompt_body,
+        focus_entities=focus_entities,
+        current_development=prompt_body,
+        current_stage="trigger",
+        time_horizon="30d",
+    )
+
+
+def _scenario_validation_failure_payload(
+    *,
+    root: Path,
+    run_id: str,
+    revision_id: str,
+    prompt: str,
+    parsed_prompt: str,
+    intake: IntakeDraft,
+    validation_errors: list[str],
+    suggested_focus_entities: list[str],
+) -> dict[str, object]:
+    guidance = _service(root).draft_intake_guidance(run_id, revision_id)
+    guidance_payload = guidance.model_dump(mode="json")
+    return {
+        "command": "scenario",
+        "prompt": prompt,
+        "intake": intake.model_dump(mode="json"),
+        "turn": {
+            "run_id": run_id,
+            "revision_id": revision_id,
+            "stage": "intake",
+            "headline": "Draft intake",
+            "user_message": "Parsed the scenario prompt, but the intake draft is not valid yet. Review the guidance and adjust the focus entities before saving.",
+            "recommended_command": "scenario-lab save-intake-draft",
+            "recommended_runtime_action": "save-intake-draft",
+            "available_sections": [],
+            "actions": [
+                {
+                    "command": "scenario-lab save-intake-draft",
+                    "runtime_action": "save-intake-draft",
+                    "label": "Save intake draft",
+                    "description": "Capture the normalized intake fields for the revision.",
+                    "required_options": [],
+                }
+            ],
+            "context": {
+                "intake_guidance": guidance_payload,
+                "parsed_prompt": parsed_prompt,
+                "validation_errors": validation_errors,
+                "suggested_focus_entities": suggested_focus_entities,
+            },
+        },
+    }
 
 
 def _replay_cases_from_payloads(
@@ -947,6 +1033,53 @@ def draft_conversation_turn(
         _service(root, corpus_db=corpus_db)
         .draft_conversation_turn(run_id, revision_id, candidate_path=candidate_path)
         .model_dump_json()
+    )
+
+
+@app.command("scenario")
+def scenario_command(
+    root: Path = typer.Option(Path(".forecast")),
+    run_id: str = typer.Option(...),
+    revision_id: str = typer.Option("r1"),
+    domain_pack: str = typer.Option(...),
+    prompt: str = typer.Argument(...),
+) -> None:
+    parsed_prompt, prompt_body = _parse_scenario_prompt(prompt)
+    pack = _pack_for_slug(domain_pack)
+    service = _service(root)
+    service.start_run(run_id=run_id, domain_pack=pack.slug())
+
+    focus_entities = _extract_focus_entities_from_prompt(prompt_body)
+    intake = _scenario_intake_from_prompt(prompt_body, focus_entities)
+    validation_errors = pack.validate_intake(intake)
+    if validation_errors:
+        print(
+            json.dumps(
+                _scenario_validation_failure_payload(
+                    root=root,
+                    run_id=run_id,
+                    revision_id=revision_id,
+                    prompt=prompt,
+                    parsed_prompt=parsed_prompt,
+                    intake=intake,
+                    validation_errors=validation_errors,
+                    suggested_focus_entities=focus_entities,
+                )
+            )
+        )
+        return
+
+    service.save_intake_draft(run_id=run_id, revision_id=revision_id, intake=intake)
+    turn = service.draft_conversation_turn(run_id, revision_id)
+    print(
+        json.dumps(
+            {
+                "command": "scenario",
+                "prompt": prompt,
+                "intake": intake.model_dump(mode="json"),
+                "turn": turn.model_dump(mode="json"),
+            }
+        )
     )
 
 

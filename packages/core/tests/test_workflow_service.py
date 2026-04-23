@@ -768,7 +768,7 @@ def test_draft_conversation_turn_returns_intake_stage_when_revision_is_empty(tmp
 
     assert isinstance(turn, ConversationTurn)
     assert turn.stage == "intake"
-    assert turn.recommended_command == "forecast-harness save-intake-draft"
+    assert turn.recommended_command == "scenario-lab save-intake-draft"
     assert turn.available_sections == []
 
 
@@ -784,7 +784,7 @@ def test_draft_conversation_turn_returns_evidence_stage_from_intake_draft(tmp_pa
     turn = service.draft_conversation_turn("crisis-1", "r1")
 
     assert turn.stage == "evidence"
-    assert turn.recommended_command == "forecast-harness draft-evidence-packet"
+    assert turn.recommended_command == "scenario-lab draft-evidence-packet"
     assert turn.context["domain_pack"] == "interstate-crisis"
 
 
@@ -807,11 +807,11 @@ def test_draft_conversation_turn_embeds_native_adapter_payloads_for_evidence_sta
     turn = service.draft_conversation_turn("crisis-1", "r1", candidate_path=source_dir)
 
     assert turn.stage == "evidence"
-    assert turn.recommended_command == "forecast-harness batch-ingest-recommended"
+    assert turn.recommended_command == "scenario-lab batch-ingest-recommended"
     assert [action.command for action in turn.actions] == [
-        "forecast-harness batch-ingest-recommended",
-        "forecast-harness draft-evidence-packet",
-        "forecast-harness save-evidence-draft",
+        "scenario-lab batch-ingest-recommended",
+        "scenario-lab draft-evidence-packet",
+        "scenario-lab save-evidence-draft",
     ]
     assert [action.runtime_action for action in turn.actions] == [
         "batch-ingest-recommended",
@@ -837,9 +837,9 @@ def test_draft_conversation_turn_returns_approval_stage_from_evidence_draft(tmp_
     turn = service.draft_conversation_turn("crisis-1", "r1")
 
     assert turn.stage == "approval"
-    assert turn.recommended_command == "forecast-harness approve-revision"
+    assert turn.recommended_command == "scenario-lab approve-revision"
     assert turn.context["revision_id"] == "r1"
-    assert turn.actions[0].command == "forecast-harness approve-revision"
+    assert turn.actions[0].command == "scenario-lab approve-revision"
     assert turn.actions[0].runtime_action == "approve-revision"
 
 
@@ -857,7 +857,7 @@ def test_draft_conversation_turn_returns_simulation_stage_from_approved_revision
     turn = service.draft_conversation_turn("crisis-1", "r1")
 
     assert turn.stage == "simulation"
-    assert turn.recommended_command == "forecast-harness simulate"
+    assert turn.recommended_command == "scenario-lab simulate"
     assert turn.context["evidence_item_count"] == 1
 
 
@@ -876,7 +876,7 @@ def test_draft_conversation_turn_returns_report_stage_from_simulated_revision(tm
     turn = service.draft_conversation_turn("crisis-1", "r1")
 
     assert turn.stage == "report"
-    assert turn.recommended_command == "forecast-harness begin-revision-update"
+    assert turn.recommended_command == "scenario-lab begin-revision-update"
     assert turn.context["revision_id"] == "r1"
     assert turn.context["top_branches"][0]["label"] == service.summarize_revision("crisis-1", "r1").top_branches[0]["label"]
     assert turn.context["scenario_families"]

@@ -35,6 +35,12 @@ scenario-lab demo-run --root .forecast
 
 You should see `demo-run complete`, then artifacts under `.forecast/runs/demo-run`.
 
+For a repo-owned bootstrap that parses a literal scenario prompt and returns the normal next workflow turn instead of running the full simulation immediately, use:
+
+```bash
+scenario-lab scenario --root .forecast --run-id us-iran-1 --domain-pack interstate-crisis "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days"
+```
+
 Scenario Lab is packaged to run with:
 
 - `Codex`: [docs/install-codex.md](docs/install-codex.md)
