@@ -1,5 +1,6 @@
 # Scenario Lab GitHub Public Metadata
 
+- Current repository slug: `YSLAB-ai/HeuristicSearchEngine`
 - Repository rename target: `scenario-lab`
 - Product name: `Scenario Lab`
 - Description: `Experimental local-first scenario analysis for natural-language forecasting with Codex or Claude`
