@@ -14,6 +14,13 @@ def _copy_entry(source: Path, target: Path) -> None:
         shutil.copy2(source, target)
 
 
+def _remove_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Install the local Scenario Lab Claude bundle.")
     parser.add_argument("--target-dir", required=True)
@@ -24,6 +31,13 @@ def main() -> None:
     manifest = json.loads((bundle_root / "adapter.json").read_text(encoding="utf-8"))
     target_root = Path(args.target_dir).resolve()
     target_root.mkdir(parents=True, exist_ok=True)
+
+    legacy_target = target_root / "skills" / "forecast-harness"
+    if legacy_target.exists() or legacy_target.is_symlink():
+        _remove_path(legacy_target)
+    skills_root = legacy_target.parent
+    if skills_root.exists() and not any(skills_root.iterdir()):
+        skills_root.rmdir()
 
     installed_paths: list[str] = []
     for entry in manifest["install_entries"]:

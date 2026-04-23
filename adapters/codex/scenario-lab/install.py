@@ -14,6 +14,13 @@ def _copy_entry(source: Path, target: Path) -> None:
         shutil.copy2(source, target)
 
 
+def _remove_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Install the local Scenario Lab Codex bundle.")
     parser.add_argument("--target-dir", required=True)
@@ -24,6 +31,17 @@ def main() -> None:
     manifest = json.loads((bundle_root / "adapter.json").read_text(encoding="utf-8"))
     target_root = Path(args.target_dir).resolve()
     target_root.mkdir(parents=True, exist_ok=True)
+
+    legacy_root = target_root / "forecast-harness"
+    for legacy_target in (
+        legacy_root / ".codex-plugin",
+        legacy_root / "skills",
+        legacy_root / "README.md",
+    ):
+        if legacy_target.exists() or legacy_target.is_symlink():
+            _remove_path(legacy_target)
+    if legacy_root.exists() and not any(legacy_root.iterdir()):
+        legacy_root.rmdir()
 
     installed_paths: list[str] = []
     for entry in manifest["install_entries"]:
