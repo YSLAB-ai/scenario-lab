@@ -522,3 +522,36 @@ def test_run_adapter_action_can_start_a_child_revision_from_a_report_stage(tmp_p
     assert update_payload["turn"]["revision_id"] == "r2"
     assert update_payload["turn"]["stage"] == "simulation"
     assert update_payload["turn"]["recommended_runtime_action"] == "simulate"
+
+
+def test_scenario_command_bootstraps_a_real_workflow_turn(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    result = runner.invoke(
+        app,
+        [
+            "scenario",
+            "--root",
+            str(root),
+            "--run-id",
+            "us-iran-1",
+            "--revision-id",
+            "r1",
+            "--domain-pack",
+            "interstate-crisis",
+            "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["command"] == "scenario"
+    assert payload["prompt"].startswith("/scenario ")
+    assert payload["intake"]["focus_entities"] == ["US", "Iran"]
+    assert payload["turn"]["stage"] == "evidence"
+    assert payload["turn"]["recommended_runtime_action"] in {
+        "batch-ingest-recommended",
+        "draft-evidence-packet",
+    }
+    assert payload["intake"]["current_stage"] == "trigger"

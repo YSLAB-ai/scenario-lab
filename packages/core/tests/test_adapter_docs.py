@@ -8,10 +8,10 @@ def test_adapter_install_docs_use_scenario_lab_branding_and_public_links() -> No
     codex_doc = (docs_root / "install-codex.md").read_text(encoding="utf-8")
     claude_doc = (docs_root / "install-claude-code.md").read_text(encoding="utf-8")
     codex_bundle = (
-        root / "adapters" / "codex" / "forecast-harness" / "README.md"
+        root / "adapters" / "codex" / "scenario-lab" / "README.md"
     ).read_text(encoding="utf-8")
     claude_bundle = (
-        root / "adapters" / "claude" / "forecast-harness" / "README.md"
+        root / "adapters" / "claude" / "scenario-lab" / "README.md"
     ).read_text(encoding="utf-8")
 
     assert "Python 3.12+" in codex_doc
@@ -23,21 +23,21 @@ def test_adapter_install_docs_use_scenario_lab_branding_and_public_links() -> No
     assert "PYTHON=/path/to/python3.12" in codex_doc
     assert "PYTHON=/path/to/python3.12" in claude_doc
     assert (
-        "adapters/codex/forecast-harness/install.py --target-dir /tmp/codex-plugins"
+        "adapters/codex/scenario-lab/install.py --target-dir /tmp/codex-plugins"
         in codex_doc
     )
     assert (
-        "adapters/claude/forecast-harness/install.py --target-dir /tmp/claude-root"
+        "adapters/claude/scenario-lab/install.py --target-dir /tmp/claude-root"
         in claude_doc
     )
     assert "--link" in codex_doc
     assert "--link" in claude_doc
     assert (
-        "adapters/codex/forecast-harness/smoke.py --work-dir /tmp/scenario-lab-codex-smoke"
+        "adapters/codex/scenario-lab/smoke.py --work-dir /tmp/scenario-lab-codex-smoke"
         in codex_doc
     )
     assert (
-        "adapters/claude/forecast-harness/smoke.py --work-dir /tmp/scenario-lab-claude-smoke"
+        "adapters/claude/scenario-lab/smoke.py --work-dir /tmp/scenario-lab-claude-smoke"
         in claude_doc
     )
     assert "docs/quickstart.md" in codex_doc

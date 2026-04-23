@@ -1326,7 +1326,8 @@ def test_draft_conversation_turn_command_returns_report_stage_for_simulated_revi
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["stage"] == "report"
-    assert payload["recommended_command"] == "forecast-harness begin-revision-update"
+    assert payload["recommended_command"] == "scenario-lab begin-revision-update"
+    assert "forecast-harness" not in payload["recommended_command"]
     assert payload["context"]["revision_id"] == "r1"
 
 
@@ -1383,8 +1384,9 @@ def test_draft_conversation_turn_command_embeds_native_adapter_payloads(tmp_path
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["stage"] == "evidence"
-    assert payload["recommended_command"] == "forecast-harness batch-ingest-recommended"
-    assert payload["actions"][0]["command"] == "forecast-harness batch-ingest-recommended"
+    assert payload["recommended_command"] == "scenario-lab batch-ingest-recommended"
+    assert payload["actions"][0]["command"] == "scenario-lab batch-ingest-recommended"
+    assert "forecast-harness" not in payload["recommended_command"]
     assert payload["actions"][0]["runtime_action"] == "batch-ingest-recommended"
     assert payload["context"]["intake_guidance"]["domain_pack"] == "interstate-crisis"
     assert payload["context"]["ingestion_recommendations"][0]["source_role"] == "official communications"

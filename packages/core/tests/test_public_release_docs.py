@@ -42,9 +42,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
     assert "docs/assets/scenario-lab-runtime-workflow.png" in readme
-    assert "forecast-harness demo-run --root .forecast" in readme
+    assert "scenario-lab demo-run --root .forecast" in readme
     assert "/Volumes/" not in readme
-    assert "forecast-harness demo-run --root .forecast" in quickstart
+    assert "scenario-lab demo-run --root .forecast" in quickstart
     assert "## Actual runtime phases" in workflow
     assert "batch-ingest-recommended" in workflow
     assert "intake -> evidence -> approval -> simulation -> report" in workflow
