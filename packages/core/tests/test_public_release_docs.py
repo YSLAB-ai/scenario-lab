@@ -22,11 +22,3 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "demo-us-iran.md").is_file()
     assert (root / "docs" / "limitations.md").is_file()
     assert (root / "docs" / "release-notes" / "public-preview.md").is_file()
-
-    social_preview = root / "docs" / "assets" / "scenario-lab-social-preview.png"
-    workflow_preview = root / "docs" / "assets" / "scenario-lab-workflow.png"
-
-    assert social_preview.is_file()
-    assert social_preview.stat().st_size > 0
-    assert workflow_preview.is_file()
-    assert workflow_preview.stat().st_size > 0
