@@ -4,11 +4,13 @@ Verified on April 23, 2026 in the isolated worktree at `/Volumes/Yiwen'sDisk/cod
 
 ## Verified environment note
 
-The worktree-local `packages/core/.venv/bin/python` failed with `ModuleNotFoundError: No module named 'typer'`, so the verified run used the repo-root Python 3.12 environment:
+Current worktree behavior, rechecked after the original run:
 
-```text
-/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.venv/bin/python
+```bash
+packages/core/.venv/bin/python -m forecasting_harness.cli --help
 ```
+
+This command succeeds in this worktree. The transcript below documents the original verified run exactly as executed from `/tmp/scenario-lab-us-iran/transcript.txt`, which used the repo-root Python interpreter in each recorded command.
 
 ## Verified workflow
 
@@ -32,7 +34,7 @@ PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.v
   --domain-pack interstate-crisis
 ```
 
-Observed output:
+Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 
 ```json
 {"run_id":"us-iran-public","revision_id":"r1","executed_action":"start-run","action_result":{"run_id":"us-iran-public","domain_pack":"interstate-crisis","created_at":"2026-04-23T16:30:41.226410Z","current_revision_id":null},"turn":{"run_id":"us-iran-public","revision_id":"r1","stage":"intake","headline":"Draft intake","recommended_command":"forecast-harness save-intake-draft","recommended_runtime_action":"save-intake-draft"}}
@@ -55,7 +57,7 @@ PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.v
   --time-horizon '30d'
 ```
 
-Observed output excerpt:
+Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 
 ```json
 {"run_id":"us-iran-public","revision_id":"r1","executed_action":"save-intake-draft","action_result":{"saved":true,"section":"intake","revision_id":"r1"},"turn":{"run_id":"us-iran-public","revision_id":"r1","stage":"evidence","headline":"Draft evidence packet","recommended_command":"forecast-harness draft-evidence-packet","recommended_runtime_action":"draft-evidence-packet","actions":[{"command":"forecast-harness draft-evidence-packet","runtime_action":"draft-evidence-packet","required_options":["corpus_db"]},{"command":"forecast-harness save-evidence-draft","runtime_action":"save-evidence-draft","required_options":[]}],"context":{"current_stage":"trigger","follow_up_questions":["Which outside actor has the most leverage over the next phase?","What constraint most limits immediate escalation?"],"ingestion_plan":{"corpus_source_count":0}}}}
@@ -74,7 +76,7 @@ PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.v
   --action draft-evidence-packet
 ```
 
-Observed output excerpt:
+Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 
 ```json
 {"run_id":"us-iran-public","revision_id":"r1","executed_action":"draft-evidence-packet","action_result":{"revision_id":"r1","items":[]},"turn":{"run_id":"us-iran-public","revision_id":"r1","stage":"approval","recommended_command":"forecast-harness approve-revision","recommended_runtime_action":"approve-revision","context":{"assumption_summary":["evidence gap: no cited evidence approved yet"],"evidence_summary":[],"warnings":["no evidence drafted yet","no suggested entities included yet"]}}}
@@ -112,7 +114,7 @@ PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.v
   --assumption 'Both sides seek to avoid immediate full-scale war while preserving deterrent signaling.'
 ```
 
-Observed output excerpt:
+Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
 
 ```json
 {"run_id":"us-iran-public","revision_id":"r1","executed_action":"approve-revision","turn":{"run_id":"us-iran-public","revision_id":"r1","stage":"simulation","recommended_command":"forecast-harness simulate","recommended_runtime_action":"simulate","context":{"evidence_item_count":0,"assumption_count":1}}}
@@ -128,11 +130,13 @@ PYTHONPATH=packages/core/src /Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.v
   --action simulate
 ```
 
-Observed output excerpt:
+Observed output from `/tmp/scenario-lab-us-iran/transcript.txt`, shortened only because the raw JSON includes the full search tree:
 
 ```json
 {"run_id":"us-iran-public","revision_id":"r1","executed_action":"simulate","action_result":{"search_mode":"mcts","iterations":10000,"node_count":129,"state_table_size":87,"transposition_hits":46,"max_depth_reached":4},"turn":{"run_id":"us-iran-public","revision_id":"r1","stage":"report","recommended_command":"forecast-harness begin-revision-update","recommended_runtime_action":"begin-revision-update","context":{"top_branches":[{"branch_id":"open-negotiation","label":"Open negotiation","score":0.1388245462126309,"confidence_signal":0.72,"confidence_bucket":"fallback","calibrated_confidence":0.875,"calibration_case_count":0,"calibration_fallback_used":true},{"branch_id":"signal","label":"Signal resolve (managed signal)","score":0.12670715124816462,"confidence_signal":0.136,"confidence_bucket":"low","calibrated_confidence":0.875,"calibration_case_count":6,"calibration_fallback_used":false},{"branch_id":"signal-2","label":"Signal resolve (backchannel opening)","score":0.11504934959349547,"confidence_signal":0.049,"confidence_bucket":"low","calibrated_confidence":0.875,"calibration_case_count":6,"calibration_fallback_used":false}]}}}
 ```
+
+The exact transcript line continues with the full `reuse_summary`, `tree_nodes`, `branches`, `confidence_calibration`, `aggregation_lens`, and `revision_summary` payloads before ending at the `turn` object shown above.
 
 Verified defaults from this run:
 
