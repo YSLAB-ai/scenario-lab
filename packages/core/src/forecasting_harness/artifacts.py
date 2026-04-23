@@ -90,6 +90,7 @@ class RunRepository:
         payload: object,
         *,
         approved: bool,
+        overwrite: bool = False,
     ) -> Path:
         self._validate_path_segment(section, "section")
         self._validate_path_segment(revision_id, "revision_id")
@@ -98,7 +99,7 @@ class RunRepository:
         section_dir.mkdir(parents=True, exist_ok=True)
         suffix = "approved" if approved else "draft"
         path = section_dir / f"{revision_id}.{suffix}.json"
-        if approved and path.exists():
+        if approved and path.exists() and not overwrite:
             raise FileExistsError(path)
         path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
         return path

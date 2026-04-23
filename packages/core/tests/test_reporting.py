@@ -128,6 +128,7 @@ def test_render_report_includes_scenario_families_key_drivers_and_search_summary
     assert "Lens: domestic-politics-first" in report
     assert "system=0.42, actors=0.48, destabilization_penalty=-0.1" in report
     assert "Calibrated confidence: medium (0.667 from 3 replay cases)" in report
+    assert "- Signal resolve -> settlement-stalemate: 1 branches" in report
 
 
 def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> None:
@@ -191,9 +192,54 @@ def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> Non
 
     assert "- Signal resolve (0.8); calibrated confidence: medium (0.667 from 3 replay cases);" in report
     assert "- Terminal phase: settlement-stalemate" in report
+    assert "- Confidence signal: 0.55" in report
     assert "Signal resolve -> Confidence measures" in report
     assert "- united-states: domestic_sensitivity=0.84, alliance_dependence=0.86" in report
-    assert "Limited response ->" not in report
+    assert "- Path: Limited response" not in report
+
+
+def test_render_report_marks_fallback_calibration_and_rounds_scores() -> None:
+    report = render_report(
+        revision_id="r1",
+        simulation={
+            "search_mode": "mcts",
+            "node_count": 13,
+            "transposition_hits": 0,
+            "branches": [
+                {
+                    "branch_id": "signal",
+                    "label": "Signal resolve",
+                    "score": 0.15468599999999996,
+                    "confidence_signal": 0.21999999999999997,
+                    "confidence_bucket": "medium",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 0,
+                    "calibration_fallback_used": True,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["diplomatic_channel"],
+                    "path": [{"label": "Signal resolve", "phase": "signaling"}],
+                },
+                {
+                    "branch_id": "talks",
+                    "label": "Crisis talks",
+                    "score": -0.2723123,
+                    "confidence_signal": 0.0444444,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 6,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["mediation_window"],
+                    "path": [{"label": "Crisis talks", "phase": "negotiation-deescalation"}],
+                },
+            ],
+        },
+        evidence_count=1,
+        unsupported_count=0,
+    )
+
+    assert "Signal resolve (0.155); calibrated confidence: medium (0.875, fallback - 0 replay cases)" in report
+    assert "Crisis talks (-0.272); calibrated confidence: low (0.875 from 6 replay cases)" in report
+    assert "- Confidence signal: 0.22" in report
 
 
 def test_render_report_prefers_explored_top_branch_over_unexplored_higher_score_branch() -> None:

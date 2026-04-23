@@ -3,11 +3,15 @@ from __future__ import annotations
 from forecasting_harness.query_api import summarize_scenario_families, summarize_top_branches
 
 
+def _format_float(value: float) -> str:
+    return f"{value:.3f}".rstrip("0").rstrip(".")
+
+
 def _format_metric_map(metrics: dict[str, object]) -> str:
     parts: list[str] = []
     for name, value in metrics.items():
         if isinstance(value, float):
-            rendered = f"{value:.3f}".rstrip("0").rstrip(".")
+            rendered = _format_float(value)
         else:
             rendered = str(value)
         parts.append(f"{name}={rendered}")
@@ -18,9 +22,12 @@ def _format_calibrated_confidence(branch: dict[str, object]) -> str:
     bucket = str(branch.get("confidence_bucket") or "unavailable")
     confidence = float(branch.get("calibrated_confidence", 0.0) or 0.0)
     case_count = int(branch.get("calibration_case_count", 0) or 0)
+    fallback_used = bool(branch.get("calibration_fallback_used", False))
     if case_count > 0:
-        return f"{bucket} ({confidence:.3f} from {case_count} replay cases)"
-    return f"{bucket} ({confidence:.3f})"
+        return f"{bucket} ({_format_float(confidence)} from {case_count} replay cases)"
+    if fallback_used:
+        return f"{bucket} ({_format_float(confidence)}, fallback - 0 replay cases)"
+    return f"{bucket} ({_format_float(confidence)})"
 
 
 def _actor_utility_lines(simulation: dict[str, object]) -> list[str]:
@@ -115,7 +122,7 @@ def render_report(
             if isinstance(breakdown, dict) and breakdown:
                 breakdown_suffix = f"; breakdown: {_format_metric_map(breakdown)}"
             lines.append(
-                f"- {branch['label']} ({branch['score']}); calibrated confidence: "
+                f"- {branch['label']} ({_format_float(float(branch['score']))}); calibrated confidence: "
                 f"{_format_calibrated_confidence(branch)}{breakdown_suffix}"
             )
     else:
@@ -126,8 +133,8 @@ def render_report(
         for family in scenario_families:
             driver_text = ", ".join(family.get("key_drivers", [])) or "none"
             lines.append(
-                f"- {family['terminal_phase']}: {family['branch_count']} branches, "
-                f"representative {family['representative_label']} ({family['best_score']}), "
+                f"- {family['root_route']} -> {family['terminal_phase']}: {family['branch_count']} branches, "
+                f"representative {family['representative_label']} ({_format_float(float(family['best_score']))}), "
                 f"drivers: {driver_text}, calibrated confidence: {_format_calibrated_confidence(family)}"
             )
 
@@ -144,7 +151,7 @@ def render_report(
                 "",
                 "## Top Branch Detail",
                 f"- Terminal phase: {terminal_phase}",
-                f"- Confidence signal: {top_branch.get('confidence_signal', 0.0)}",
+                f"- Confidence signal: {_format_float(float(top_branch.get('confidence_signal', 0.0) or 0.0))}",
                 f"- Calibrated confidence: {_format_calibrated_confidence(top_branch)}",
                 f"- Key drivers: {driver_text}",
             ]

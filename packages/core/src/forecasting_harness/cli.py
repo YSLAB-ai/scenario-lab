@@ -841,7 +841,11 @@ def draft_intake_guidance(
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
 ) -> None:
-    print(_service(root).draft_intake_guidance(run_id, revision_id).model_dump_json())
+    try:
+        payload = _service(root).draft_intake_guidance(run_id, revision_id)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="revision_id") from exc
+    print(payload.model_dump_json())
 
 
 @app.command("draft-evidence-packet")
@@ -973,6 +977,7 @@ def run_adapter_action(
     suggested_actor: list[str] | None = typer.Option(None),
     objective_profile_name: str | None = typer.Option(None),
     iterations: int | None = typer.Option(None),
+    overwrite: bool = typer.Option(False),
     max_files: int = typer.Option(5),
 ) -> None:
     if action not in _ADAPTER_RUNTIME_ACTIONS:
@@ -1034,6 +1039,7 @@ def run_adapter_action(
             query_text=query_text,
             parent_revision_id=parent_revision_id,
             iterations=iterations,
+            overwrite=overwrite,
             max_files=max_files,
         )
     except ValueError as exc:
@@ -1075,7 +1081,10 @@ def approve_revision(
             )
     except ValueError as exc:
         raise typer.BadParameter(str(exc), param_hint="objective_profile_name") from exc
-    _service(root).approve_revision(run_id=run_id, revision_id=revision_id, assumptions=payload)
+    try:
+        _service(root).approve_revision(run_id=run_id, revision_id=revision_id, assumptions=payload)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="revision_id") from exc
     print(f"approved {revision_id}")
 
 
@@ -1103,15 +1112,20 @@ def simulate(
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
     iterations: int = typer.Option(10000),
+    overwrite: bool = typer.Option(False),
 ) -> None:
     repo = RunRepository(root)
     pack = _load_pack_for_run(repo, run_id)
-    result = _service(root).simulate_revision(
-        run_id=run_id,
-        revision_id=revision_id,
-        pack=pack,
-        iterations=iterations,
-    )
+    try:
+        result = _service(root).simulate_revision(
+            run_id=run_id,
+            revision_id=revision_id,
+            pack=pack,
+            iterations=iterations,
+            overwrite=overwrite,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="revision_id") from exc
     print(json.dumps(result))
 
 

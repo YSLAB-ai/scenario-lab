@@ -292,14 +292,18 @@ class WorkflowService:
         self.repository.append_event(run_id, "evidence-drafted", {"revision_id": revision_id})
 
     def draft_intake_guidance(self, run_id: str, revision_id: str) -> IntakeGuidance:
-        intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
         pack = self._pack_for_run(run_id)
+        try:
+            intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
+        except FileNotFoundError:
+            intake = None
         profile = pack.default_objective_profile()
+        canonical_stages = pack.canonical_phases()
         return IntakeGuidance(
             domain_pack=pack.slug(),
-            current_stage=intake.current_stage,
-            canonical_stages=pack.canonical_phases(),
-            suggested_entities=pack.suggest_related_actors(intake),
+            current_stage=intake.current_stage if intake is not None else (canonical_stages[0] if canonical_stages else "trigger"),
+            canonical_stages=canonical_stages,
+            suggested_entities=pack.suggest_related_actors(intake) if intake is not None else [],
             follow_up_questions=pack.suggest_questions(),
             pack_field_schema=pack.extend_schema(),
             default_objective_profile=profile.model_dump(mode="json"),
@@ -741,12 +745,28 @@ class WorkflowService:
     def begin_revision_update(self, run_id: str, revision_id: str, *, parent_revision_id: str) -> dict[str, object]:
         intake = self.repository.load_revision_model(run_id, "intake", parent_revision_id, IntakeDraft, approved=True)
         evidence = self.repository.load_revision_model(run_id, "evidence", parent_revision_id, EvidencePacket, approved=True)
+        assumptions = self.repository.load_revision_model(run_id, "assumptions", parent_revision_id, AssumptionSummary, approved=True)
         self.save_intake_draft(run_id, revision_id, intake, parent_revision_id=parent_revision_id)
         self.save_evidence_draft(
             run_id,
             revision_id,
             evidence.model_copy(update={"revision_id": revision_id}),
             parent_revision_id=parent_revision_id,
+        )
+        self.repository.write_revision_json(run_id, "intake", revision_id, intake.model_dump(mode="json"), approved=True)
+        self.repository.write_revision_json(
+            run_id,
+            "evidence",
+            revision_id,
+            evidence.model_copy(update={"revision_id": revision_id}).model_dump(mode="json"),
+            approved=True,
+        )
+        self.repository.write_revision_json(
+            run_id,
+            "assumptions",
+            revision_id,
+            assumptions.model_dump(mode="json"),
+            approved=True,
         )
         self.repository.append_event(
             run_id,
@@ -756,21 +776,34 @@ class WorkflowService:
         return {
             "revision_id": revision_id,
             "parent_revision_id": parent_revision_id,
-            "copied_sections": ["intake", "evidence"],
+            "copied_sections": ["intake", "evidence", "assumptions"],
         }
 
     def approve_revision(self, run_id: str, revision_id: str, assumptions: AssumptionSummary) -> RunRecord:
         assumptions = _validated_assumptions(assumptions)
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=False)
-        evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
+        try:
+            evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=False)
+        except FileNotFoundError as exc:
+            raise ValueError(
+                f"evidence draft is missing for {revision_id}; draft or save evidence before approval"
+            ) from exc
 
-        self.repository.write_revision_json(run_id, "intake", revision_id, intake.model_dump(mode="json"), approved=True)
+        self.repository.write_revision_json(
+            run_id,
+            "intake",
+            revision_id,
+            intake.model_dump(mode="json"),
+            approved=True,
+            overwrite=True,
+        )
         self.repository.write_revision_json(
             run_id,
             "evidence",
             revision_id,
             evidence.model_dump(mode="json"),
             approved=True,
+            overwrite=True,
         )
         self.repository.write_revision_json(
             run_id,
@@ -778,6 +811,7 @@ class WorkflowService:
             revision_id,
             assumptions.model_dump(mode="json"),
             approved=True,
+            overwrite=True,
         )
 
         run = self.repository.load_run_record(run_id)
@@ -798,7 +832,12 @@ class WorkflowService:
         pack: Any,
         iterations: int | None = None,
         attach_calibration: bool = True,
+        overwrite: bool = False,
     ) -> dict[str, object]:
+        if self._artifact_exists(run_id, "simulation", revision_id, approved=True) and not overwrite:
+            raise ValueError(
+                f"revision {revision_id} already has a simulated artifact; rerun with overwrite=True or begin a child revision"
+            )
         intake = self.repository.load_revision_model(run_id, "intake", revision_id, IntakeDraft, approved=True)
         assumptions = self.repository.load_revision_model(run_id, "assumptions", revision_id, AssumptionSummary, approved=True)
         evidence = self.repository.load_revision_model(run_id, "evidence", revision_id, EvidencePacket, approved=True)
@@ -824,7 +863,14 @@ class WorkflowService:
                 }
             }
         )
-        self.repository.write_revision_json(run_id, "belief-state", revision_id, state.model_dump(mode="json"), approved=True)
+        self.repository.write_revision_json(
+            run_id,
+            "belief-state",
+            revision_id,
+            state.model_dump(mode="json"),
+            approved=True,
+            overwrite=overwrite,
+        )
 
         reuse_context: dict[str, object] | None = None
         parent_revision_id = revision_record.parent_revision_id
@@ -859,7 +905,7 @@ class WorkflowService:
         result["actor_utility_summary"] = _summarize_actor_preferences(state)
         result["aggregation_lens"] = _serialize_run_lens(objective_profile)
         result["recommended_run_lens"] = _serialize_run_lens(recommended_profile)
-        self.repository.write_revision_json(run_id, "simulation", revision_id, result, approved=True)
+        self.repository.write_revision_json(run_id, "simulation", revision_id, result, approved=True, overwrite=overwrite)
 
         self.generate_report(
             run_id,
@@ -1106,6 +1152,7 @@ class WorkflowService:
         query_text: str | None = None,
         parent_revision_id: str | None = None,
         iterations: int | None = None,
+        overwrite: bool = False,
         max_files: int = 5,
     ) -> AdapterRuntimeResult:
         action_result: object = None
@@ -1169,6 +1216,7 @@ class WorkflowService:
                 revision_id=revision_id,
                 pack=pack,
                 iterations=_ADAPTER_RUNTIME_DEFAULT_ITERATIONS if iterations is None else iterations,
+                overwrite=overwrite,
             )
         elif action == "begin-revision-update":
             if parent_revision_id is None:

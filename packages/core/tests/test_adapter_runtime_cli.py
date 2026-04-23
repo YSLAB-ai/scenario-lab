@@ -518,6 +518,7 @@ def test_run_adapter_action_can_start_a_child_revision_from_a_report_stage(tmp_p
     assert update_result.exit_code == 0
     update_payload = json.loads(update_result.stdout)
     assert update_payload["action_result"]["parent_revision_id"] == "r1"
+    assert update_payload["action_result"]["copied_sections"] == ["intake", "evidence", "assumptions"]
     assert update_payload["turn"]["revision_id"] == "r2"
-    assert update_payload["turn"]["stage"] == "approval"
-    assert update_payload["turn"]["recommended_runtime_action"] == "approve-revision"
+    assert update_payload["turn"]["stage"] == "simulation"
+    assert update_payload["turn"]["recommended_runtime_action"] == "simulate"

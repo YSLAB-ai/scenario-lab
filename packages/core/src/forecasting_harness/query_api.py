@@ -39,6 +39,7 @@ def summarize_top_branches(
                 "confidence_bucket": str(branch.get("confidence_bucket") or ""),
                 "calibrated_confidence": float(branch.get("calibrated_confidence", 0.0) or 0.0),
                 "calibration_case_count": int(branch.get("calibration_case_count", 0) or 0),
+                "calibration_fallback_used": bool(branch.get("calibration_fallback_used", False)),
             }
             for branch in top_branches
         ]
@@ -54,6 +55,7 @@ def summarize_top_branches(
             "confidence_bucket": str(branch.get("confidence_bucket") or ""),
             "calibrated_confidence": float(branch.get("calibrated_confidence", 0.0) or 0.0),
             "calibration_case_count": int(branch.get("calibration_case_count", 0) or 0),
+            "calibration_fallback_used": bool(branch.get("calibration_fallback_used", False)),
         }
         for branch in top_branches
     ]
@@ -100,6 +102,7 @@ def summarize_scenario_families(branches: list[dict[str, Any]], limit: int = 3) 
                 "confidence_bucket": "",
                 "calibrated_confidence": 0.0,
                 "calibration_case_count": 0,
+                "calibration_fallback_used": False,
             },
         )
         entry["branch_count"] += 1
@@ -114,6 +117,7 @@ def summarize_scenario_families(branches: list[dict[str, Any]], limit: int = 3) 
             entry["confidence_bucket"] = str(branch.get("confidence_bucket") or "")
             entry["calibrated_confidence"] = float(branch.get("calibrated_confidence", 0.0) or 0.0)
             entry["calibration_case_count"] = int(branch.get("calibration_case_count", 0) or 0)
+            entry["calibration_fallback_used"] = bool(branch.get("calibration_fallback_used", False))
 
     families = sorted(
         grouped.values(),
@@ -133,6 +137,7 @@ def summarize_scenario_families(branches: list[dict[str, Any]], limit: int = 3) 
             "confidence_bucket": item["confidence_bucket"],
             "calibrated_confidence": item["calibrated_confidence"],
             "calibration_case_count": item["calibration_case_count"],
+            "calibration_fallback_used": item["calibration_fallback_used"],
         }
         for item in families[:limit]
     ]

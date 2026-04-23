@@ -361,6 +361,77 @@ def test_simulate_command_accepts_iteration_override(tmp_path: Path) -> None:
     simulation_payload = json.loads(simulation_result.stdout)
     assert simulation_payload["iterations"] == 250
 
+
+def test_simulate_command_requires_overwrite_to_rerun_same_revision(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    evidence_path = tmp_path / "evidence.json"
+
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["US", "Iran"],
+                "current_development": "Exchange of strikes",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "revision_id": "r1",
+                "items": [
+                    {
+                        "evidence_id": "r1-ev-1",
+                        "source_id": "doc-1",
+                        "source_title": "Doc 1",
+                        "reason": "Relevant context",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-evidence-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(evidence_path)],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["approve-revision", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--assumption", "Both sides avoid immediate total war"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["simulate", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--iterations", "64"],
+    ).exit_code == 0
+
+    repeat_result = runner.invoke(
+        app,
+        ["simulate", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--iterations", "64"],
+    )
+    overwrite_result = runner.invoke(
+        app,
+        ["simulate", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--iterations", "96", "--overwrite"],
+    )
+
+    assert repeat_result.exit_code != 0
+    assert "already has a simulated artifact" in repeat_result.output
+    assert overwrite_result.exit_code == 0
+    assert json.loads(overwrite_result.stdout)["iterations"] == 96
+
 def test_draft_evidence_packet_command(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"
@@ -763,6 +834,27 @@ def test_draft_intake_guidance_command_returns_pack_guidance(tmp_path: Path) -> 
     assert "China" in payload["suggested_entities"]
 
 
+def test_draft_intake_guidance_command_returns_generic_pack_guidance_before_intake_exists(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["draft-intake-guidance", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["domain_pack"] == "interstate-crisis"
+    assert payload["current_stage"] == "trigger"
+    assert payload["suggested_entities"] == []
+
+
 def test_save_intake_draft_command_accepts_direct_flags(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"
@@ -943,6 +1035,41 @@ def test_approve_revision_command_accepts_direct_flags(tmp_path: Path) -> None:
     assert approved.summary == ["Both sides prefer limited signaling"]
     assert approved.suggested_actors == ["United States"]
     assert approved.objective_profile_name == "balanced-system"
+
+
+def test_approve_revision_command_reports_missing_evidence_draft_cleanly(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["approve-revision", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code != 0
+    assert "evidence draft is missing" in result.output
 
 
 def test_approve_revision_command_leaves_objective_profile_unset_when_flag_omitted(tmp_path: Path) -> None:

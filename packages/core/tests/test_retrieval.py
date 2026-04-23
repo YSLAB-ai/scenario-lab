@@ -118,6 +118,7 @@ def test_query_api_summarizes_top_branches_without_loading_full_tree():
             "confidence_bucket": "",
             "calibrated_confidence": 0.0,
             "calibration_case_count": 0,
+            "calibration_fallback_used": False,
         }
     ]
 
@@ -145,6 +146,7 @@ def test_query_api_can_return_detailed_top_branch_data():
             "confidence_bucket": "",
             "calibrated_confidence": 0.0,
             "calibration_case_count": 0,
+            "calibration_fallback_used": False,
         }
     ]
 
@@ -169,25 +171,27 @@ def test_query_api_keeps_explored_branches_ahead_of_unexplored_higher_score_bran
         ],
         limit=2,
     ) == [
-        {
-            "branch_id": "visited",
-            "label": "Visited branch",
-            "score": 0.5,
-            "confidence_signal": 0.0,
-            "confidence_bucket": "",
-            "calibrated_confidence": 0.0,
-            "calibration_case_count": 0,
-        },
-        {
-            "branch_id": "unvisited",
-            "label": "Unvisited branch",
-            "score": 0.9,
-            "confidence_signal": 0.0,
-            "confidence_bucket": "",
-            "calibrated_confidence": 0.0,
-            "calibration_case_count": 0,
-        },
-    ]
+            {
+                "branch_id": "visited",
+                "label": "Visited branch",
+                "score": 0.5,
+                "confidence_signal": 0.0,
+                "confidence_bucket": "",
+                "calibrated_confidence": 0.0,
+                "calibration_case_count": 0,
+                "calibration_fallback_used": False,
+            },
+            {
+                "branch_id": "unvisited",
+                "label": "Unvisited branch",
+                "score": 0.9,
+                "confidence_signal": 0.0,
+                "confidence_bucket": "",
+                "calibrated_confidence": 0.0,
+                "calibration_case_count": 0,
+                "calibration_fallback_used": False,
+            },
+        ]
 
 
 def test_registry_search_chunks_handles_punctuation_queries(tmp_path: Path):
@@ -580,6 +584,7 @@ def test_query_api_defaults_missing_scores_consistently():
             "confidence_bucket": "",
             "calibrated_confidence": 0.0,
             "calibration_case_count": 0,
+            "calibration_fallback_used": False,
         },
         {
             "branch_id": "b2",
@@ -589,6 +594,7 @@ def test_query_api_defaults_missing_scores_consistently():
             "confidence_bucket": "",
             "calibrated_confidence": 0.0,
             "calibration_case_count": 0,
+            "calibration_fallback_used": False,
         },
     ]
 
@@ -609,6 +615,7 @@ def test_query_api_normalizes_none_scores_before_sorting():
             "confidence_bucket": "",
             "calibrated_confidence": 0.0,
             "calibration_case_count": 0,
+            "calibration_fallback_used": False,
         },
         {
             "branch_id": "b1",
@@ -618,6 +625,7 @@ def test_query_api_normalizes_none_scores_before_sorting():
             "confidence_bucket": "",
             "calibrated_confidence": 0.0,
             "calibration_case_count": 0,
+            "calibration_fallback_used": False,
         },
     ]
 
