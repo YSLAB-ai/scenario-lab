@@ -1,10 +1,10 @@
 # Scenario Lab GitHub Public Metadata
 
-- Current repository slug: `YSLAB-ai/HeuristicSearchEngine`
-- Repository rename target: `scenario-lab`
+- Current public repository slug: `YSLAB-ai/scenario-lab`
+- Repository rename target: applied as `scenario-lab`
 - Product name: `Scenario Lab`
 - Description: `Experimental local-first scenario analysis for natural-language forecasting with Codex or Claude`
-- Homepage target after rename: `https://github.com/YSLAB-ai/scenario-lab`
+- Homepage: `https://github.com/YSLAB-ai/scenario-lab`
 - Topics:
   - `scenario-analysis`
   - `forecasting`
@@ -14,6 +14,6 @@
   - `claude`
   - `mcts`
   - `agent-tools`
-- Social preview asset: `docs/assets/scenario-lab-social-preview.png`
+- Social preview asset prepared in-repo: `docs/assets/scenario-lab-social-preview.png`
 
-The live GitHub rename and metadata edits are public-facing changes and must be performed only after the repo content is verified and immediately before release.
+The live GitHub rename, description, homepage, and topics have been applied. The social preview asset is prepared in-repo for manual upload through the GitHub web settings page if needed.

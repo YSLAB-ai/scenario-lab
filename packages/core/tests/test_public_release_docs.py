@@ -4,6 +4,13 @@ from pathlib import Path
 def test_public_readme_is_scenario_lab_landing_page() -> None:
     root = Path(__file__).resolve().parents[3]
     readme = (root / "README.md").read_text(encoding="utf-8")
+    quickstart = (root / "docs" / "quickstart.md").read_text(encoding="utf-8")
+    workflow = (root / "docs" / "natural-language-workflow.md").read_text(
+        encoding="utf-8"
+    )
+    metadata = (root / "docs" / "github-public-metadata.md").read_text(
+        encoding="utf-8"
+    )
 
     assert readme.startswith("# Scenario Lab")
     assert "Experimental preview" in readme
@@ -16,7 +23,11 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "[docs/demo-us-iran.md](docs/demo-us-iran.md)" in readme
     assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
+    assert "forecast-harness demo-run --root .forecast" in readme
     assert "/Volumes/" not in readme
+    assert "forecast-harness demo-run --root .forecast" in quickstart
+    assert "5-minute conversational path" in workflow
+    assert "Current public repository slug: `YSLAB-ai/scenario-lab`" in metadata
 
 
 def test_public_docs_and_assets_exist() -> None:
@@ -45,4 +56,4 @@ def test_public_docs_and_assets_exist() -> None:
     )
     assert "<json-for-one-evidence-item>" not in demo_doc
     assert "exactly as executed" not in demo_doc
-    assert "Homepage target after rename:" in metadata_doc
+    assert "Homepage: `https://github.com/YSLAB-ai/scenario-lab`" in metadata_doc

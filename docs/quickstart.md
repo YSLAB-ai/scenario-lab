@@ -12,7 +12,7 @@ pip install -e 'packages/core[dev]'
 ## 2. Run the built-in demo
 
 ```bash
-PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli demo-run --root .forecast
+forecast-harness demo-run --root .forecast
 ```
 
 ## 3. Inspect the generated artifacts
@@ -22,3 +22,5 @@ ls .forecast/runs/demo-run
 cat .forecast/runs/demo-run/report.md
 cat .forecast/runs/demo-run/workbench.md
 ```
+
+You should see `demo-run complete` before inspecting the generated files.

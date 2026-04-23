@@ -13,13 +13,15 @@ Start with the first-use setup and demo flow in [docs/quickstart.md](docs/quicks
 If you want the shortest local smoke test, run the built-in demo:
 
 ```bash
-PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli demo-run --root .forecast
+source packages/core/.venv/bin/activate
+forecast-harness demo-run --root .forecast
 ```
 
 Expected:
 
 - `demo-run complete`
 - generated run artifacts under `.forecast/runs/demo-run`
+- open `.forecast/runs/demo-run/report.md` for the first report summary
 
 ## Natural-Language Workflow
 
@@ -66,7 +68,8 @@ The current limitations are documented in [docs/limitations.md](docs/limitations
 If you want a minimal runnable surface instead of the higher-level adapter workflow, use the built-in demo and inspect the files it writes:
 
 ```bash
-PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli demo-run --root .forecast
+source packages/core/.venv/bin/activate
+forecast-harness demo-run --root .forecast
 ls .forecast/runs/demo-run
 cat .forecast/runs/demo-run/report.md
 cat .forecast/runs/demo-run/workbench.md
