@@ -53,12 +53,12 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     "stage": "intake",
     "headline": "Draft intake",
     "user_message": "Revision is ready for intake. Capture the event framing and core entities first.",
-    "recommended_command": "forecast-harness save-intake-draft",
+    "recommended_command": "scenario-lab save-intake-draft",
     "recommended_runtime_action": "save-intake-draft",
     "available_sections": [],
     "actions": [
       {
-        "command": "forecast-harness save-intake-draft",
+        "command": "scenario-lab save-intake-draft",
         "runtime_action": "save-intake-draft",
         "label": "Save intake draft",
         "description": "Capture the normalized intake fields for the revision.",
@@ -105,14 +105,14 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     "stage": "evidence",
     "headline": "Draft evidence packet",
     "user_message": "Intake draft saved. Review suggested entities and follow-up questions, then draft evidence.",
-    "recommended_command": "forecast-harness draft-evidence-packet",
+    "recommended_command": "scenario-lab draft-evidence-packet",
     "recommended_runtime_action": "draft-evidence-packet",
     "available_sections": [
       "intake"
     ],
     "actions": [
       {
-        "command": "forecast-harness draft-evidence-packet",
+        "command": "scenario-lab draft-evidence-packet",
         "runtime_action": "draft-evidence-packet",
         "label": "Draft evidence packet",
         "description": "Draft a grouped evidence packet from the current corpus and manifest-driven retrieval plan.",
@@ -121,7 +121,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
         ]
       },
       {
-        "command": "forecast-harness save-evidence-draft",
+        "command": "scenario-lab save-evidence-draft",
         "runtime_action": "save-evidence-draft",
         "label": "Save evidence draft",
         "description": "Persist a hand-edited evidence packet directly without going through a file-backed JSON handoff.",
@@ -407,7 +407,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     "stage": "approval",
     "headline": "Review approval packet",
     "user_message": "Evidence draft is ready. Review warnings, assumptions, and evidence summary before approval.",
-    "recommended_command": "forecast-harness approve-revision",
+    "recommended_command": "scenario-lab approve-revision",
     "recommended_runtime_action": "approve-revision",
     "available_sections": [
       "intake",
@@ -415,7 +415,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     ],
     "actions": [
       {
-        "command": "forecast-harness approve-revision",
+        "command": "scenario-lab approve-revision",
         "runtime_action": "approve-revision",
         "label": "Approve revision",
         "description": "Freeze the intake, evidence, and assumptions for simulation.",
@@ -602,7 +602,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     "stage": "simulation",
     "headline": "Ready to simulate",
     "user_message": "Revision is approved and ready to simulate.",
-    "recommended_command": "forecast-harness simulate",
+    "recommended_command": "scenario-lab simulate",
     "recommended_runtime_action": "simulate",
     "available_sections": [
       "intake",
@@ -611,7 +611,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     ],
     "actions": [
       {
-        "command": "forecast-harness simulate",
+        "command": "scenario-lab simulate",
         "runtime_action": "simulate",
         "label": "Run simulation",
         "description": "Execute deterministic search for the approved revision.",
@@ -6877,7 +6877,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     "stage": "report",
     "headline": "Review simulation report",
     "user_message": "Simulation is complete. Review the top branches and decide whether to update the revision.",
-    "recommended_command": "forecast-harness begin-revision-update",
+    "recommended_command": "scenario-lab begin-revision-update",
     "recommended_runtime_action": "begin-revision-update",
     "available_sections": [
       "intake",
@@ -6888,7 +6888,7 @@ Exact observed output from `/tmp/scenario-lab-us-iran/transcript.txt`:
     ],
     "actions": [
       {
-        "command": "forecast-harness begin-revision-update",
+        "command": "scenario-lab begin-revision-update",
         "runtime_action": "begin-revision-update",
         "label": "Start revision update",
         "description": "Create a child revision from the current approved revision and continue the conversation loop.",

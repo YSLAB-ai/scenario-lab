@@ -620,3 +620,29 @@ def test_scenario_command_rejects_mismatched_pack_for_existing_run(tmp_path: Pat
     assert mismatch_result.exit_code != 0
     assert "Invalid value for domain_pack" in mismatch_result.stderr
     assert "already uses domain_pack" in mismatch_result.stderr
+
+
+def test_scenario_command_falls_back_when_prompt_has_no_alias_matches(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    result = runner.invoke(
+        app,
+        [
+            "scenario",
+            "--root",
+            str(root),
+            "--run-id",
+            "china-taiwan-1",
+            "--domain-pack",
+            "interstate-crisis",
+            "/scenario how would a China-Taiwan conflict at the Taiwan Strait develop over the next 30 days",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["command"] == "scenario"
+    assert payload["turn"]["stage"] == "intake"
+    assert payload["turn"]["context"]["validation_errors"]
+    assert payload["turn"]["context"]["suggested_focus_entities"] == []

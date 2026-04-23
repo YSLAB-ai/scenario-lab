@@ -303,14 +303,18 @@ def _extract_focus_entities_from_prompt(prompt_body: str) -> list[str]:
     return focus_entities
 
 
-def _scenario_intake_from_prompt(prompt_body: str, focus_entities: list[str], *, current_stage: str) -> IntakeDraft:
-    return IntakeDraft(
-        event_framing=prompt_body,
-        focus_entities=focus_entities,
-        current_development=prompt_body,
-        current_stage=current_stage,
-        time_horizon="30d",
-    )
+def _scenario_intake_payload_from_prompt(prompt_body: str, focus_entities: list[str], *, current_stage: str) -> dict[str, object]:
+    return {
+        "event_framing": prompt_body,
+        "focus_entities": focus_entities,
+        "current_development": prompt_body,
+        "current_stage": current_stage,
+        "time_horizon": "30d",
+        "known_constraints": [],
+        "known_unknowns": [],
+        "suggested_entities": [],
+        "pack_fields": {},
+    }
 
 
 def _scenario_initial_stage(pack: GenericEventPack | InterstateCrisisPack) -> str:
@@ -327,16 +331,20 @@ def _scenario_validation_failure_payload(
     revision_id: str,
     prompt: str,
     parsed_prompt: str,
-    intake: IntakeDraft,
+    intake: object,
     validation_errors: list[str],
     suggested_focus_entities: list[str],
 ) -> dict[str, object]:
     guidance = _service(root).draft_intake_guidance(run_id, revision_id)
     guidance_payload = guidance.model_dump(mode="json")
+    if hasattr(intake, "model_dump"):
+        intake_payload = intake.model_dump(mode="json")
+    else:
+        intake_payload = intake
     return {
         "command": "scenario",
         "prompt": prompt,
-        "intake": intake.model_dump(mode="json"),
+        "intake": intake_payload,
         "turn": {
             "run_id": run_id,
             "revision_id": revision_id,
@@ -1069,7 +1077,8 @@ def scenario_command(
 
     focus_entities = _extract_focus_entities_from_prompt(prompt_body)
     initial_stage = _scenario_initial_stage(pack)
-    intake = _scenario_intake_from_prompt(prompt_body, focus_entities, current_stage=initial_stage)
+    intake_payload = _scenario_intake_payload_from_prompt(prompt_body, focus_entities, current_stage=initial_stage)
+    intake = IntakeDraft.model_construct(**intake_payload)
     validation_errors = pack.validate_intake(intake)
     if validation_errors:
         print(
@@ -1080,7 +1089,7 @@ def scenario_command(
                     revision_id=revision_id,
                     prompt=prompt,
                     parsed_prompt=parsed_prompt,
-                    intake=intake,
+                    intake=intake_payload,
                     validation_errors=validation_errors,
                     suggested_focus_entities=focus_entities,
                 )
@@ -1088,6 +1097,7 @@ def scenario_command(
         )
         return
 
+    intake = IntakeDraft.model_validate(intake_payload)
     service.save_intake_draft(run_id=run_id, revision_id=revision_id, intake=intake)
     turn = service.draft_conversation_turn(run_id, revision_id)
     print(
