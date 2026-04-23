@@ -209,15 +209,15 @@ Exact observed search summary:
 
 Exact observed top-three branches:
 
-1. `Coordinated consultation with allies` with score `0.2894457915831681`
+1. `No full-scale war; allies step in and talks stay alive.` with score `0.2894457915831681`
    Engine label: `Alliance consultation (coordinated signaling)`
-   What this means: the next phase is led by allied consultation and coordinated public signaling.
-2. `A controlled show of resolve` with score `0.2887236102403397`
+   What this means: outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war.
+2. `More warning signals, but still no break into war.` with score `0.2887236102403397`
    Engine label: `Signal resolve (managed signal)`
-   What this means: the next phase centers on a managed signal of firmness rather than a runaway escalation.
-3. `Open negotiations` with score `0.28652269436203087`
+   What this means: Washington and Tehran trade warnings, but neither side fully breaks into a larger war.
+3. `Negotiations remain on the table.` with score `0.28652269436203087`
    Engine label: `Open negotiation`
-   What this means: the next phase is driven by open negotiation.
+   What this means: talks stay possible, but this run gives a slight edge to the pressure-heavy paths above.
 
 All three carried the same replay-backed calibration surface in this run:
 
@@ -228,17 +228,17 @@ All three carried the same replay-backed calibration surface in this run:
 
 Exact observed scenario-family ranking:
 
-1. `Allied consultation followed by a stalled settlement track`
+1. `Allies step in, then the crisis freezes into a tense stalemate.`
    Engine label: `Alliance consultation -> settlement-stalemate`
-   Plain-English reading: this family starts with coordinated allied consultation and then moves into a settlement effort that stalls.
-2. `A controlled signal followed by a stalled settlement track`
+   Plain-English reading: outside powers get more involved, but the crisis still settles into an uneasy stalemate instead of a wider war.
+2. `Both sides trade warnings, then the crisis freezes into a tense stalemate.`
    Engine label: `Signal resolve -> settlement-stalemate`
-   Plain-English reading: this family starts with a managed signal of resolve and then moves into a settlement effort that stalls.
-3. `Open negotiations followed by a stalled settlement track`
+   Plain-English reading: pressure rises on both sides, but the crisis still stops short of a larger war.
+3. `Negotiations stay open, then the crisis freezes into a tense stalemate.`
    Engine label: `Open negotiation -> settlement-stalemate`
-   Plain-English reading: this family starts with open negotiation and then moves into a settlement effort that stalls.
+   Plain-English reading: talks remain possible, but they do not fully resolve the crisis in this run.
 
-That means the engine slightly favored coordinated consultation with allies over a controlled show of resolve or open negotiations, but the top of the ranking stayed tight rather than decisive.
+That means the engine slightly favored allied involvement and continued diplomacy over more warning signals or open negotiations, but the top of the ranking stayed tight rather than decisive.
 
 ## 6. What the engine inferred about third parties
 

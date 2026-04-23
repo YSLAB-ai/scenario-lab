@@ -128,7 +128,79 @@ def test_render_report_includes_scenario_families_key_drivers_and_search_summary
     assert "Lens: domestic-politics-first" in report
     assert "system=0.42, actors=0.48, destabilization_penalty=-0.1" in report
     assert "Calibrated confidence: medium (0.667 from 3 replay cases)" in report
-    assert "- Signal resolve -> settlement-stalemate: 1 branches" in report
+    assert "- Signal resolve -> settlement-stalemate" in report
+
+
+def test_render_report_humanizes_interstate_crisis_branches_and_families() -> None:
+    report = render_report(
+        revision_id="r1",
+        domain_pack="interstate-crisis",
+        simulation={
+            "search_mode": "mcts",
+            "node_count": 133,
+            "transposition_hits": 111,
+            "branches": [
+                {
+                    "branch_id": "alliance-consultation-2",
+                    "label": "Alliance consultation (coordinated signaling)",
+                    "score": 0.2894457915831681,
+                    "confidence_signal": 0.2,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 6,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["alliance_pressure", "diplomatic_channel", "mediation_window"],
+                    "aggregate_score_breakdown": {
+                        "actors": 0.167,
+                        "system": 0.122,
+                        "destabilization_penalty": 0.0,
+                    },
+                    "path": [
+                        {"label": "Alliance consultation (coordinated signaling)", "phase": "negotiation-deescalation"},
+                        {"label": "Signal resolve", "phase": "settlement-stalemate"},
+                    ],
+                },
+                {
+                    "branch_id": "signal",
+                    "label": "Signal resolve (managed signal)",
+                    "score": 0.2887236102403397,
+                    "confidence_signal": 0.191,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 6,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["diplomatic_channel", "leader_style", "mediation_window"],
+                    "path": [{"label": "Signal resolve (managed signal)", "phase": "signaling"}],
+                },
+                {
+                    "branch_id": "open-negotiation",
+                    "label": "Open negotiation",
+                    "score": 0.28652269436203087,
+                    "confidence_signal": 0.337,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 6,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["diplomatic_channel", "leader_style", "mediation_window"],
+                    "path": [{"label": "Open negotiation", "phase": "negotiation-deescalation"}],
+                },
+            ],
+        },
+        evidence_count=7,
+        unsupported_count=5,
+    )
+
+    assert "No full-scale war; allies step in and talks stay alive." in report
+    assert "Engine label: Alliance consultation (coordinated signaling)" in report
+    assert "Why it ranks high: Outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war." in report
+    assert "More warning signals, but still no break into war." in report
+    assert "Engine label: Signal resolve (managed signal)" in report
+    assert "Negotiations remain on the table." in report
+    assert "Engine label: Open negotiation" in report
+    assert "Allies step in, then the crisis freezes into a tense stalemate." in report
+    assert "Engine label: Alliance consultation -> settlement-stalemate" in report
+    assert "Both sides trade warnings, then the crisis freezes into a tense stalemate." in report
+    assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in report
 
 
 def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> None:

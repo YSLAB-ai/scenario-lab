@@ -930,8 +930,10 @@ class WorkflowService:
         evidence_count: int,
         unsupported_count: int,
     ) -> str:
+        run = self.repository.load_run_record(run_id)
         content = render_report(
             revision_id=revision_id,
+            domain_pack=run.domain_pack,
             simulation=simulation,
             evidence_count=evidence_count,
             unsupported_count=unsupported_count,

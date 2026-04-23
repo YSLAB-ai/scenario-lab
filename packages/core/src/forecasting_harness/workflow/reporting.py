@@ -3,6 +3,46 @@ from __future__ import annotations
 from forecasting_harness.query_api import summarize_scenario_families, summarize_top_branches
 
 
+_INTERSTATE_BRANCH_SUMMARIES: dict[str, tuple[str, str]] = {
+    "Alliance consultation (coordinated signaling)": (
+        "No full-scale war; allies step in and talks stay alive.",
+        "Outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war.",
+    ),
+    "Signal resolve (managed signal)": (
+        "More warning signals, but still no break into war.",
+        "Washington and Tehran trade warnings, but neither side fully breaks into a larger war.",
+    ),
+    "Open negotiation": (
+        "Negotiations remain on the table.",
+        "Talks stay possible, but this run gives a slight edge to the pressure-heavy paths above.",
+    ),
+}
+
+_INTERSTATE_FAMILY_SUMMARIES: dict[tuple[str, str], tuple[str, str]] = {
+    (
+        "Alliance consultation",
+        "settlement-stalemate",
+    ): (
+        "Allies step in, then the crisis freezes into a tense stalemate.",
+        "Outside powers get more involved, but the crisis still settles into an uneasy stalemate instead of a wider war.",
+    ),
+    (
+        "Signal resolve",
+        "settlement-stalemate",
+    ): (
+        "Both sides trade warnings, then the crisis freezes into a tense stalemate.",
+        "Pressure rises on both sides, but the crisis still stops short of a larger war.",
+    ),
+    (
+        "Open negotiation",
+        "settlement-stalemate",
+    ): (
+        "Negotiations stay open, then the crisis freezes into a tense stalemate.",
+        "Talks remain possible, but they do not fully resolve the crisis in this run.",
+    ),
+}
+
+
 def _format_float(value: float) -> str:
     return f"{value:.3f}".rstrip("0").rstrip(".")
 
@@ -91,9 +131,38 @@ def _resolve_top_branch(
     return None
 
 
+def _humanized_branch_summary(
+    branch: dict[str, object],
+    *,
+    domain_pack: str | None,
+) -> tuple[str, str | None, str]:
+    label = str(branch.get("label") or branch.get("branch_id") or "Scenario")
+    if domain_pack == "interstate-crisis":
+        summary = _INTERSTATE_BRANCH_SUMMARIES.get(label)
+        if summary is not None:
+            return summary[0], summary[1], label
+    return label, None, label
+
+
+def _humanized_family_summary(
+    family: dict[str, object],
+    *,
+    domain_pack: str | None,
+) -> tuple[str, str | None, str]:
+    root_route = str(family.get("root_route") or "Scenario")
+    terminal_phase = str(family.get("terminal_phase") or "unknown")
+    raw_label = f"{root_route} -> {terminal_phase}"
+    if domain_pack == "interstate-crisis":
+        summary = _INTERSTATE_FAMILY_SUMMARIES.get((root_route, terminal_phase))
+        if summary is not None:
+            return summary[0], summary[1], raw_label
+    return raw_label, None, raw_label
+
+
 def render_report(
     *,
     revision_id: str,
+    domain_pack: str | None = None,
     simulation: dict[str, object],
     evidence_count: int,
     unsupported_count: int,
@@ -121,29 +190,41 @@ def render_report(
     ]
     if top_branches:
         for branch in top_branches:
+            title, explanation, raw_label = _humanized_branch_summary(branch, domain_pack=domain_pack)
             breakdown = branch.get("aggregate_score_breakdown")
             breakdown_suffix = ""
             if isinstance(breakdown, dict) and breakdown:
                 breakdown_suffix = f"; breakdown: {_format_metric_map(breakdown)}"
             lines.append(
-                f"- {branch['label']} ({_format_float(float(branch['score']))}); calibrated confidence: "
+                f"- {title} ({_format_float(float(branch['score']))}); calibrated confidence: "
                 f"{_format_calibrated_confidence(branch)}{breakdown_suffix}"
             )
+            if title != raw_label:
+                lines.append(f"  - Engine label: {raw_label}")
+            if explanation:
+                lines.append(f"  - Why it ranks high: {explanation}")
     else:
         lines.append("- No branches were generated.")
 
     if scenario_families:
         lines.extend(["", "## Scenario Families"])
         for family in scenario_families:
+            title, explanation, raw_label = _humanized_family_summary(family, domain_pack=domain_pack)
             driver_text = ", ".join(family.get("key_drivers", [])) or "none"
+            lines.append(f"- {title}")
+            if title != raw_label:
+                lines.append(f"  - Engine label: {raw_label}")
             lines.append(
-                f"- {family['root_route']} -> {family['terminal_phase']}: {family['branch_count']} branches, "
-                f"representative {family['representative_label']} ({_format_float(float(family['best_score']))}), "
-                f"drivers: {driver_text}, calibrated confidence: {_format_calibrated_confidence(family)}"
+                f"  - Branches: {family['branch_count']}; representative: {family['representative_label']} "
+                f"({_format_float(float(family['best_score']))}); drivers: {driver_text}; "
+                f"calibrated confidence: {_format_calibrated_confidence(family)}"
             )
+            if explanation:
+                lines.append(f"  - Plain-English reading: {explanation}")
 
     top_branch = _resolve_top_branch(branches, top_branches)
     if top_branch is not None:
+        title, explanation, raw_label = _humanized_branch_summary(top_branch, domain_pack=domain_pack)
         path = top_branch.get("path", [])
         path_labels = " -> ".join(
             item["label"] for item in path if isinstance(item, dict) and isinstance(item.get("label"), str)
@@ -154,12 +235,17 @@ def render_report(
             [
                 "",
                 "## Top Branch Detail",
+                f"- Plain-English outcome: {title}",
                 f"- Terminal phase: {terminal_phase}",
                 f"- Confidence signal: {_format_float(float(top_branch.get('confidence_signal', 0.0) or 0.0))}",
                 f"- Calibrated confidence: {_format_calibrated_confidence(top_branch)}",
                 f"- Key drivers: {driver_text}",
             ]
         )
+        if title != raw_label:
+            lines.append(f"- Engine label: {raw_label}")
+        if explanation:
+            lines.append(f"- Why it ranks high: {explanation}")
         if path_labels:
             lines.append(f"- Path: {path_labels}")
         breakdown = top_branch.get("aggregate_score_breakdown")

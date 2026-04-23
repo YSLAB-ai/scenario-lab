@@ -1061,6 +1061,51 @@ def test_generate_report_writes_revision_specific_reports_and_credibility_note(t
     assert "low-credibility exploratory run" not in second_report
 
 
+def test_generate_report_uses_run_domain_pack_for_humanized_interstate_language(tmp_path: Path) -> None:
+    repository = RunRepository(tmp_path / ".forecast")
+    service = WorkflowService(repository)
+    service.start_run(run_id="crisis-1", domain_pack="interstate-crisis")
+
+    report = service.generate_report(
+        "crisis-1",
+        "r1",
+        simulation={
+            "branches": [
+                {
+                    "branch_id": "alliance-consultation-2",
+                    "label": "Alliance consultation (coordinated signaling)",
+                    "score": 0.2894457915831681,
+                    "confidence_signal": 0.2,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 6,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["alliance_pressure", "diplomatic_channel", "mediation_window"],
+                    "path": [{"label": "Alliance consultation (coordinated signaling)", "phase": "signaling"}],
+                },
+                {
+                    "branch_id": "open-negotiation",
+                    "label": "Open negotiation",
+                    "score": 0.28652269436203087,
+                    "confidence_signal": 0.337,
+                    "confidence_bucket": "low",
+                    "calibrated_confidence": 0.875,
+                    "calibration_case_count": 6,
+                    "terminal_phase": "settlement-stalemate",
+                    "key_drivers": ["diplomatic_channel", "leader_style", "mediation_window"],
+                    "path": [{"label": "Open negotiation", "phase": "negotiation-deescalation"}],
+                },
+            ]
+        },
+        evidence_count=7,
+        unsupported_count=5,
+    )
+
+    assert "No full-scale war; allies step in and talks stay alive." in report
+    assert "Engine label: Alliance consultation (coordinated signaling)" in report
+    assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in report
+
+
 def test_draft_evidence_packet_from_corpus_persists_a_revision_draft(tmp_path: Path) -> None:
     repository = RunRepository(tmp_path / ".forecast")
     corpus = CorpusRegistry(tmp_path / "corpus.db")

@@ -46,15 +46,15 @@ This phase sequence was rechecked on a verified `U.S.-Iran` run in [docs/demo-us
   - `node_count = 133`
   - `transposition_hits = 111`
 - verified top scenario ranking:
-  1. `Coordinated consultation with allies` at `0.289`
+  1. `No full-scale war; allies step in and talks stay alive.` at `0.289`
      Engine label: `Alliance consultation (coordinated signaling)`
-     What this means: the next phase is led by allied consultation and coordinated public signaling.
-  2. `A controlled show of resolve` at `0.289`
+     What this means: outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war.
+  2. `More warning signals, but still no break into war.` at `0.289`
      Engine label: `Signal resolve (managed signal)`
-     What this means: the next phase centers on a managed signal of firmness rather than a runaway escalation.
-  3. `Open negotiations` at `0.287`
+     What this means: Washington and Tehran trade warnings, but neither side fully breaks into a larger war.
+  3. `Negotiations remain on the table.` at `0.287`
      Engine label: `Open negotiation`
-     What this means: the next phase is driven by open negotiation.
+     What this means: talks stay possible, but this run gives a slight edge to the pressure-heavy paths above.
   The top three scores stayed very close together, so the ranking was tight rather than decisive and the engine did not find a runaway winner.
 - verified third-party actor pressures:
   - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
