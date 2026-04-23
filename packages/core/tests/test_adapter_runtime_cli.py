@@ -528,7 +528,7 @@ def test_scenario_command_bootstraps_a_real_workflow_turn(tmp_path: Path) -> Non
     runner = CliRunner()
     root = tmp_path / ".forecast"
 
-    result = runner.invoke(
+    first_result = runner.invoke(
         app,
         [
             "scenario",
@@ -544,8 +544,8 @@ def test_scenario_command_bootstraps_a_real_workflow_turn(tmp_path: Path) -> Non
         ],
     )
 
-    assert result.exit_code == 0
-    payload = json.loads(result.stdout)
+    assert first_result.exit_code == 0
+    payload = json.loads(first_result.stdout)
     assert payload["command"] == "scenario"
     assert payload["prompt"].startswith("/scenario ")
     assert payload["intake"]["focus_entities"] == ["US", "Iran"]
@@ -555,3 +555,26 @@ def test_scenario_command_bootstraps_a_real_workflow_turn(tmp_path: Path) -> Non
         "draft-evidence-packet",
     }
     assert payload["intake"]["current_stage"] == "trigger"
+
+    second_result = runner.invoke(
+        app,
+        [
+            "scenario",
+            "--root",
+            str(root),
+            "--run-id",
+            "us-iran-1",
+            "--domain-pack",
+            "interstate-crisis",
+            "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days",
+        ],
+    )
+
+    assert second_result.exit_code == 0
+    second_payload = json.loads(second_result.stdout)
+    assert second_payload["command"] == "scenario"
+    assert second_payload["turn"]["stage"] == "evidence"
+    assert second_payload["turn"]["recommended_runtime_action"] in {
+        "batch-ingest-recommended",
+        "draft-evidence-packet",
+    }

@@ -303,14 +303,21 @@ def _extract_focus_entities_from_prompt(prompt_body: str) -> list[str]:
     return focus_entities
 
 
-def _scenario_intake_from_prompt(prompt_body: str, focus_entities: list[str]) -> IntakeDraft:
+def _scenario_intake_from_prompt(prompt_body: str, focus_entities: list[str], *, current_stage: str) -> IntakeDraft:
     return IntakeDraft(
         event_framing=prompt_body,
         focus_entities=focus_entities,
         current_development=prompt_body,
-        current_stage="trigger",
+        current_stage=current_stage,
         time_horizon="30d",
     )
+
+
+def _scenario_initial_stage(pack: GenericEventPack | InterstateCrisisPack) -> str:
+    canonical_phases = pack.canonical_phases()
+    if canonical_phases:
+        return canonical_phases[0]
+    return "trigger"
 
 
 def _scenario_validation_failure_payload(
@@ -1047,10 +1054,15 @@ def scenario_command(
     parsed_prompt, prompt_body = _parse_scenario_prompt(prompt)
     pack = _pack_for_slug(domain_pack)
     service = _service(root)
-    service.start_run(run_id=run_id, domain_pack=pack.slug())
+    repo = service.repository
+    try:
+        repo.load_run_record(run_id)
+    except FileNotFoundError:
+        service.start_run(run_id=run_id, domain_pack=pack.slug())
 
     focus_entities = _extract_focus_entities_from_prompt(prompt_body)
-    intake = _scenario_intake_from_prompt(prompt_body, focus_entities)
+    initial_stage = _scenario_initial_stage(pack)
+    intake = _scenario_intake_from_prompt(prompt_body, focus_entities, current_stage=initial_stage)
     validation_errors = pack.validate_intake(intake)
     if validation_errors:
         print(
