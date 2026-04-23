@@ -97,6 +97,8 @@ Verified `U.S.-Iran` example:
 - report path from the rechecked run:
   - `/tmp/scenario-lab-us-iran-convo/run/runs/us-iran-convo/reports/r1.report.md`
 
+In that verified `U.S.-Iran` run, **`Open negotiation` was the highest-ranked scenario**.
+
 The shorter phase-by-phase workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 
 ## What Makes It Effective
