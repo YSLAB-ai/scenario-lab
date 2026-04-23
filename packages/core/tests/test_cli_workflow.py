@@ -1331,6 +1331,27 @@ def test_draft_conversation_turn_command_returns_report_stage_for_simulated_revi
     assert payload["context"]["revision_id"] == "r1"
 
 
+def test_draft_conversation_turn_command_returns_intake_stage_for_new_revision(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        ["draft-conversation-turn", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["stage"] == "intake"
+    assert "scenario-lab save-intake-draft" in payload["recommended_command"]
+    assert "forecast-harness" not in payload["recommended_command"]
+
+
 def test_draft_conversation_turn_command_embeds_native_adapter_payloads(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"
