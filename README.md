@@ -65,13 +65,11 @@ The current limitations are documented in [docs/limitations.md](/Volumes/Yiwen's
 
 ## Minimal builder section
 
-If you want the lowest-level workflow surface instead of the built-in demo, use the verified CLI commands already present in the repo:
+If you want a minimal runnable surface instead of the higher-level adapter workflow, use the built-in demo and inspect the files it writes:
 
 ```bash
-forecast-harness start-run --root .forecast --run-id crisis-1 --domain-pack interstate-crisis
-forecast-harness save-intake-draft --root .forecast --run-id crisis-1 --revision-id r1
-forecast-harness run-adapter-action --root .forecast --run-id crisis-1 --revision-id r1 --action draft-evidence-packet
-forecast-harness approve-revision --root .forecast --run-id crisis-1 --revision-id r1 --assumption "Bounded escalation remains more likely than immediate full-scale war."
-forecast-harness simulate --root .forecast --run-id crisis-1 --revision-id r1
-forecast-harness generate-report --root .forecast --run-id crisis-1 --revision-id r1
+PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli demo-run --root .forecast
+ls .forecast/runs/demo-run
+cat .forecast/runs/demo-run/report.md
+cat .forecast/runs/demo-run/workbench.md
 ```

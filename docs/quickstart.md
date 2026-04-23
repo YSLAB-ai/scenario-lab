@@ -15,8 +15,10 @@ pip install -e 'packages/core[dev]'
 PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli demo-run --root .forecast
 ```
 
-## 3. Generate a report
+## 3. Inspect the generated artifacts
 
 ```bash
-PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli generate-report --root .forecast --run-id demo-run --revision-id r1
+ls .forecast/runs/demo-run
+cat .forecast/runs/demo-run/report.md
+cat .forecast/runs/demo-run/workbench.md
 ```

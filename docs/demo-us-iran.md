@@ -1,6 +1,6 @@
 # Scenario Lab Demo: U.S.-Iran
 
-This page documents a verified end-to-end `U.S.-Iran` scenario run on accepted `main`.
+This page is the starter surface for the verified `U.S.-Iran` demo that Task 3 will complete on accepted `main`.
 
 ## Commands
 
