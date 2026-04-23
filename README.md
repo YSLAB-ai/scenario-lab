@@ -6,7 +6,9 @@ Scenario Lab helps you turn a developing situation into a structured scenario ru
 
 ## Quickstart
 
-Run the built-in local demo:
+Start with the first-use setup and demo flow in [docs/quickstart.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/quickstart.md).
+
+If you want the shortest local smoke test, run the built-in demo:
 
 ```bash
 PYTHONPATH=packages/core/src packages/core/.venv/bin/python -m forecasting_harness.cli demo-run --root .forecast
@@ -19,6 +21,8 @@ Expected:
 
 ## Natural-Language Workflow
 
+The prompt-style workflow examples and runtime-action note are documented in [docs/natural-language-workflow.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/natural-language-workflow.md).
+
 - `Start a U.S.-Iran scenario run for the next 30 days`
 - `Draft the evidence packet`
 - `Approve and simulate`
@@ -27,14 +31,6 @@ Expected:
 ## What it does
 
 Scenario Lab is a local-first scenario workflow built on the repo's verified forecasting harness CLI and packaged adapter runtime. It lets you create a run, save structured intake, curate evidence, approve a revision, simulate branches, and generate a report from local artifacts under `.forecast/`.
-
-## Quickstart
-
-The first-use setup and demo flow are documented in [docs/quickstart.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/quickstart.md).
-
-## Natural-language workflow
-
-The prompt-style workflow examples and runtime-action note are documented in [docs/natural-language-workflow.md](/Volumes/Yiwen'sDisk/codex/HeuristicSearchEngine/.worktrees/scenario-lab-public-release/docs/natural-language-workflow.md).
 
 ## U.S.-Iran demo
 
