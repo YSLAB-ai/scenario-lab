@@ -158,20 +158,73 @@ def test_public_docs_and_assets_exist() -> None:
 def test_multilingual_readmes_exist_and_link_to_canonical_english_readme() -> None:
     root = Path(__file__).resolve().parents[3]
     localized_readmes = {
-        "README.zh-CN.md": "中文",
-        "README.es.md": "Español",
-        "README.fr.md": "Français",
-        "README.ko.md": "한국어",
-        "README.ja.md": "日本語",
+        "README.zh-CN.md": {
+            "language": "中文",
+            "domain_pack": "领域包",
+            "interstate_crisis": "国家间危机",
+            "market_shock": "市场冲击",
+            "financial_advice": "不是金融建议",
+        },
+        "README.es.md": {
+            "language": "Español",
+            "domain_pack": "paquete de dominio",
+            "interstate_crisis": "crisis interestatal",
+            "market_shock": "choque de mercado",
+            "financial_advice": "no es asesoramiento financiero",
+        },
+        "README.fr.md": {
+            "language": "Français",
+            "domain_pack": "paquet de domaine",
+            "interstate_crisis": "crise interétatique",
+            "market_shock": "choc de marché",
+            "financial_advice": "ne constitue pas un conseil financier",
+        },
+        "README.ko.md": {
+            "language": "한국어",
+            "domain_pack": "도메인 팩",
+            "interstate_crisis": "국가 간 위기",
+            "market_shock": "시장 충격",
+            "financial_advice": "금융 조언이 아닙니다",
+        },
+        "README.ja.md": {
+            "language": "日本語",
+            "domain_pack": "ドメインパック",
+            "interstate_crisis": "国家間危機",
+            "market_shock": "市場ショック",
+            "financial_advice": "金融助言ではありません",
+        },
     }
+    untranslated_phrases = [
+        "domain pack",
+        "interstate crisis",
+        "market shock",
+        "company decision",
+        "evidence packet",
+        "belief state",
+        "actor behavior profiles",
+        "simulation engine",
+        "scenario families",
+        "calibrated confidence",
+        "bounded crisis paths",
+        "terminal outcome",
+        "prediction product",
+        "financial advice",
+        "public preview",
+    ]
 
-    for filename, language_name in localized_readmes.items():
+    for filename, expected in localized_readmes.items():
         content = (root / filename).read_text(encoding="utf-8")
         assert content.startswith("# Scenario Lab")
         assert LANGUAGE_SWITCHER in content
-        assert language_name in content
+        assert expected["language"] in content
         assert "English README is canonical" in content
         assert "v0.1.0" in content
         assert "PolyForm Noncommercial License 1.0.0" in content
-        assert "not financial advice" in content
+        assert expected["domain_pack"] in content
+        assert expected["interstate_crisis"] in content
+        assert expected["market_shock"] in content
+        assert expected["financial_advice"] in content
         assert "[CONTRIBUTORS.md](CONTRIBUTORS.md)" in content
+        lower_content = content.lower()
+        for phrase in untranslated_phrases:
+            assert phrase not in lower_content, f"{filename} still contains {phrase!r}"

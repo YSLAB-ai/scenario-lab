@@ -4,26 +4,28 @@
 
 > Vista previa experimental: simulación Monte Carlo de eventos reales que puedes ejecutar localmente con Codex o Claude.
 
-Language: Español
+Idioma: Español
 
-This translation is provided for convenience. The English README is canonical for product scope, license terms, disclaimers, and release details.
+Esta traducción se ofrece para facilitar la lectura. English README is canonical; la versión inglesa rige el alcance del producto, la licencia, los avisos legales y los detalles de publicación.
 
-Scenario Lab es un Monte Carlo simulation engine para eventos reales, como conflictos regionales, mercados, política y decisiones empresariales. Es una herramienta experimental de investigación, no un producto de predicción y not financial advice.
+Scenario Lab es un motor de simulación Monte Carlo para eventos reales, como conflictos regionales, mercados, política y decisiones empresariales. Es una herramienta experimental de investigación, no un producto predictivo y no es asesoramiento financiero.
 
-Version: `v0.1.0` public preview. Contributors: [CONTRIBUTORS.md](CONTRIBUTORS.md).
+Versión: `v0.1.0` vista previa pública. Contribuidores: [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
-![Scenario Lab workflow](docs/assets/scenario-lab-workflow.png)
+![Flujo de trabajo de Scenario Lab](docs/assets/scenario-lab-workflow.png)
 
 ## Qué es
 
-Scenario Lab convierte una situación en desarrollo en una simulación estructurada. Tú defines los actores, el desarrollo actual y la evidencia que quieres aprobar. Después explora futuros ramificados con Monte Carlo tree search y clasifica las ramas encontradas.
+Scenario Lab convierte una situación en desarrollo en una simulación estructurada. Tú defines los actores, el desarrollo actual y la evidencia que quieres aprobar. Después explora futuros ramificados con búsqueda de árbol Monte Carlo y clasifica las ramas encontradas.
 
 Cómo funciona:
 
-- Un domain pack define actores, fases y acciones para un tipo de evento, como interstate crisis, market shock o company decision.
-- El evidence packet aprobado y el encuadre del caso se compilan en un belief state con actor behavior profiles y campos específicos del dominio.
-- El simulation engine ejecuta `mcts`, propone acciones, muestrea transiciones y puntúa ramas.
-- Los reportes convierten las ramas en outcomes, scenario families y calibrated confidence labels legibles.
+- Un paquete de dominio define actores, fases y acciones para un tipo de evento, como crisis interestatal, choque de mercado o decisión empresarial.
+- El paquete de evidencia aprobado y el encuadre del caso se compilan en un estado de creencias con perfiles de comportamiento de actores y campos específicos del dominio.
+- El motor de simulación ejecuta `mcts`, propone acciones, muestrea transiciones de estado y puntúa ramas.
+- Los informes convierten las ramas exploradas en resultados, familias de escenarios y etiquetas de confianza calibrada.
+
+El mismo entorno puede usarse para conflicto regional, tensión de mercado, negociación política y respuesta empresarial porque cada paquete de dominio contiene reglas y campos de estado distintos.
 
 ## Inicio rápido
 
@@ -62,35 +64,35 @@ Comando de proyecto en Claude Code:
 
 Una ejecución normal pasa por estas fases:
 
-![Scenario Lab runtime workflow](docs/assets/scenario-lab-runtime-workflow.png)
+![Flujo de ejecución de Scenario Lab](docs/assets/scenario-lab-runtime-workflow.png)
 
 1. `intake`: entender el problema, identificar actores principales y fijar el horizonte temporal.
-2. `evidence`: revisar terceros relevantes, evidencia faltante y fuentes posibles.
+2. `evidence`: revisar terceros relevantes, evidencia faltante y fuentes que podrían incorporarse.
 3. `approval`: bloquear configuración, supuestos y evidencia antes de la búsqueda.
-4. `simulation`: explorar rutas con deterministic Monte Carlo tree search.
-5. `report`: mostrar outcomes principales, explicar ramas y permitir actualizaciones.
+4. `simulation`: explorar rutas posibles con búsqueda de árbol Monte Carlo determinista.
+5. `report`: mostrar los resultados principales, explicar las ramas y permitir actualizaciones.
 
-El ejemplo verificado `U.S.-Iran` está en [docs/demo-us-iran.md](docs/demo-us-iran.md). Esa ejecución usó `10000` iterations y generó `133` nodes y `111` transposition hits. El `interstate-crisis` pack actual modela bounded crisis paths y no incluye full-scale war como terminal outcome explícito.
+El ejemplo verificado `U.S.-Iran` está en [docs/demo-us-iran.md](docs/demo-us-iran.md). Esa ejecución usó `10000` iteraciones y generó `133` nodos y `111` aciertos de transposición. El paquete de dominio de crisis interestatal actual modela rutas de crisis acotada y no incluye guerra total como resultado final explícito.
 
 ## Qué lo hace útil
 
-Scenario Lab no trata todas las ramas como igualmente plausibles. La búsqueda se guía por domain rules, actor behavior profiles y la evidencia aprobada.
+Scenario Lab no trata todas las ramas como igualmente plausibles. La búsqueda de ramas se guía por reglas de dominio, perfiles de comportamiento de actores y evidencia aprobada.
 
-- Las acciones están restringidas por domain packs.
-- La evidencia cambia actor profiles y campos del dominio.
-- Las consecuencias negativas aguas abajo penalizan la clasificación.
-- Mejor evidencia y mejor domain knowledge suelen producir ramas más diferenciadas.
+- Las acciones están restringidas por paquetes de dominio.
+- La evidencia cambia los perfiles de actores y los campos del dominio.
+- Las consecuencias negativas posteriores penalizan la clasificación.
+- Mejor evidencia y mejor conocimiento de dominio suelen producir ramas más diferenciadas.
 
-Para que un AI agent mejore un domain pack débil, indícale [docs/domain-pack-enrichment.md](docs/domain-pack-enrichment.md).
+Para que un agente de IA mejore un paquete de dominio débil, indícale [docs/domain-pack-enrichment.md](docs/domain-pack-enrichment.md).
 
 ## Límites actuales
 
 Consulta [docs/limitations.md](docs/limitations.md).
 
-- La calidad depende mucho del evidence packet aprobado.
-- La calidad depende mucho de la profundidad del domain pack.
-- Replay coverage, evidence quality y domain knowledge mejoran mediante contribuciones de la comunidad.
-- OCR-backed PDF ingestion está diferido en esta public preview.
+- La calidad depende mucho del paquete de evidencia aprobado.
+- La calidad depende mucho de la profundidad del paquete de dominio.
+- La cobertura de repetición histórica, la calidad de evidencia y el conocimiento de dominio mejoran mediante contribuciones de la comunidad.
+- La incorporación de PDF mediante OCR está diferida en esta vista previa pública.
 
 ## Licencia y descargo
 
@@ -98,15 +100,15 @@ Scenario Lab usa [PolyForm Noncommercial License 1.0.0](LICENSE). El repositorio
 
 Required Notice: Copyright Heuristic Search Group LLC
 
-Este repositorio es para uso experimental, educativo y de investigación. No es un prediction product, no garantiza eventos futuros y no sustituye juicio profesional, decisiones de inversión ni decisiones operativas. It is not financial advice.
+Este repositorio es para uso experimental, educativo y de investigación. No es un producto predictivo, no garantiza eventos futuros y no sustituye juicio profesional, decisiones de inversión ni decisiones operativas. No es asesoramiento financiero.
 
 El software se proporciona `as is`, sin garantía. En la medida permitida por la ley, Heuristic Search Group LLC no responde por pérdidas financieras, pérdidas de trading, pérdidas operativas u otros daños. Revisa [LICENSE](LICENSE), [NOTICE](NOTICE) y [docs/limitations.md](docs/limitations.md).
 
 ## Otros enlaces
 
-- English canonical README: [README.md](README.md)
-- quickstart: [docs/quickstart.md](docs/quickstart.md)
-- workflow: [docs/natural-language-workflow.md](docs/natural-language-workflow.md)
+- README canónico en inglés: [README.md](README.md)
+- inicio rápido: [docs/quickstart.md](docs/quickstart.md)
+- flujo de trabajo: [docs/natural-language-workflow.md](docs/natural-language-workflow.md)
 - demo: [docs/demo-us-iran.md](docs/demo-us-iran.md)
-- contributors: [CONTRIBUTORS.md](CONTRIBUTORS.md)
-- release notes: [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md)
+- contribuidores: [CONTRIBUTORS.md](CONTRIBUTORS.md)
+- notas de versión: [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md)
