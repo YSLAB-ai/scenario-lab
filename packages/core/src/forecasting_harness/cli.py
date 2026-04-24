@@ -280,6 +280,43 @@ _SCENARIO_FOCUS_ENTITY_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (r"\bu\.s\.\s+iran\b", ("US", "Iran")),
     (r"\bunited states\s+and\s+iran\b", ("US", "Iran")),
 )
+_SCENARIO_ENTITY_PATTERN = (
+    r"(?:"
+    r"U\.S\.|US|U\.K\.|UK|EU|UN|NATO|OPEC|"
+    r"[A-Z][A-Za-z0-9.'&]*"
+    r"(?:\s+(?:of|the|for|&|[A-Z][A-Za-z0-9.'&]*)){0,4}"
+    r")"
+)
+_SCENARIO_ENTITY_RE = re.compile(
+    rf"(?<![A-Za-z0-9])(?P<entity>{_SCENARIO_ENTITY_PATTERN})(?![A-Za-z0-9])"
+)
+_SCENARIO_ENTITY_PAIR_RE = re.compile(
+    rf"(?<![A-Za-z0-9])(?P<first>{_SCENARIO_ENTITY_PATTERN})"
+    rf"\s*(?:[-–—/]|[Vv][Ss]\.?|[Vv]ersus|VERSUS|[Aa]nd)\s*"
+    rf"(?P<second>{_SCENARIO_ENTITY_PATTERN})(?![A-Za-z0-9])"
+)
+_SCENARIO_BETWEEN_ENTITY_PAIR_RE = re.compile(
+    rf"\b[Bb]etween\s+(?P<first>{_SCENARIO_ENTITY_PATTERN})\s+[Aa]nd\s+"
+    rf"(?P<second>{_SCENARIO_ENTITY_PATTERN})(?![A-Za-z0-9])"
+)
+_SCENARIO_ENTITY_STOPWORDS = {
+    "actor",
+    "actors",
+    "action",
+    "actions",
+    "branch",
+    "branches",
+    "conflict",
+    "crisis",
+    "event",
+    "market",
+    "monte carlo",
+    "scenario",
+    "scenarios",
+    "simulation",
+    "strait",
+    "war",
+}
 _SCENARIO_PACK_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "interstate-crisis",
@@ -385,6 +422,35 @@ def _parse_scenario_prompt(prompt: str) -> tuple[str, str]:
     return prompt, body
 
 
+def _normalize_scenario_entity(raw_entity: str) -> str:
+    entity = re.sub(r"\s+", " ", raw_entity).strip(" \t\r\n\"'`.,;:!?()[]{}")
+    upper_entity = entity.upper().replace(".", "")
+    if upper_entity == "US":
+        return "US"
+    if upper_entity == "UK":
+        return "UK"
+    return entity
+
+
+def _is_scenario_entity_candidate(entity: str) -> bool:
+    normalized = entity.casefold()
+    if not entity or normalized in _SCENARIO_ENTITY_STOPWORDS:
+        return False
+    if normalized.startswith("strait of ") or normalized.endswith(" strait"):
+        return False
+    return any(character.isalpha() for character in entity)
+
+
+def _append_scenario_entity(entities: list[str], raw_entity: str) -> None:
+    entity = _normalize_scenario_entity(raw_entity)
+    if not _is_scenario_entity_candidate(entity):
+        return
+    dedupe_key = entity.casefold().replace(".", "")
+    existing_keys = {existing.casefold().replace(".", "") for existing in entities}
+    if dedupe_key not in existing_keys:
+        entities.append(entity)
+
+
 def _extract_focus_entities_from_prompt(prompt_body: str) -> list[str]:
     normalized = prompt_body.lower()
     focus_entities: list[str] = []
@@ -393,6 +459,18 @@ def _extract_focus_entities_from_prompt(prompt_body: str) -> list[str]:
             for entity in entities:
                 if entity not in focus_entities:
                     focus_entities.append(entity)
+    if focus_entities:
+        return focus_entities
+
+    for pair_pattern in (_SCENARIO_BETWEEN_ENTITY_PAIR_RE, _SCENARIO_ENTITY_PAIR_RE):
+        for match in pair_pattern.finditer(prompt_body):
+            _append_scenario_entity(focus_entities, match.group("first"))
+            _append_scenario_entity(focus_entities, match.group("second"))
+            if len(focus_entities) >= 2:
+                return focus_entities
+
+    for match in _SCENARIO_ENTITY_RE.finditer(prompt_body):
+        _append_scenario_entity(focus_entities, match.group("entity"))
     return focus_entities
 
 

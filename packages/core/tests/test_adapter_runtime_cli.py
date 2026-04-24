@@ -648,7 +648,7 @@ def test_scenario_command_rejects_mismatched_pack_for_existing_run(tmp_path: Pat
     assert "already uses domain_pack" in mismatch_result.stderr
 
 
-def test_scenario_command_falls_back_when_prompt_has_no_alias_matches(tmp_path: Path) -> None:
+def test_scenario_command_extracts_non_us_iran_crisis_actors(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"
 
@@ -669,6 +669,34 @@ def test_scenario_command_falls_back_when_prompt_has_no_alias_matches(tmp_path: 
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["command"] == "scenario"
-    assert payload["turn"]["stage"] == "intake"
-    assert payload["turn"]["context"]["validation_errors"]
-    assert payload["turn"]["context"]["suggested_focus_entities"] == []
+    assert payload["domain_pack"] == "interstate-crisis"
+    assert payload["intake"]["focus_entities"] == ["China", "Taiwan"]
+    assert payload["turn"]["stage"] == "evidence"
+    assert payload["turn"]["recommended_runtime_action"] in {
+        "batch-ingest-recommended",
+        "draft-evidence-packet",
+    }
+
+
+def test_scenario_command_extracts_company_actors_from_prompt(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+
+    result = runner.invoke(
+        app,
+        [
+            "scenario",
+            "--root",
+            str(root),
+            "--run-id",
+            "apple-microsoft-1",
+            "/scenario how would Apple company respond after Microsoft wins a major enterprise customer over the next 30 days",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["command"] == "scenario"
+    assert payload["domain_pack"] == "company-action"
+    assert payload["intake"]["focus_entities"] == ["Apple", "Microsoft"]
+    assert payload["turn"]["stage"] == "evidence"
