@@ -11,11 +11,16 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     metadata = (root / "docs" / "github-public-metadata.md").read_text(
         encoding="utf-8"
     )
+    release_notes = (root / "docs" / "release-notes" / "public-preview.md").read_text(
+        encoding="utf-8"
+    )
 
     assert readme.startswith("# Scenario Lab")
     assert "U.S.-Iran" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
+    assert "Version: `v0.1.0`" in readme
+    assert "[CONTRIBUTORS.md](CONTRIBUTORS.md)" in readme
     assert "## License And Disclaimer" in readme
     assert "PolyForm Noncommercial License 1.0.0" in readme
     assert "Required Notice: Copyright Heuristic Search Group LLC" in readme
@@ -66,6 +71,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "the engine did not find a runaway winner" in workflow
     assert "scenario-lab" in metadata
     assert "YSLAB-ai" in metadata
+    assert "Version: `v0.1.0`" in release_notes
+    assert "YSLAB-ai" in release_notes
+    assert "OpenAI Codex" in release_notes
 
 
 def test_public_docs_and_assets_exist() -> None:
@@ -89,6 +97,7 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "limitations.md").is_file()
     assert (root / "LICENSE").is_file()
     assert (root / "NOTICE").is_file()
+    assert (root / "CONTRIBUTORS.md").is_file()
     assert (root / "docs" / "release-notes" / "public-preview.md").is_file()
     assert (root / "docs" / "github-public-metadata.md").is_file()
     assert workflow_asset.is_file()
@@ -132,3 +141,7 @@ def test_public_docs_and_assets_exist() -> None:
     assert "run-replay-retuning" in enrichment_doc
     assert "run-domain-evolution" in enrichment_doc
     assert "Do not edit shared simulation code" in enrichment_doc
+    contributors_doc = (root / "CONTRIBUTORS.md").read_text(encoding="utf-8")
+    assert "YSLAB-ai" in contributors_doc
+    assert "OpenAI Codex" in contributors_doc
+    assert "AI coding agent" in contributors_doc

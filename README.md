@@ -4,6 +4,8 @@
 
 Scenario Lab is a Monte Carlo simulation engine for real-world events such as regional conflict, markets, politics, and company decision-making.
 
+Version: `v0.1.0` public preview. Contributors: [CONTRIBUTORS.md](CONTRIBUTORS.md).
+
 ![Scenario Lab workflow](docs/assets/scenario-lab-workflow.png)
 
 ## What Is It
@@ -194,6 +196,7 @@ Other useful entry points:
 - verified `U.S.-Iran` demo: [docs/demo-us-iran.md](docs/demo-us-iran.md)
 - domain-pack enrichment guide: [docs/domain-pack-enrichment.md](docs/domain-pack-enrichment.md)
 - current limitations: [docs/limitations.md](docs/limitations.md)
+- contributors: [CONTRIBUTORS.md](CONTRIBUTORS.md)
 - license and notice: [LICENSE](LICENSE), [NOTICE](NOTICE)
 - preview summary: [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md)
 

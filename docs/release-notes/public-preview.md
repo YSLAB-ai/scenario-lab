@@ -1,5 +1,7 @@
 # Scenario Lab Public Preview
 
+Version: `v0.1.0`
+
 This preview includes:
 
 - local-first scenario workflow
@@ -8,6 +10,11 @@ This preview includes:
 - spreadsheet and web-archive ingestion
 - protected domain evolution and synthesis
 - PolyForm Noncommercial licensing for the public repository
+
+Contributors credited for this preview:
+
+- `YSLAB-ai`
+- `OpenAI Codex`
 
 Social preview image: `docs/assets/scenario-lab-social-preview.png`
 
