@@ -45,6 +45,7 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
         in readme
     )
     assert "[docs/demo-us-iran.md](docs/demo-us-iran.md)" in readme
+    assert "[docs/domain-pack-enrichment.md](docs/domain-pack-enrichment.md)" in readme
     assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "[LICENSE](LICENSE)" in readme
     assert "[NOTICE](NOTICE)" in readme
@@ -74,6 +75,9 @@ def test_public_docs_and_assets_exist() -> None:
         encoding="utf-8"
     )
     limitations_doc = (root / "docs" / "limitations.md").read_text(encoding="utf-8")
+    enrichment_doc = (root / "docs" / "domain-pack-enrichment.md").read_text(
+        encoding="utf-8"
+    )
     workflow_asset = root / "docs" / "assets" / "scenario-lab-workflow.png"
     runtime_workflow_asset = root / "docs" / "assets" / "scenario-lab-runtime-workflow.png"
     social_preview_asset = root / "docs" / "assets" / "scenario-lab-social-preview.png"
@@ -81,6 +85,7 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "quickstart.md").is_file()
     assert (root / "docs" / "natural-language-workflow.md").is_file()
     assert (root / "docs" / "demo-us-iran.md").is_file()
+    assert (root / "docs" / "domain-pack-enrichment.md").is_file()
     assert (root / "docs" / "limitations.md").is_file()
     assert (root / "LICENSE").is_file()
     assert (root / "NOTICE").is_file()
@@ -118,3 +123,9 @@ def test_public_docs_and_assets_exist() -> None:
     assert "financial losses" in limitations_doc
     assert "scenario-lab" in metadata_doc
     assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc
+    assert "How To Improve A Domain Pack" in enrichment_doc
+    assert "compile-revision-knowledge" in enrichment_doc
+    assert "compile-replay-knowledge" in enrichment_doc
+    assert "run-replay-retuning" in enrichment_doc
+    assert "run-domain-evolution" in enrichment_doc
+    assert "Do not edit shared simulation code" in enrichment_doc
