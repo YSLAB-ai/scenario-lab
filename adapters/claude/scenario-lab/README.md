@@ -12,3 +12,5 @@ If you install into a real Claude root such as `~/.claude`, the bundle also inst
 ```text
 /scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
 ```
+
+Evidence commands default to `.forecast/corpus.db`. If a run has no evidence corpus yet, save candidate evidence files under `.forecast/evidence-candidates/`, run `scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended`, then run `scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet`.

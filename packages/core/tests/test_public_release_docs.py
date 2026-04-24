@@ -26,6 +26,8 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert LANGUAGE_SWITCHER in readme
     assert "U.S.-Iran" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
+    assert "## Evidence Corpus" in readme
+    assert ".forecast/corpus.db" in readme
     assert "Monte Carlo tree search" in readme
     assert "Version: `v0.1.0`" in readme
     assert "[CONTRIBUTORS.md](CONTRIBUTORS.md)" in readme
@@ -66,6 +68,9 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "docs/assets/scenario-lab-runtime-workflow.png" in readme
     assert "/Volumes/" not in readme
     assert "scenario-lab demo-run --root .forecast" in quickstart
+    assert "## 4. Build an evidence corpus" in quickstart
+    assert "scenario-lab ingest-directory --root .forecast" in quickstart
+    assert "scenario-lab draft-evidence-packet --root .forecast" in quickstart
     assert "## Actual runtime phases" in workflow
     assert "batch-ingest-recommended" in workflow
     assert "intake -> evidence -> approval -> simulation -> report" in workflow

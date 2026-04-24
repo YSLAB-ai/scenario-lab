@@ -60,6 +60,24 @@ Claude Code 프로젝트 명령:
 /scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
 ```
 
+## 증거 코퍼스
+
+증거 초안은 기본적으로 로컬 SQLite 데이터베이스 `.forecast/corpus.db`를 사용합니다. 아직 코퍼스가 없다면 관련 증거 파일을 `.forecast/evidence-candidates/`에 저장한 뒤 실행합니다.
+
+```bash
+scenario-lab ingest-directory --root .forecast --path .forecast/evidence-candidates --tag domain=interstate-crisis
+scenario-lab draft-evidence-packet --root .forecast --run-id <run-id> --revision-id r1
+```
+
+어댑터 런타임으로 추천 파일을 일괄 수집할 수도 있습니다.
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+별도 증거 데이터베이스가 필요할 때만 `--corpus-db <path>`를 사용하세요.
+
 ## 작업 흐름과 데모
 
 일반적인 실행은 다음 단계를 거칩니다.

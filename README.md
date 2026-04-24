@@ -45,6 +45,28 @@ For a repo-owned bootstrap that parses a literal scenario prompt and returns the
 scenario-lab scenario --root .forecast "/scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days"
 ```
 
+## Evidence Corpus
+
+Scenario Lab drafts evidence from a local SQLite corpus. By default, evidence commands use `.forecast/corpus.db`, so Claude Code, Codex, or another agent does not need to invent a database path.
+
+Use this normal evidence flow:
+
+```bash
+mkdir -p .forecast/evidence-candidates
+# Save or let your agent save relevant Markdown, CSV, JSON, spreadsheet, saved web page, or text-extractable PDF files there.
+scenario-lab ingest-directory --root .forecast --path .forecast/evidence-candidates --tag domain=interstate-crisis
+scenario-lab draft-evidence-packet --root .forecast --run-id <run-id> --revision-id r1
+```
+
+For adapter-driven runs, prefer the packaged runtime:
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+You can still override the corpus location with `--corpus-db <path>` when you need a separate evidence database.
+
 Scenario Lab is packaged to run with:
 
 - `Codex`: [docs/install-codex.md](docs/install-codex.md)

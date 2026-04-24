@@ -10,7 +10,7 @@ These are the actual adapter-runtime phases exposed by the repo.
 2. `evidence`
    Next action: usually `draft-evidence-packet`
    Optional next action: `batch-ingest-recommended` if local candidate files are available and recommended
-   Meaning: review what evidence is missing, what sources to pull in, and then build the evidence packet.
+   Meaning: review what evidence is missing, what sources to pull in, and then build the evidence packet. Evidence commands use `.forecast/corpus.db` by default; if the corpus is empty, save relevant evidence files under a candidate folder and ingest them before drafting the packet.
 3. `approval`
    Next action: `approve-revision`
    Meaning: review warnings and assumptions, then lock the setup before search.

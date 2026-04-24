@@ -60,6 +60,24 @@ Comando de proyecto en Claude Code:
 /scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
 ```
 
+## Corpus de evidencia
+
+Los borradores de evidencia usan por defecto la base local SQLite `.forecast/corpus.db`. Si aún no existe, guarda archivos de evidencia relevantes en `.forecast/evidence-candidates/` y ejecuta:
+
+```bash
+scenario-lab ingest-directory --root .forecast --path .forecast/evidence-candidates --tag domain=interstate-crisis
+scenario-lab draft-evidence-packet --root .forecast --run-id <run-id> --revision-id r1
+```
+
+También puedes usar el entorno de adaptador para ingerir archivos recomendados:
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+Usa `--corpus-db <path>` solo cuando quieras una base de evidencia separada.
+
 ## Flujo de trabajo y demo
 
 Una ejecución normal pasa por estas fases:

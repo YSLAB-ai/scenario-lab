@@ -60,6 +60,24 @@ Claude Code のプロジェクトコマンド：
 /scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
 ```
 
+## エビデンスコーパス
+
+エビデンス草案は既定でローカル SQLite データベース `.forecast/corpus.db` を使います。まだコーパスがない場合は、関連するエビデンスファイルを `.forecast/evidence-candidates/` に保存してから実行します。
+
+```bash
+scenario-lab ingest-directory --root .forecast --path .forecast/evidence-candidates --tag domain=interstate-crisis
+scenario-lab draft-evidence-packet --root .forecast --run-id <run-id> --revision-id r1
+```
+
+アダプターランタイムで推奨ファイルを一括取り込みすることもできます。
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+別のエビデンスデータベースを使う場合だけ `--corpus-db <path>` を指定してください。
+
 ## ワークフローとデモ
 
 通常の実行は次の段階を通ります。

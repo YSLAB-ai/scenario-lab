@@ -27,6 +27,17 @@ Add `--link` to symlink the bundle instead of copying it while iterating locally
 packages/core/.venv/bin/python adapters/codex/scenario-lab/smoke.py --work-dir /tmp/scenario-lab-codex-smoke
 ```
 
+## Evidence corpus
+
+Codex should use `.forecast/corpus.db` as the default local evidence corpus. When a run reaches evidence collection and no corpus exists yet, save relevant evidence files under `.forecast/evidence-candidates/`, then use:
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+Only pass `--corpus-db <path>` when intentionally using a separate evidence database.
+
 ## Next docs
 
 - `docs/quickstart.md`

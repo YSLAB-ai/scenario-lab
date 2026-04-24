@@ -168,6 +168,112 @@ def test_run_adapter_action_executes_the_normal_adapter_loop(tmp_path: Path) -> 
     assert simulation_payload["turn"]["recommended_runtime_action"] == "begin-revision-update"
 
 
+def test_run_adapter_action_defaults_corpus_db_to_root(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    source_dir = tmp_path / "incoming"
+    source_dir.mkdir()
+    (source_dir / "official-warning.md").write_text(
+        "# Foreign Ministry\nOfficial statement and warning to the other state.\n",
+        encoding="utf-8",
+    )
+
+    start_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "start-run",
+            "--domain-pack",
+            "interstate-crisis",
+        ],
+    )
+    assert start_result.exit_code == 0
+
+    intake_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--candidate-path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "save-intake-draft",
+            "--event-framing",
+            "Assess escalation",
+            "--focus-entity",
+            "Japan",
+            "--focus-entity",
+            "China",
+            "--current-development",
+            "Naval transit through the Taiwan Strait",
+            "--current-stage",
+            "trigger",
+            "--time-horizon",
+            "30d",
+        ],
+    )
+
+    assert intake_result.exit_code == 0
+    intake_payload = json.loads(intake_result.stdout)
+    assert intake_payload["turn"]["recommended_runtime_action"] == "batch-ingest-recommended"
+    batch_action = intake_payload["turn"]["actions"][0]
+    assert batch_action["runtime_action"] == "batch-ingest-recommended"
+    assert batch_action["required_options"] == ["candidate_path"]
+
+    ingest_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--candidate-path",
+            str(source_dir),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "batch-ingest-recommended",
+        ],
+    )
+
+    assert ingest_result.exit_code == 0
+    ingest_payload = json.loads(ingest_result.stdout)
+    assert ingest_payload["action_result"]["ingested_count"] == 1
+    assert (root / "corpus.db").is_file()
+
+    evidence_result = runner.invoke(
+        app,
+        [
+            "run-adapter-action",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+            "--action",
+            "draft-evidence-packet",
+        ],
+    )
+
+    assert evidence_result.exit_code == 0
+    evidence_payload = json.loads(evidence_result.stdout)
+    assert evidence_payload["turn"]["stage"] == "approval"
+
+
 def test_run_adapter_action_simulate_defaults_to_cli_iteration_budget(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"

@@ -570,6 +570,60 @@ def test_draft_evidence_packet_command_can_omit_query_text(tmp_path: Path) -> No
     assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]
 
 
+def test_draft_evidence_packet_command_defaults_corpus_db_to_root(tmp_path: Path) -> None:
+    runner = CliRunner()
+    root = tmp_path / ".forecast"
+    intake_path = tmp_path / "intake.json"
+
+    intake_path.write_text(
+        json.dumps(
+            {
+                "event_framing": "Assess escalation",
+                "focus_entities": ["Japan", "China"],
+                "current_development": "Naval transit through the Taiwan Strait",
+                "current_stage": "trigger",
+                "time_horizon": "30d",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    corpus = CorpusRegistry(root / "corpus.db")
+    corpus.register_document(
+        source_id="doc-1",
+        title="Posture shift",
+        source_type="markdown",
+        published_at="2026-04-20",
+        tags={"domain": "interstate-crisis"},
+        content="Force posture hardens near the strait after the naval transit.",
+    )
+
+    assert runner.invoke(
+        app,
+        ["start-run", "--root", str(root), "--run-id", "crisis-1", "--domain-pack", "interstate-crisis"],
+    ).exit_code == 0
+    assert runner.invoke(
+        app,
+        ["save-intake-draft", "--root", str(root), "--run-id", "crisis-1", "--revision-id", "r1", "--input", str(intake_path)],
+    ).exit_code == 0
+
+    result = runner.invoke(
+        app,
+        [
+            "draft-evidence-packet",
+            "--root",
+            str(root),
+            "--run-id",
+            "crisis-1",
+            "--revision-id",
+            "r1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert [item["source_id"] for item in json.loads(result.stdout)["items"]] == ["doc-1"]
+
+
 def test_draft_retrieval_plan_command(tmp_path: Path) -> None:
     runner = CliRunner()
     root = tmp_path / ".forecast"
@@ -1773,6 +1827,35 @@ def test_ingest_directory_command_reports_ingested_and_skipped_files(tmp_path: P
     payload = json.loads(result.stdout)
     assert payload["ingested"] == 4
     assert payload["skipped"] == 1
+
+
+def test_ingest_directory_command_defaults_corpus_db_to_root(tmp_path: Path) -> None:
+    root = tmp_path / ".forecast"
+    source_dir = tmp_path / "corpus"
+    source_dir.mkdir()
+    (source_dir / "signals.md").write_text("# Overview\nJapan issues a warning.\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "ingest-directory",
+            "--root",
+            str(root),
+            "--path",
+            str(source_dir),
+            "--tag",
+            "domain=interstate-crisis",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["ingested"] == 1
+
+    hits = SearchEngine(CorpusRegistry(root / "corpus.db")).search(
+        RetrievalQuery(text="Japan warning", filters={"domain": "interstate-crisis"})
+    )
+    assert [hit["source_id"] for hit in hits] == ["signals"]
 
 
 def test_list_corpus_sources_command_lists_documents(tmp_path: Path) -> None:

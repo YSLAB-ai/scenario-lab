@@ -96,6 +96,10 @@ def _service(root: Path, *, corpus_db: Path | None = None) -> WorkflowService:
     return WorkflowService(RunRepository(root), corpus_registry=corpus_registry)
 
 
+def _resolve_corpus_db(root: Path, corpus_db: Path | None) -> Path:
+    return corpus_db if corpus_db is not None else root / "corpus.db"
+
+
 def _evolution_service(workspace_root: Path) -> DomainEvolutionService:
     return DomainEvolutionService(
         evolution_storage=EvolutionStorage(workspace_root / "knowledge" / "evolution"),
@@ -933,14 +937,15 @@ def synthesize_domain_command(
 
 @app.command("ingest-file")
 def ingest_file_command(
-    corpus_db: Path = typer.Option(...),
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
     path: Path = typer.Option(...),
     source_id: str | None = typer.Option(None),
     title: str | None = typer.Option(None),
     published_at: str | None = typer.Option(None),
     tag: list[str] | None = typer.Option(None),
 ) -> None:
-    registry = CorpusRegistry(corpus_db)
+    registry = CorpusRegistry(_resolve_corpus_db(root, corpus_db))
     payload = _register_ingested_document(
         registry,
         path,
@@ -954,28 +959,46 @@ def ingest_file_command(
 
 @app.command("ingest-directory")
 def ingest_directory_command(
-    corpus_db: Path = typer.Option(...),
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
     path: Path = typer.Option(...),
     published_at: str | None = typer.Option(None),
     tag: list[str] | None = typer.Option(None),
 ) -> None:
-    registry = CorpusRegistry(corpus_db)
-    print(json.dumps(ingest_directory(registry, path, published_at=published_at, tags=_parse_tags(tag))))
+    registry = CorpusRegistry(_resolve_corpus_db(root, corpus_db))
+    print(
+        json.dumps(
+            ingest_directory(
+                registry,
+                path,
+                published_at=published_at,
+                tags=_parse_tags(tag),
+            )
+        )
+    )
 
 
 @app.command("list-corpus-sources")
-def list_corpus_sources(corpus_db: Path = typer.Option(...)) -> None:
-    print(json.dumps(CorpusRegistry(corpus_db).list_documents()))
+def list_corpus_sources(
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
+) -> None:
+    print(
+        json.dumps(
+            CorpusRegistry(_resolve_corpus_db(root, corpus_db)).list_documents()
+        )
+    )
 
 
 @app.command("rebuild-corpus-embeddings")
 def rebuild_corpus_embeddings_command(
-    corpus_db: Path = typer.Option(...),
+    root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
     semantic_backend: str | None = typer.Option(None, "--semantic-backend"),
     semantic_model: str | None = typer.Option(None, "--semantic-model"),
 ) -> None:
     registry = CorpusRegistry(
-        corpus_db,
+        _resolve_corpus_db(root, corpus_db),
         embedding_backend=semantic_backend,
         embedding_model=semantic_model,
     )
@@ -1138,14 +1161,17 @@ def draft_intake_guidance(
 @app.command("draft-evidence-packet")
 def draft_evidence_packet_command(
     root: Path = typer.Option(Path(".forecast")),
-    corpus_db: Path = typer.Option(...),
+    corpus_db: Path | None = typer.Option(None),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
     query_text: str | None = typer.Option(None),
 ) -> None:
     repo = RunRepository(root)
     pack = _load_pack_for_run(repo, run_id)
-    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    service = WorkflowService(
+        repo,
+        corpus_registry=CorpusRegistry(_resolve_corpus_db(root, corpus_db)),
+    )
     packet = service.draft_evidence_packet(run_id, revision_id, pack=pack, query_text=query_text)
     print(packet.model_dump_json())
 
@@ -1166,27 +1192,33 @@ def draft_retrieval_plan_command(
 @app.command("draft-ingestion-plan")
 def draft_ingestion_plan_command(
     root: Path = typer.Option(Path(".forecast")),
-    corpus_db: Path = typer.Option(...),
+    corpus_db: Path | None = typer.Option(None),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
 ) -> None:
     repo = RunRepository(root)
     pack = _load_pack_for_run(repo, run_id)
-    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    service = WorkflowService(
+        repo,
+        corpus_registry=CorpusRegistry(_resolve_corpus_db(root, corpus_db)),
+    )
     print(service.draft_ingestion_plan(run_id, revision_id, pack=pack).model_dump_json())
 
 
 @app.command("recommend-ingestion-files")
 def recommend_ingestion_files_command(
     root: Path = typer.Option(Path(".forecast")),
-    corpus_db: Path = typer.Option(...),
+    corpus_db: Path | None = typer.Option(None),
     path: Path = typer.Option(...),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
 ) -> None:
     repo = RunRepository(root)
     pack = _load_pack_for_run(repo, run_id)
-    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    service = WorkflowService(
+        repo,
+        corpus_registry=CorpusRegistry(_resolve_corpus_db(root, corpus_db)),
+    )
     recommendations = service.recommend_ingestion_files(run_id, revision_id, pack=pack, path=path)
     print(json.dumps([item.model_dump(mode="json") for item in recommendations]))
 
@@ -1194,7 +1226,7 @@ def recommend_ingestion_files_command(
 @app.command("batch-ingest-recommended")
 def batch_ingest_recommended_command(
     root: Path = typer.Option(Path(".forecast")),
-    corpus_db: Path = typer.Option(...),
+    corpus_db: Path | None = typer.Option(None),
     path: Path = typer.Option(...),
     run_id: str = typer.Option(...),
     revision_id: str = typer.Option(...),
@@ -1202,7 +1234,10 @@ def batch_ingest_recommended_command(
 ) -> None:
     repo = RunRepository(root)
     pack = _load_pack_for_run(repo, run_id)
-    service = WorkflowService(repo, corpus_registry=CorpusRegistry(corpus_db))
+    service = WorkflowService(
+        repo,
+        corpus_registry=CorpusRegistry(_resolve_corpus_db(root, corpus_db)),
+    )
     result = service.batch_ingest_recommended_files(
         run_id,
         revision_id,
@@ -1231,7 +1266,7 @@ def draft_conversation_turn(
     revision_id: str = typer.Option(...),
 ) -> None:
     print(
-        _service(root, corpus_db=corpus_db)
+        _service(root, corpus_db=_resolve_corpus_db(root, corpus_db))
         .draft_conversation_turn(run_id, revision_id, candidate_path=candidate_path)
         .model_dump_json()
     )
@@ -1240,6 +1275,8 @@ def draft_conversation_turn(
 @app.command("scenario")
 def scenario_command(
     root: Path = typer.Option(Path(".forecast")),
+    corpus_db: Path | None = typer.Option(None),
+    candidate_path: Path | None = typer.Option(None),
     run_id: str | None = typer.Option(None),
     revision_id: str = typer.Option("r1"),
     domain_pack: str | None = typer.Option(None),
@@ -1248,7 +1285,7 @@ def scenario_command(
     parsed_prompt, prompt_body = _parse_scenario_prompt(prompt)
     resolved_domain_pack = domain_pack or _infer_domain_pack_from_prompt(prompt_body)
     resolved_run_id = run_id or _auto_run_id_for_prompt(prompt_body, pack_slug=resolved_domain_pack)
-    service = _service(root)
+    service = _service(root, corpus_db=_resolve_corpus_db(root, corpus_db))
     repo = service.repository
     try:
         existing_run = repo.load_run_record(resolved_run_id)
@@ -1287,7 +1324,7 @@ def scenario_command(
 
     intake = IntakeDraft.model_validate(intake_payload)
     service.save_intake_draft(run_id=resolved_run_id, revision_id=revision_id, intake=intake)
-    turn = service.draft_conversation_turn(resolved_run_id, revision_id)
+    turn = service.draft_conversation_turn(resolved_run_id, revision_id, candidate_path=candidate_path)
     print(
         json.dumps(
             {
@@ -1377,7 +1414,7 @@ def run_adapter_action(
         except ValueError as exc:
             raise typer.BadParameter(str(exc), param_hint="objective_profile_name") from exc
 
-    service = _service(root, corpus_db=corpus_db)
+    service = _service(root, corpus_db=_resolve_corpus_db(root, corpus_db))
     try:
         result = service.run_adapter_action(
             run_id=run_id,

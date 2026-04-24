@@ -31,6 +31,17 @@ Example use in Claude Code:
 
 That command uses the repo’s `scenario-lab scenario` bootstrap, summarizes the inferred actors and next stage, and then stops for approval instead of silently running the whole workflow.
 
+## Evidence corpus
+
+Claude Code should use `.forecast/corpus.db` as the default local evidence corpus. When a run reaches evidence collection and no corpus exists yet, Claude should gather or save relevant evidence files under `.forecast/evidence-candidates/`, then use:
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+Only pass `--corpus-db <path>` when intentionally using a separate evidence database.
+
 ## Smoke the packaged bundle
 
 ```bash

@@ -60,6 +60,24 @@ Commande de projet dans Claude Code :
 /scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
 ```
 
+## Corpus de preuves
+
+Les brouillons de preuves utilisent par défaut la base SQLite locale `.forecast/corpus.db`. Si elle n'existe pas encore, enregistrez les fichiers de preuves pertinents dans `.forecast/evidence-candidates/`, puis exécutez :
+
+```bash
+scenario-lab ingest-directory --root .forecast --path .forecast/evidence-candidates --tag domain=interstate-crisis
+scenario-lab draft-evidence-packet --root .forecast --run-id <run-id> --revision-id r1
+```
+
+Vous pouvez aussi utiliser l'exécution d'adaptateur pour importer les fichiers recommandés :
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+Utilisez `--corpus-db <path>` uniquement si vous voulez une base de preuves séparée.
+
 ## Flux de travail et démonstration
 
 Une exécution normale suit ces phases :

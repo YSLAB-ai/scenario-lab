@@ -27,6 +27,8 @@ def test_adapter_install_docs_use_scenario_lab_branding_and_public_links() -> No
     assert "docs/quickstart.md" in claude_doc
     assert "docs/natural-language-workflow.md" in claude_doc
     assert "docs/demo-us-iran.md" in claude_doc
+    assert ".forecast/corpus.db" in codex_doc
+    assert ".forecast/corpus.db" in claude_doc
     assert codex_bundle_path.is_file()
     assert claude_bundle_path.is_file()
     assert "Scenario Lab" in codex_bundle

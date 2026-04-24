@@ -1088,7 +1088,7 @@ class WorkflowService:
                             "scenario-lab batch-ingest-recommended",
                             "Batch ingest recommended files",
                             "Ingest the highest-priority local files that cover missing evidence categories.",
-                            required_options=["corpus_db", "candidate_path"],
+                            required_options=["candidate_path"],
                         )
                     )
 
@@ -1097,7 +1097,6 @@ class WorkflowService:
                     "scenario-lab draft-evidence-packet",
                     "Draft evidence packet",
                     "Draft a grouped evidence packet from the current corpus and manifest-driven retrieval plan.",
-                    required_options=["corpus_db"] if self.corpus_registry is not None else [],
                 )
             )
             actions.append(

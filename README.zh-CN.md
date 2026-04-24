@@ -60,6 +60,24 @@ Claude Code 项目命令：
 /scenario how would a U.S.-Iran conflict at the Strait of Hormuz develop over the next 30 days
 ```
 
+## 证据语料库
+
+证据草稿默认使用本地 SQLite 数据库 `.forecast/corpus.db`。如果还没有语料库，请把相关证据文件保存到 `.forecast/evidence-candidates/`，然后运行：
+
+```bash
+scenario-lab ingest-directory --root .forecast --path .forecast/evidence-candidates --tag domain=interstate-crisis
+scenario-lab draft-evidence-packet --root .forecast --run-id <run-id> --revision-id r1
+```
+
+也可以让适配器运行时批量导入推荐文件：
+
+```bash
+scenario-lab run-adapter-action --root .forecast --candidate-path .forecast/evidence-candidates --run-id <run-id> --revision-id r1 --action batch-ingest-recommended
+scenario-lab run-adapter-action --root .forecast --run-id <run-id> --revision-id r1 --action draft-evidence-packet
+```
+
+只有在需要单独的证据数据库时才传入 `--corpus-db <path>`。
+
 ## 工作流和演示
 
 一次正常运行会经过这些阶段：
