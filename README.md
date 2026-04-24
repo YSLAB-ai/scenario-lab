@@ -131,13 +131,13 @@ Verified deeper `U.S.-Iran` example:
 - leading scenario families:
   - `Allies push talks, then a tense stalemate.`
     Engine label: `Alliance consultation -> settlement-stalemate`
-    Plain-English reading: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
+    In short: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
   - `Warnings increase, then a tense stalemate.`
     Engine label: `Signal resolve -> settlement-stalemate`
-    Plain-English reading: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
+    In short: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
   - `Talks stay open, then a tense stalemate.`
     Engine label: `Open negotiation -> settlement-stalemate`
-    Plain-English reading: diplomacy remains available, but it does not fully resolve the crisis in this run.
+    In short: diplomacy remains available, but it does not fully resolve the crisis in this run.
 - inferred third-party actor pressures from the approved evidence and assumptions:
   - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
   - `Israel`: `domestic_sensitivity=0.73`, `reputational_sensitivity=0.55`

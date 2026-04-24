@@ -232,13 +232,13 @@ Exact observed scenario-family ranking:
 
 1. `Allies push talks, then a tense stalemate.`
    Engine label: `Alliance consultation -> settlement-stalemate`
-   Plain-English reading: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
+   In short: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
 2. `Warnings increase, then a tense stalemate.`
    Engine label: `Signal resolve -> settlement-stalemate`
-   Plain-English reading: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
+   In short: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
 3. `Talks stay open, then a tense stalemate.`
    Engine label: `Open negotiation -> settlement-stalemate`
-   Plain-English reading: diplomacy remains available, but it does not fully resolve the crisis in this run.
+   In short: diplomacy remains available, but it does not fully resolve the crisis in this run.
 
 That means the engine slightly favored allied involvement and continued diplomacy over more warning signals or open negotiations, but the top of the ranking stayed tight rather than decisive.
 

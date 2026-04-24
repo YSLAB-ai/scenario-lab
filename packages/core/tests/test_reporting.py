@@ -200,8 +200,10 @@ def test_render_report_humanizes_interstate_crisis_branches_and_families() -> No
     assert "Engine label: Open negotiation" in report
     assert "Allies push talks, then a tense stalemate." in report
     assert "Engine label: Alliance consultation -> settlement-stalemate" in report
+    assert "In short: Outside powers pressure both sides to keep diplomacy open" in report
     assert "Warnings increase, then a tense stalemate." in report
     assert "Talks stay open, then a tense stalemate." in report
+    assert "Plain-English reading:" not in report
 
 
 def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> None:

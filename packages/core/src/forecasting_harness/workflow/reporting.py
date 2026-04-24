@@ -239,7 +239,7 @@ def render_report(
                 f"calibrated confidence: {_format_calibrated_confidence(family)}"
             )
             if explanation:
-                lines.append(f"  - Plain-English reading: {explanation}")
+                lines.append(f"  - In short: {explanation}")
 
     top_branch = _resolve_top_branch(branches, top_branches)
     if top_branch is not None:

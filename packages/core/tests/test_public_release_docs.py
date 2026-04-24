@@ -29,10 +29,12 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "Engine label: `Open negotiation`" in readme
     assert "Allies push talks, then a tense stalemate." in readme
     assert "Engine label: `Alliance consultation -> settlement-stalemate`" in readme
+    assert "In short: outside powers pressure both sides to keep diplomacy open" in readme
     assert "Warnings increase, then a tense stalemate." in readme
     assert "Engine label: `Signal resolve -> settlement-stalemate`" in readme
     assert "Talks stay open, then a tense stalemate." in readme
     assert "Engine label: `Open negotiation -> settlement-stalemate`" in readme
+    assert "Plain-English reading:" not in readme
     assert "does not model full-scale war as an explicit terminal outcome" in readme
     assert "the top three branches were very close together" in readme
     assert "it did not find a runaway winner" in readme
@@ -102,10 +104,12 @@ def test_public_docs_and_assets_exist() -> None:
     assert "Engine label: `Open negotiation`" in demo_doc
     assert "Allies push talks, then a tense stalemate." in demo_doc
     assert "Engine label: `Alliance consultation -> settlement-stalemate`" in demo_doc
+    assert "In short: outside powers pressure both sides to keep diplomacy open" in demo_doc
     assert "Warnings increase, then a tense stalemate." in demo_doc
     assert "Engine label: `Signal resolve -> settlement-stalemate`" in demo_doc
     assert "Talks stay open, then a tense stalemate." in demo_doc
     assert "Engine label: `Open negotiation -> settlement-stalemate`" in demo_doc
+    assert "Plain-English reading:" not in demo_doc
     assert "does not model full-scale war as an explicit terminal outcome" in demo_doc
     assert "the top of the ranking stayed tight rather than decisive" in demo_doc
     assert "PolyForm Noncommercial License 1.0.0" in limitations_doc
