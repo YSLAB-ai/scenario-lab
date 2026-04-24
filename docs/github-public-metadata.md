@@ -9,6 +9,13 @@
   - `scenario-analysis`
   - `forecasting`
   - `decision-support`
+  - `monte-carlo-simulation`
+  - `market-simulation`
+  - `market-forecasting`
+  - `stock-market`
+  - `stock-market-prediction`
+  - `risk-modeling`
+  - `geopolitical-risk`
   - `local-first`
   - `codex`
   - `claude`
@@ -16,4 +23,6 @@
   - `agent-tools`
 - Social preview asset prepared in-repo: `docs/assets/scenario-lab-social-preview.png`
 
-The live GitHub rename, description, homepage, and topics have been applied. The social preview asset is prepared in-repo for manual upload through the GitHub web settings page if needed.
+SEO positioning: the stock-market topic is included for discovery around stock-market prediction research, market-shock simulation, and scenario analysis. It is not financial advice, not a trading signal, and not a claim that Scenario Lab predicts stock prices or investment returns.
+
+The live GitHub rename, description, homepage, and topics should match this document. The social preview asset is prepared in-repo for manual upload through the GitHub web settings page if needed.

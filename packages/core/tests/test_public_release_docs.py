@@ -123,6 +123,9 @@ def test_public_docs_and_assets_exist() -> None:
     assert "financial losses" in limitations_doc
     assert "scenario-lab" in metadata_doc
     assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc
+    assert "stock-market-prediction" in metadata_doc
+    assert "stock-market prediction research" in metadata_doc
+    assert "not financial advice" in metadata_doc
     assert "How To Improve A Domain Pack" in enrichment_doc
     assert "compile-revision-knowledge" in enrichment_doc
     assert "compile-replay-knowledge" in enrichment_doc
