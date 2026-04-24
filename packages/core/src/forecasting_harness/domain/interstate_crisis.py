@@ -68,6 +68,15 @@ def _normalized_weights(*values: float) -> list[float]:
     return [value / total for value in safe_values]
 
 
+def _canonical_focus_entity(entity: str) -> str:
+    normalized = " ".join(entity.strip().lower().replace(".", "").replace("-", " ").split())
+    if normalized in {"us", "u s", "usa", "united states", "united states of america"}:
+        return "united-states"
+    if normalized == "iran":
+        return "iran"
+    return normalized
+
+
 class InterstateCrisisPack(DomainPack):
     PHASES = [
         "trigger",
@@ -98,7 +107,8 @@ class InterstateCrisisPack(DomainPack):
         return issues
 
     def suggest_related_actors(self, intake: IntakeDraft) -> list[str]:
-        if set(intake.focus_entities) == {"US", "Iran"}:
+        focus_entities = {_canonical_focus_entity(entity) for entity in intake.focus_entities}
+        if focus_entities == {"united-states", "iran"}:
             return ["China", "Israel", "Gulf States", "Russia"]
         return []
 

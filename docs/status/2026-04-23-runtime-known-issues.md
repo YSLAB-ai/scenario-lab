@@ -11,8 +11,8 @@ This note records the remaining verified runtime issues after the 2026-04-23 pri
   - Implication: replay confidence is a deterministic regression signal, not validated real-world forecast skill.
 
 - `interstate-crisis` still encodes a narrow related-actor heuristic.
-  - Verified in [packages/core/src/forecasting_harness/domain/interstate_crisis.py](../../packages/core/src/forecasting_harness/domain/interstate_crisis.py): `suggest_related_actors()` only special-cases `{"US", "Iran"}` and otherwise returns an empty list.
-  - Implication: many real crisis runs still need manual suggested-entity enrichment.
+  - Verified in [packages/core/src/forecasting_harness/domain/interstate_crisis.py](../../packages/core/src/forecasting_harness/domain/interstate_crisis.py): `suggest_related_actors()` special-cases the U.S.-Iran frame, including common `US` / `United States` aliases, and otherwise returns an empty list.
+  - Implication: many non-U.S.-Iran crisis runs still need manual suggested-entity enrichment.
 
 - `interstate-crisis` still forces a bilateral focal frame.
   - Verified in [packages/core/src/forecasting_harness/domain/interstate_crisis.py](../../packages/core/src/forecasting_harness/domain/interstate_crisis.py): `validate_intake()` requires exactly two `focus_entities`.

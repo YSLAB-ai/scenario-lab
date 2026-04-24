@@ -68,7 +68,7 @@ def test_builtin_replay_suite_and_calibration_summary_are_structured(tmp_path: P
     assert summary.overall_top_branch_accuracy == 1.0
     assert summary.overall_root_strategy_accuracy == 1.0
     assert summary.overall_evidence_source_accuracy == 0.895
-    assert summary.domains_needing_attention == []
+    assert summary.domains_needing_attention == ["election-shock", "interstate-crisis"]
     assert {item.run_id for item in summary.attention_items} == {"south-africa-gnu-2024", "taiwan-drills-2022"}
     assert summary.failure_type_counts == {"evidence_source_mismatch": 2}
     assert summary.historically_anchored_case_count == 28
@@ -93,7 +93,7 @@ def test_builtin_replay_cli_commands_emit_structured_payloads(tmp_path: Path) ->
     assert summary_result.exit_code == 0
     summary_payload = CalibrationSummary.model_validate_json(summary_result.stdout)
     assert summary_payload.case_count == 40
-    assert summary_payload.domains_needing_attention == []
+    assert summary_payload.domains_needing_attention == ["election-shock", "interstate-crisis"]
     assert summary_payload.historically_anchored_case_count == 28
     assert summary_payload.overall_evidence_source_accuracy == 0.895
     assert summary_payload.failure_type_counts == {"evidence_source_mismatch": 2}

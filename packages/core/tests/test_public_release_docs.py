@@ -21,18 +21,19 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "Required Notice: Copyright Heuristic Search Group LLC" in readme
     assert "not a prediction product" in readme
     assert "financial losses" in readme
-    assert "No full-scale war; allies step in and talks stay alive." in readme
+    assert "No major escalation; allies push talks, then a tense stalemate." in readme
     assert "Engine label: `Alliance consultation (coordinated signaling)`" in readme
-    assert "More warning signals, but still no break into war." in readme
+    assert "Warnings increase, then a tense stalemate." in readme
     assert "Engine label: `Signal resolve (managed signal)`" in readme
-    assert "Negotiations remain on the table." in readme
+    assert "Talks stay open, but the crisis remains unresolved." in readme
     assert "Engine label: `Open negotiation`" in readme
-    assert "Allies step in, then the crisis freezes into a tense stalemate." in readme
+    assert "Allies push talks, then a tense stalemate." in readme
     assert "Engine label: `Alliance consultation -> settlement-stalemate`" in readme
-    assert "Both sides trade warnings, then the crisis freezes into a tense stalemate." in readme
+    assert "Warnings increase, then a tense stalemate." in readme
     assert "Engine label: `Signal resolve -> settlement-stalemate`" in readme
-    assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in readme
+    assert "Talks stay open, then a tense stalemate." in readme
     assert "Engine label: `Open negotiation -> settlement-stalemate`" in readme
+    assert "does not model full-scale war as an explicit terminal outcome" in readme
     assert "the top three branches were very close together" in readme
     assert "it did not find a runaway winner" in readme
     assert "third-party actors carried into the run" in readme
@@ -52,11 +53,11 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "## Actual runtime phases" in workflow
     assert "batch-ingest-recommended" in workflow
     assert "intake -> evidence -> approval -> simulation -> report" in workflow
-    assert "No full-scale war; allies step in and talks stay alive." in workflow
+    assert "No major escalation; allies push talks, then a tense stalemate." in workflow
     assert "Engine label: `Alliance consultation (coordinated signaling)`" in workflow
-    assert "More warning signals, but still no break into war." in workflow
+    assert "Warnings increase, then a tense stalemate." in workflow
     assert "Engine label: `Signal resolve (managed signal)`" in workflow
-    assert "Negotiations remain on the table." in workflow
+    assert "Talks stay open, but the crisis remains unresolved." in workflow
     assert "Engine label: `Open negotiation`" in workflow
     assert "The top three scores stayed very close together" in workflow
     assert "the engine did not find a runaway winner" in workflow
@@ -93,18 +94,19 @@ def test_public_docs_and_assets_exist() -> None:
     assert "run-adapter-action" in demo_doc
     assert "<json-for-one-evidence-item>" not in demo_doc
     assert "AP Apr. 23, 2026: U.S. threat posture around Hormuz shipping attacks" in demo_doc
-    assert "No full-scale war; allies step in and talks stay alive." in demo_doc
+    assert "No major escalation; allies push talks, then a tense stalemate." in demo_doc
     assert "Engine label: `Alliance consultation (coordinated signaling)`" in demo_doc
-    assert "More warning signals, but still no break into war." in demo_doc
+    assert "Warnings increase, then a tense stalemate." in demo_doc
     assert "Engine label: `Signal resolve (managed signal)`" in demo_doc
-    assert "Negotiations remain on the table." in demo_doc
+    assert "Talks stay open, but the crisis remains unresolved." in demo_doc
     assert "Engine label: `Open negotiation`" in demo_doc
-    assert "Allies step in, then the crisis freezes into a tense stalemate." in demo_doc
+    assert "Allies push talks, then a tense stalemate." in demo_doc
     assert "Engine label: `Alliance consultation -> settlement-stalemate`" in demo_doc
-    assert "Both sides trade warnings, then the crisis freezes into a tense stalemate." in demo_doc
+    assert "Warnings increase, then a tense stalemate." in demo_doc
     assert "Engine label: `Signal resolve -> settlement-stalemate`" in demo_doc
-    assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in demo_doc
+    assert "Talks stay open, then a tense stalemate." in demo_doc
     assert "Engine label: `Open negotiation -> settlement-stalemate`" in demo_doc
+    assert "does not model full-scale war as an explicit terminal outcome" in demo_doc
     assert "the top of the ranking stayed tight rather than decisive" in demo_doc
     assert "PolyForm Noncommercial License 1.0.0" in limitations_doc
     assert "Required Notice: Copyright Heuristic Search Group LLC" in limitations_doc

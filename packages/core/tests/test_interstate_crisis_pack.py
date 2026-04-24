@@ -74,6 +74,21 @@ def test_pack_suggests_relevant_third_parties_for_us_iran_case() -> None:
     assert "China" in suggestions
 
 
+def test_pack_suggests_relevant_third_parties_for_united_states_iran_case() -> None:
+    pack = InterstateCrisisPack()
+    intake = IntakeDraft(
+        event_framing="Assess escalation",
+        primary_actors=["United States", "Iran"],
+        trigger="Exchange of strikes",
+        current_phase="trigger",
+        time_horizon="30d",
+    )
+
+    suggestions = pack.suggest_related_actors(intake)
+
+    assert suggestions == ["China", "Israel", "Gulf States", "Russia"]
+
+
 def test_pack_exposes_domain_specific_retrieval_filters() -> None:
     pack = InterstateCrisisPack()
     intake = IntakeDraft(

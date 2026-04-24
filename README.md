@@ -116,26 +116,28 @@ Verified deeper `U.S.-Iran` example:
   - iterations: `10000`
   - node count: `133`
   - transposition hits: `111`
+- model boundary:
+  - the current `interstate-crisis` pack models bounded crisis paths through signaling, limited response, escalation pressure, negotiation, and stalemate. It does not model full-scale war as an explicit terminal outcome.
 - top ranked scenarios:
-  1. `No full-scale war; allies step in and talks stay alive.` with score `0.289`
+  1. `No major escalation; allies push talks, then a tense stalemate.` with score `0.289`
      Engine label: `Alliance consultation (coordinated signaling)`
-     What this means: outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war.
-  2. `More warning signals, but still no break into war.` with score `0.289`
+     What this means: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
+  2. `Warnings increase, then a tense stalemate.` with score `0.289`
      Engine label: `Signal resolve (managed signal)`
-     What this means: Washington and Tehran trade warnings, but neither side fully breaks into a larger war.
-  3. `Negotiations remain on the table.` with score `0.287`
+     What this means: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
+  3. `Talks stay open, but the crisis remains unresolved.` with score `0.287`
      Engine label: `Open negotiation`
-     What this means: talks stay possible, but this run gives a slight edge to the pressure-heavy paths above.
+     What this means: diplomacy remains available, but it does not fully resolve the crisis in this run.
 - leading scenario families:
-  - `Allies step in, then the crisis freezes into a tense stalemate.`
+  - `Allies push talks, then a tense stalemate.`
     Engine label: `Alliance consultation -> settlement-stalemate`
-    Plain-English reading: outside powers get more involved, but the crisis still settles into an uneasy stalemate instead of a wider war.
-  - `Both sides trade warnings, then the crisis freezes into a tense stalemate.`
+    Plain-English reading: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
+  - `Warnings increase, then a tense stalemate.`
     Engine label: `Signal resolve -> settlement-stalemate`
-    Plain-English reading: pressure rises on both sides, but the crisis still stops short of a larger war.
-  - `Negotiations stay open, then the crisis freezes into a tense stalemate.`
+    Plain-English reading: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
+  - `Talks stay open, then a tense stalemate.`
     Engine label: `Open negotiation -> settlement-stalemate`
-    Plain-English reading: talks remain possible, but they do not fully resolve the crisis in this run.
+    Plain-English reading: diplomacy remains available, but it does not fully resolve the crisis in this run.
 - inferred third-party actor pressures from the approved evidence and assumptions:
   - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`
   - `Israel`: `domestic_sensitivity=0.73`, `reputational_sensitivity=0.55`
@@ -145,7 +147,7 @@ Verified deeper `U.S.-Iran` example:
 - report path from the rechecked run:
   - `/tmp/scenario-lab-us-iran-deeper-main/run/runs/us-iran-deeper/reports/r1.report.md`
 
-In that verified `U.S.-Iran` run, **no full-scale war; allies step in and talks stay alive** ranked first, but the top three branches were very close together. The engine slightly favored that path over more warning signals or open negotiations; it did not find a runaway winner. Engine label: `Alliance consultation (coordinated signaling)`
+In that verified `U.S.-Iran` run, **no major escalation; allies push talks, then a tense stalemate** ranked first, but the top three branches were very close together. The engine slightly favored allied pressure over more warning signals or direct open negotiations; it did not find a runaway winner. Engine label: `Alliance consultation (coordinated signaling)`
 
 The shorter phase-by-phase workflow notes are in [docs/natural-language-workflow.md](docs/natural-language-workflow.md).
 

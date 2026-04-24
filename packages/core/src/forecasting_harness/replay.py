@@ -457,6 +457,7 @@ def summarize_calibration(result: ReplaySuiteResult, *, attention_threshold: flo
         if (
             float(metrics.get("top_branch_accuracy", 0.0)) < attention_threshold
             or float(metrics.get("root_strategy_accuracy", 0.0)) < attention_threshold
+            or float(metrics.get("evidence_source_accuracy", 0.0)) < attention_threshold
             or float(metrics.get("average_inferred_field_coverage", 0.0)) < attention_threshold
         ):
             domains_needing_attention.append(domain_pack)

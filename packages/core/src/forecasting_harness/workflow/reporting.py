@@ -5,16 +5,17 @@ from forecasting_harness.query_api import summarize_scenario_families, summarize
 
 _INTERSTATE_BRANCH_SUMMARIES: dict[str, tuple[str, str]] = {
     "Alliance consultation (coordinated signaling)": (
-        "No full-scale war; allies step in and talks stay alive.",
-        "Outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war.",
+        "No major escalation; allies push talks, then a tense stalemate.",
+        "Outside powers pressure both sides to keep diplomacy open; the run ends in an "
+        "uneasy stalemate, not a settlement.",
     ),
     "Signal resolve (managed signal)": (
-        "More warning signals, but still no break into war.",
-        "Washington and Tehran trade warnings, but neither side fully breaks into a larger war.",
+        "Warnings increase, then a tense stalemate.",
+        "Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.",
     ),
     "Open negotiation": (
-        "Negotiations remain on the table.",
-        "Talks stay possible, but this run gives a slight edge to the pressure-heavy paths above.",
+        "Talks stay open, but the crisis remains unresolved.",
+        "Diplomacy remains available, but it does not fully resolve the crisis in this run.",
     ),
 }
 
@@ -23,23 +24,33 @@ _INTERSTATE_FAMILY_SUMMARIES: dict[tuple[str, str], tuple[str, str]] = {
         "Alliance consultation",
         "settlement-stalemate",
     ): (
-        "Allies step in, then the crisis freezes into a tense stalemate.",
-        "Outside powers get more involved, but the crisis still settles into an uneasy stalemate instead of a wider war.",
+        "Allies push talks, then a tense stalemate.",
+        "Outside powers pressure both sides to keep diplomacy open; the run ends in an "
+        "uneasy stalemate, not a settlement.",
     ),
     (
         "Signal resolve",
         "settlement-stalemate",
     ): (
-        "Both sides trade warnings, then the crisis freezes into a tense stalemate.",
-        "Pressure rises on both sides, but the crisis still stops short of a larger war.",
+        "Warnings increase, then a tense stalemate.",
+        "Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.",
     ),
     (
         "Open negotiation",
         "settlement-stalemate",
     ): (
-        "Negotiations stay open, then the crisis freezes into a tense stalemate.",
-        "Talks remain possible, but they do not fully resolve the crisis in this run.",
+        "Talks stay open, then a tense stalemate.",
+        "Diplomacy remains available, but it does not fully resolve the crisis in this run.",
     ),
+}
+
+
+_MODEL_BOUNDARY_NOTES: dict[str, str] = {
+    "interstate-crisis": (
+        "This pack models bounded interstate-crisis paths: signaling, limited response, "
+        "escalation pressure, negotiation, and stalemate. It does not model full-scale "
+        "war as an explicit terminal outcome."
+    )
 }
 
 
@@ -159,6 +170,13 @@ def _humanized_family_summary(
     return raw_label, None, raw_label
 
 
+def _model_boundary_lines(domain_pack: str | None) -> list[str]:
+    note = _MODEL_BOUNDARY_NOTES.get(domain_pack or "")
+    if note is None:
+        return []
+    return ["", "## Model Boundary", f"- {note}"]
+
+
 def render_report(
     *,
     revision_id: str,
@@ -185,6 +203,7 @@ def render_report(
         "",
         "## Aggregation Lens",
         *_aggregation_lens_lines(simulation),
+        *_model_boundary_lines(domain_pack),
         "",
         "## Top Branches",
     ]

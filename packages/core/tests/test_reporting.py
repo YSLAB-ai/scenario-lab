@@ -190,17 +190,18 @@ def test_render_report_humanizes_interstate_crisis_branches_and_families() -> No
         unsupported_count=5,
     )
 
-    assert "No full-scale war; allies step in and talks stay alive." in report
+    assert "This pack models bounded interstate-crisis paths" in report
+    assert "No major escalation; allies push talks, then a tense stalemate." in report
     assert "Engine label: Alliance consultation (coordinated signaling)" in report
-    assert "Why it ranks high: Outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war." in report
-    assert "More warning signals, but still no break into war." in report
+    assert "Why it ranks high: Outside powers pressure both sides to keep diplomacy open" in report
+    assert "Warnings increase, then a tense stalemate." in report
     assert "Engine label: Signal resolve (managed signal)" in report
-    assert "Negotiations remain on the table." in report
+    assert "Talks stay open, but the crisis remains unresolved." in report
     assert "Engine label: Open negotiation" in report
-    assert "Allies step in, then the crisis freezes into a tense stalemate." in report
+    assert "Allies push talks, then a tense stalemate." in report
     assert "Engine label: Alliance consultation -> settlement-stalemate" in report
-    assert "Both sides trade warnings, then the crisis freezes into a tense stalemate." in report
-    assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in report
+    assert "Warnings increase, then a tense stalemate." in report
+    assert "Talks stay open, then a tense stalemate." in report
 
 
 def test_render_report_top_branch_detail_matches_sorted_top_branch_list() -> None:

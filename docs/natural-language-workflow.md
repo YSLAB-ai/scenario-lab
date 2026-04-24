@@ -45,16 +45,18 @@ This phase sequence was rechecked on a verified `U.S.-Iran` run in [docs/demo-us
   - `iterations = 10000`
   - `node_count = 133`
   - `transposition_hits = 111`
+- model boundary:
+  - the current `interstate-crisis` pack models bounded crisis paths through signaling, limited response, escalation pressure, negotiation, and stalemate. It does not model full-scale war as an explicit terminal outcome.
 - verified top scenario ranking:
-  1. `No full-scale war; allies step in and talks stay alive.` at `0.289`
+  1. `No major escalation; allies push talks, then a tense stalemate.` at `0.289`
      Engine label: `Alliance consultation (coordinated signaling)`
-     What this means: outside powers put pressure on both sides, while diplomacy stays alive long enough to avoid a wider war.
-  2. `More warning signals, but still no break into war.` at `0.289`
+     What this means: outside powers pressure both sides to keep diplomacy open; the run ends in an uneasy stalemate, not a settlement.
+  2. `Warnings increase, then a tense stalemate.` at `0.289`
      Engine label: `Signal resolve (managed signal)`
-     What this means: Washington and Tehran trade warnings, but neither side fully breaks into a larger war.
-  3. `Negotiations remain on the table.` at `0.287`
+     What this means: Washington and Tehran keep signaling resolve, but the branch still ends in a contained stalemate.
+  3. `Talks stay open, but the crisis remains unresolved.` at `0.287`
      Engine label: `Open negotiation`
-     What this means: talks stay possible, but this run gives a slight edge to the pressure-heavy paths above.
+     What this means: diplomacy remains available, but it does not fully resolve the crisis in this run.
   The top three scores stayed very close together, so the ranking was tight rather than decisive and the engine did not find a runaway winner.
 - verified third-party actor pressures:
   - `China`: `domestic_sensitivity=0.62`, `negotiation_openness=0.75`

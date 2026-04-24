@@ -1101,9 +1101,10 @@ def test_generate_report_uses_run_domain_pack_for_humanized_interstate_language(
         unsupported_count=5,
     )
 
-    assert "No full-scale war; allies step in and talks stay alive." in report
+    assert "This pack models bounded interstate-crisis paths" in report
+    assert "No major escalation; allies push talks, then a tense stalemate." in report
     assert "Engine label: Alliance consultation (coordinated signaling)" in report
-    assert "Negotiations stay open, then the crisis freezes into a tense stalemate." in report
+    assert "Talks stay open, then a tense stalemate." in report
 
 
 def test_draft_evidence_packet_from_corpus_persists_a_revision_draft(tmp_path: Path) -> None:

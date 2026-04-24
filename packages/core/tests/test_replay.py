@@ -256,6 +256,40 @@ def test_calibration_summary_surfaces_attention_items_for_missed_cases(tmp_path:
     assert summary.domains_needing_attention == ["company-action"]
 
 
+def test_calibration_summary_flags_domains_with_only_evidence_source_misses() -> None:
+    result = ReplaySuiteResult(
+        case_count=1,
+        top_branch_accuracy=1.0,
+        root_strategy_accuracy=1.0,
+        evidence_source_accuracy=0.0,
+        average_inferred_field_coverage=1.0,
+        domain_breakdown={
+            "company-action": {
+                "count": 1,
+                "top_branch_accuracy": 1.0,
+                "root_strategy_accuracy": 1.0,
+                "evidence_source_accuracy": 0.0,
+                "average_inferred_field_coverage": 1.0,
+            }
+        },
+        results=[
+            ReplayCaseResult(
+                run_id="source-miss",
+                domain_pack="company-action",
+                top_branch_match=True,
+                root_strategy_match=True,
+                evidence_source_match=False,
+                inferred_field_coverage=1.0,
+            )
+        ],
+    )
+
+    summary = summarize_calibration(result, attention_threshold=0.85)
+
+    assert summary.failure_type_counts == {"evidence_source_mismatch": 1}
+    assert summary.domains_needing_attention == ["company-action"]
+
+
 def test_summarize_calibration_includes_replay_backed_confidence_profiles() -> None:
     result = ReplaySuiteResult(
         case_count=3,
