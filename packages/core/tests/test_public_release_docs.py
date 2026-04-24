@@ -1,6 +1,13 @@
 from pathlib import Path
 
 
+LANGUAGE_SWITCHER = (
+    "🌐 Languages: [English](README.md) | [中文](README.zh-CN.md) | "
+    "[Español](README.es.md) | [Français](README.fr.md) | "
+    "[한국어](README.ko.md) | [日本語](README.ja.md)"
+)
+
+
 def test_public_readme_is_scenario_lab_landing_page() -> None:
     root = Path(__file__).resolve().parents[3]
     readme = (root / "README.md").read_text(encoding="utf-8")
@@ -16,6 +23,7 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     )
 
     assert readme.startswith("# Scenario Lab")
+    assert LANGUAGE_SWITCHER in readme
     assert "U.S.-Iran" in readme
     assert "scenario-lab demo-run --root .forecast" in readme
     assert "Monte Carlo tree search" in readme
@@ -145,3 +153,25 @@ def test_public_docs_and_assets_exist() -> None:
     assert "YSLAB-ai" in contributors_doc
     assert "OpenAI Codex" in contributors_doc
     assert "AI coding agent" in contributors_doc
+
+
+def test_multilingual_readmes_exist_and_link_to_canonical_english_readme() -> None:
+    root = Path(__file__).resolve().parents[3]
+    localized_readmes = {
+        "README.zh-CN.md": "中文",
+        "README.es.md": "Español",
+        "README.fr.md": "Français",
+        "README.ko.md": "한국어",
+        "README.ja.md": "日本語",
+    }
+
+    for filename, language_name in localized_readmes.items():
+        content = (root / filename).read_text(encoding="utf-8")
+        assert content.startswith("# Scenario Lab")
+        assert LANGUAGE_SWITCHER in content
+        assert language_name in content
+        assert "English README is canonical" in content
+        assert "v0.1.0" in content
+        assert "PolyForm Noncommercial License 1.0.0" in content
+        assert "not financial advice" in content
+        assert "[CONTRIBUTORS.md](CONTRIBUTORS.md)" in content

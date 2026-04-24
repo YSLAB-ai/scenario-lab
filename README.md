@@ -1,5 +1,7 @@
 # Scenario Lab
 
+🌐 Languages: [English](README.md) | [中文](README.zh-CN.md) | [Español](README.es.md) | [Français](README.fr.md) | [한국어](README.ko.md) | [日本語](README.ja.md)
+
 > Experimental preview: Monte Carlo simulation for real-world events you can run locally with Codex or Claude.
 
 Scenario Lab is a Monte Carlo simulation engine for real-world events such as regional conflict, markets, politics, and company decision-making.
