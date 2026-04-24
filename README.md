@@ -201,15 +201,11 @@ The current limitations are documented in [docs/limitations.md](docs/limitations
 
 ## License And Disclaimer
 
-Scenario Lab is source-available software under the [PolyForm Noncommercial License 1.0.0](LICENSE). That means the public repo is for noncommercial use under the license terms, not for commercial deployment or resale.
-
-The license permits noncommercial uses such as personal research, experiment, testing, study, and other qualifying noncommercial uses described in the license. Commercial use is not permitted under the public repository license.
-
-Required Notice: Copyright Heuristic Search Group LLC
+Scenario Lab is released under the [MIT License](LICENSE).
 
 This repository is provided for experimental, educational, and research use. It is not a prediction product, not a guarantee of future events, and not a substitute for professional judgment or operational decision-making.
 
-The software is provided `as is`, without warranty. As far as the law allows, Heuristic Search Group LLC is not liable for financial losses, trading losses, operational losses, or other damages arising from use of the software. See [LICENSE](LICENSE), [NOTICE](NOTICE), and [docs/limitations.md](docs/limitations.md) for the current public terms and limits.
+The software is provided `as is`, without warranty, under the terms of the MIT License. See [LICENSE](LICENSE) and [docs/limitations.md](docs/limitations.md) for the current public terms and limits.
 
 ## Others
 
@@ -221,7 +217,7 @@ Other useful entry points:
 - domain-pack enrichment guide: [docs/domain-pack-enrichment.md](docs/domain-pack-enrichment.md)
 - current limitations: [docs/limitations.md](docs/limitations.md)
 - contributors: [CONTRIBUTORS.md](CONTRIBUTORS.md)
-- license and notice: [LICENSE](LICENSE), [NOTICE](NOTICE)
+- license: [LICENSE](LICENSE)
 - preview summary: [docs/release-notes/public-preview.md](docs/release-notes/public-preview.md)
 
 If you want the smallest runnable surface instead of the higher-level interactive workflow, use the built-in demo and inspect the generated files:

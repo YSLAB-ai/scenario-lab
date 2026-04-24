@@ -114,13 +114,11 @@ AI 에이전트가 얇은 도메인 팩을 개선하게 하려면 [docs/domain-p
 
 ## 라이선스와 면책
 
-Scenario Lab은 [PolyForm Noncommercial License 1.0.0](LICENSE)로 제공됩니다. 공개 저장소는 비상업적 사용을 위한 것이며 상업적 배포나 재판매에는 사용할 수 없습니다.
-
-Required Notice: Copyright Heuristic Search Group LLC
+Scenario Lab은 [MIT License](LICENSE)로 배포됩니다.
 
 이 저장소는 실험, 교육, 연구 용도입니다. 예측 제품이 아니며 미래 사건을 보장하지 않고 전문적 판단, 투자 판단, 운영 의사결정을 대체하지 않습니다. 금융 조언이 아닙니다.
 
-소프트웨어는 `as is`로 제공되며 보증이 없습니다. 법이 허용하는 범위에서 Heuristic Search Group LLC는 금융 손실, 거래 손실, 운영 손실 또는 기타 손해에 대해 책임지지 않습니다. [LICENSE](LICENSE), [NOTICE](NOTICE), [docs/limitations.md](docs/limitations.md)를 확인하세요.
+소프트웨어는 `as is`로 제공되며 보증이 없고 MIT License 조건을 따릅니다. [LICENSE](LICENSE)와 [docs/limitations.md](docs/limitations.md)를 확인하세요.
 
 ## 기타 링크
 

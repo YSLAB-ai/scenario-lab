@@ -114,13 +114,11 @@ Voir [docs/limitations.md](docs/limitations.md).
 
 ## Licence et avertissement
 
-Scenario Lab est publié sous [PolyForm Noncommercial License 1.0.0](LICENSE). Le dépôt public est réservé aux usages non commerciaux, sans déploiement commercial ni revente.
-
-Required Notice: Copyright Heuristic Search Group LLC
+Scenario Lab est publié sous la [MIT License](LICENSE).
 
 Ce dépôt est destiné à l'expérimentation, à l'éducation et à la recherche. Ce n'est pas un produit prédictif, il ne garantit aucun événement futur et ne remplace pas le jugement professionnel, les décisions d'investissement ou les décisions opérationnelles. Il ne constitue pas un conseil financier.
 
-Le logiciel est fourni `as is`, sans garantie. Dans la mesure permise par la loi, Heuristic Search Group LLC n'est pas responsable des pertes financières, pertes de trading, pertes opérationnelles ou autres dommages. Consultez [LICENSE](LICENSE), [NOTICE](NOTICE) et [docs/limitations.md](docs/limitations.md).
+Le logiciel est fourni `as is`, sans garantie, selon les termes de la MIT License. Consultez [LICENSE](LICENSE) et [docs/limitations.md](docs/limitations.md).
 
 ## Autres liens
 

@@ -12,9 +12,6 @@
 
 ## License and use limits
 
-- The public repository is licensed under `PolyForm Noncommercial License 1.0.0`.
-- The public repo is for noncommercial use under that license. Commercial use is not permitted under the public repository license.
-- The license permits noncommercial uses such as personal research, experiment, testing, study, and other qualifying noncommercial uses described in [LICENSE](../LICENSE).
-- `Required Notice: Copyright Heuristic Search Group LLC`
+- The public repository is licensed under the `MIT License`.
 - Scenario Lab is provided for experimental, educational, and research use. It is not a prediction product or a substitute for professional judgment.
-- The software is provided `as is`, without warranty. As far as the law allows, Heuristic Search Group LLC is not liable for financial losses, trading losses, operational losses, or other damages arising from use of the software.
+- The software is provided `as is`, without warranty, under the terms of the [MIT License](../LICENSE).

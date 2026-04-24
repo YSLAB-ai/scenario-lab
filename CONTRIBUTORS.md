@@ -13,5 +13,4 @@ Public release commits should use a GitHub-linked author email so GitHub can att
 
 ## Notes
 
-- `Heuristic Search Group LLC` is listed in [NOTICE](NOTICE) as the copyright holder for the public repository notice.
 - Contributor credits describe project participation and do not change the license terms in [LICENSE](LICENSE).

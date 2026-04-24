@@ -32,10 +32,11 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "Version: `v0.1.0`" in readme
     assert "[CONTRIBUTORS.md](CONTRIBUTORS.md)" in readme
     assert "## License And Disclaimer" in readme
-    assert "PolyForm Noncommercial License 1.0.0" in readme
-    assert "Required Notice: Copyright Heuristic Search Group LLC" in readme
+    assert "MIT License" in readme
+    assert "PolyForm" not in readme
+    assert "Noncommercial" not in readme
+    assert "Heuristic Search Group LLC" not in readme
     assert "not a prediction product" in readme
-    assert "financial losses" in readme
     assert "No major escalation; allies push talks, then a tense stalemate." in readme
     assert "Engine label: `Alliance consultation (coordinated signaling)`" in readme
     assert "Warnings increase, then a tense stalemate." in readme
@@ -63,7 +64,6 @@ def test_public_readme_is_scenario_lab_landing_page() -> None:
     assert "[docs/domain-pack-enrichment.md](docs/domain-pack-enrichment.md)" in readme
     assert "[docs/limitations.md](docs/limitations.md)" in readme
     assert "[LICENSE](LICENSE)" in readme
-    assert "[NOTICE](NOTICE)" in readme
     assert "docs/assets/scenario-lab-workflow.png" in readme
     assert "docs/assets/scenario-lab-runtime-workflow.png" in readme
     assert "/Volumes/" not in readme
@@ -109,7 +109,7 @@ def test_public_docs_and_assets_exist() -> None:
     assert (root / "docs" / "domain-pack-enrichment.md").is_file()
     assert (root / "docs" / "limitations.md").is_file()
     assert (root / "LICENSE").is_file()
-    assert (root / "NOTICE").is_file()
+    assert not (root / "NOTICE").exists()
     assert (root / "CONTRIBUTORS.md").is_file()
     assert (root / "docs" / "release-notes" / "public-preview.md").is_file()
     assert (root / "docs" / "github-public-metadata.md").is_file()
@@ -139,10 +139,11 @@ def test_public_docs_and_assets_exist() -> None:
     assert "Plain-English reading:" not in demo_doc
     assert "does not model full-scale war as an explicit terminal outcome" in demo_doc
     assert "the top of the ranking stayed tight rather than decisive" in demo_doc
-    assert "PolyForm Noncommercial License 1.0.0" in limitations_doc
-    assert "Required Notice: Copyright Heuristic Search Group LLC" in limitations_doc
+    assert "MIT License" in limitations_doc
+    assert "PolyForm" not in limitations_doc
+    assert "Noncommercial" not in limitations_doc
+    assert "Heuristic Search Group LLC" not in limitations_doc
     assert "not a prediction product" in limitations_doc
-    assert "financial losses" in limitations_doc
     assert "scenario-lab" in metadata_doc
     assert "github.com/YSLAB-ai/scenario-lab" in metadata_doc
     assert "stock-market-prediction" in metadata_doc
@@ -158,6 +159,7 @@ def test_public_docs_and_assets_exist() -> None:
     assert "YSLAB-ai" in contributors_doc
     assert "OpenAI Codex" in contributors_doc
     assert "AI coding agent" in contributors_doc
+    assert "Heuristic Search Group LLC" not in contributors_doc
 
 
 def test_multilingual_readmes_exist_and_link_to_canonical_english_readme() -> None:
@@ -224,7 +226,10 @@ def test_multilingual_readmes_exist_and_link_to_canonical_english_readme() -> No
         assert expected["language"] in content
         assert "English README is canonical" in content
         assert "v0.1.0" in content
-        assert "PolyForm Noncommercial License 1.0.0" in content
+        assert "MIT License" in content
+        assert "PolyForm" not in content
+        assert "Noncommercial" not in content
+        assert "Heuristic Search Group LLC" not in content
         assert expected["domain_pack"] in content
         assert expected["interstate_crisis"] in content
         assert expected["market_shock"] in content
