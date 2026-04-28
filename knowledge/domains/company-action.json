@@ -1,29 +1,33 @@
 {
   "slug": "company-action",
   "description": "Template for analyzing company strategic responses to crises, product issues, financing stress, or reputation shocks.",
-  "actor_categories": ["company", "board", "regulator", "creditors", "customers", "competitors"],
+  "actor_categories": ["company", "board", "regulator", "creditors", "customers", "competitors", "institutional investors", "short sellers", "options market"],
   "evidence_categories": ["financial resilience", "leadership behavior", "customer reaction", "regulatory pressure", "operational resilience"],
   "evidence_category_terms": {
-    "financial resilience": ["cash runway", "liquidity", "balance sheet", "leverage", "margin pressure", "cash preservation", "weak quarter"],
-    "leadership behavior": ["chief executive", "ceo", "management tone", "board response", "succession", "executive transition", "investor concern"],
-    "customer reaction": ["customer churn", "returns", "complaints", "demand response", "supplier reassurance", "customer reassurance"],
-    "regulatory pressure": ["enforcement", "investigation", "agency pressure", "consent order", "safety scrutiny", "regulatory scrutiny"],
-    "operational resilience": ["plant disruption", "supply continuity", "production recovery", "operations", "product delays", "delivery concerns", "roadmap credibility"]
+    "financial resilience": ["cash runway", "liquidity", "balance sheet", "leverage", "margin pressure", "cash preservation", "weak quarter", "earnings beat", "guidance miss", "guidance cut", "guide down", "below consensus", "gross margin", "revenue miss", "sell-through", "channel inventory", "inventory digestion"],
+    "leadership behavior": ["chief executive", "ceo", "management tone", "board response", "succession", "executive transition", "investor concern", "earnings call", "guidance raise", "beat and raise", "conservative guidance", "management credibility"],
+    "customer reaction": ["customer churn", "returns", "complaints", "demand response", "supplier reassurance", "customer reassurance", "installer", "homeowner", "subscriber", "subscriber growth", "monthly active users", "churn rate", "attach rate", "sell-through demand"],
+    "regulatory pressure": ["enforcement", "investigation", "agency pressure", "consent order", "safety scrutiny", "regulatory scrutiny", "tariff", "trade policy", "IRA", "Section 45X", "domestic manufacturing credit", "export control", "antidumping", "Section 301", "Section 201"],
+    "operational resilience": ["plant disruption", "supply continuity", "production recovery", "operations", "product delays", "delivery concerns", "roadmap credibility", "manufacturing geography", "contract manufacturer", "channel inventory", "supply chain", "battery attach", "microinverter", "inventory normalization"]
   },
   "key_state_fields": ["cash_runway_months", "brand_sentiment", "regulatory_pressure"],
   "canonical_stages": ["trigger", "board-response", "market-response", "restructuring", "resolution"],
-  "recommended_source_types": ["company filings", "earnings transcripts", "press releases", "enforcement notices", "industry analysis"],
+  "recommended_source_types": ["company filings", "earnings call transcripts", "press releases", "enforcement notices", "industry analysis", "sell-side analyst notes", "policy and regulatory filings", "competitor disclosures"],
   "starter_sources": [
     {"kind": "company filings", "description": "10-K, 10-Q, 8-K, annual report, investor presentation"},
     {"kind": "management communications", "description": "earnings calls, investor day remarks, public executive statements"},
-    {"kind": "market reaction", "description": "sell-side notes, major press coverage, customer or supplier disclosures"}
+    {"kind": "market reaction", "description": "sell-side notes, major press coverage, customer or supplier disclosures"},
+    {"kind": "policy and trade filings", "description": "IRA provisions, tariff schedules, agency rulings, domestic manufacturing credit notices"},
+    {"kind": "historical earnings reactions", "description": "prior-quarter earnings surprises and post-earnings stock price trajectories for the company and close peers"}
   ],
   "ingestion_priorities": [
     "current company disclosures",
     "recent liquidity and leverage indicators",
-    "leadership response analogs from prior company crises"
+    "leadership response analogs from prior company crises",
+    "historical earnings reaction data for the company and peer comparables",
+    "active policy and tariff developments affecting the company's cost structure or demand"
   ],
-  "freshness_notes": "Current filings and management statements generally dominate older materials. Historical crisis analogs remain useful for executive style and board behavior."
+  "freshness_notes": "Current filings and management statements generally dominate older materials. Historical crisis analogs remain useful for executive style and board behavior. For earnings-call scenarios, historical per-quarter reaction data (day-of move, 10-day follow-through, recovery timeline) is highly predictive and should be ingested even when older."
   ,
   "semantic_alias_groups": [
     ["ceo", "chief executive", "management", "succession", "leadership transition"],
@@ -31,6 +35,12 @@
     ["customer backlash", "customer reaction", "consumer response"],
     ["factory outage", "operational disruption", "production interruption", "product delays"],
     ["regulatory scrutiny", "regulatory pressure", "agency pressure", "safety scrutiny"],
-    ["investor concern", "credibility pressure", "market anxiety"]
+    ["investor concern", "credibility pressure", "market anxiety"],
+    ["earnings beat", "revenue beat", "guidance raise", "beat and raise", "above consensus"],
+    ["guidance miss", "guidance cut", "guide down", "weak guidance", "below consensus", "disappointing outlook"],
+    ["channel inventory", "sell-through", "sell-in", "inventory digestion", "distributor inventory", "channel health"],
+    ["tariff", "trade policy", "Section 301", "Section 201", "Section 45X", "IRA", "domestic manufacturing credit", "export control"],
+    ["short sellers", "short interest", "short squeeze", "put options", "implied volatility", "IV crush"],
+    ["institutional investors", "analyst downgrade", "price target cut", "sell-side", "buy rating", "coverage initiation"]
   ]
 }

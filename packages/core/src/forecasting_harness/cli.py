@@ -283,6 +283,40 @@ _SCENARIO_FOCUS_ENTITY_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
     (r"\bus-iran\b", ("US", "Iran")),
     (r"\bu\.s\.\s+iran\b", ("US", "Iran")),
     (r"\bunited states\s+and\s+iran\b", ("US", "Iran")),
+    # Semiconductor / tech companies
+    (r"\bintel\b", ("Intel",)),
+    (r"\bamd\b", ("AMD",)),
+    (r"\bnvidia\b", ("Nvidia",)),
+    (r"\btsmc\b", ("TSMC",)),
+    (r"\bqualcomm\b", ("Qualcomm",)),
+    (r"\barm\b", ("Arm",)),
+    (r"\bapple\b", ("Apple",)),
+    (r"\bmicrosoft\b", ("Microsoft",)),
+    (r"\bgoogle\b", ("Google",)),
+    (r"\bmeta\b", ("Meta",)),
+    (r"\bamazon\b", ("Amazon",)),
+    # Consumer / streaming / media
+    (r"\bspotify\b", ("Spotify",)),
+    (r"\bnetflix\b", ("Netflix",)),
+    (r"\bdisney\b", ("Disney",)),
+    (r"\bsnap\b", ("Snap",)),
+    (r"\bubер\b|\buber\b", ("Uber",)),
+    (r"\blyft\b", ("Lyft",)),
+    (r"\bairbnb\b", ("Airbnb",)),
+    (r"\btesla\b", ("Tesla",)),
+    # Financial
+    (r"\bjpmorgan\b|\bjp morgan\b", ("JPMorgan",)),
+    (r"\bgoldman\b", ("Goldman Sachs",)),
+    (r"\bvisa\b", ("Visa",)),
+    (r"\bmastercard\b", ("Mastercard",)),
+    # Energy / cleantech
+    (r"\benphase\b", ("Enphase",)),
+    (r"\bsolaredge\b|\bsolar\s*edge\b", ("SolarEdge",)),
+    (r"\bfirst\s*solar\b", ("First Solar",)),
+    (r"\bsunrun\b", ("Sunrun",)),
+    (r"\btesla\s*energy\b", ("Tesla Energy",)),
+    (r"\bnextracker\b", ("NEXTracker",)),
+    (r"\bsunnova\b", ("Sunnova",)),
 )
 _SCENARIO_ENTITY_PATTERN = (
     r"(?:"
@@ -407,10 +441,18 @@ _SCENARIO_PACK_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "board",
             "ceo",
             "earnings",
+            "earning call",
+            "earning report",
+            "stock price",
+            "share price",
             "product recall",
             "customer loss",
             "stakeholder",
             "company",
+            "quarterly",
+            "guidance",
+            "revenue",
+            "market cap",
         ),
     ),
 )
@@ -493,13 +535,29 @@ def _auto_run_id_for_prompt(prompt_body: str, *, pack_slug: str) -> str:
     return f"{pack_slug}-{prompt_fragment}-{timestamp}"
 
 
+def _infer_time_horizon_from_prompt(prompt_body: str) -> str:
+    normalized = prompt_body.lower()
+    match = re.search(r"next\s+(\d+)\s*(day|week|month|year)s?", normalized)
+    if match:
+        n, unit = int(match.group(1)), match.group(2)
+        if unit == "day":
+            return f"{n}d"
+        if unit == "week":
+            return f"{n * 7}d"
+        if unit == "month":
+            return f"{n * 30}d"
+        if unit == "year":
+            return f"{n * 365}d"
+    return "30d"
+
+
 def _scenario_intake_payload_from_prompt(prompt_body: str, focus_entities: list[str], *, current_stage: str) -> dict[str, object]:
     return {
         "event_framing": prompt_body,
         "focus_entities": focus_entities,
         "current_development": prompt_body,
         "current_stage": current_stage,
-        "time_horizon": "30d",
+        "time_horizon": _infer_time_horizon_from_prompt(prompt_body),
         "known_constraints": [],
         "known_unknowns": [],
         "suggested_entities": [],

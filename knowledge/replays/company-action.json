@@ -289,6 +289,139 @@
     ]
   },
   {
+    "run_id": "spotify-earnings-beat-guide-miss-2025",
+    "domain_pack": "company-action",
+    "case_title": "Spotify Q1 2025 earnings beat with weak Q2 guidance",
+    "time_anchor": "2025-04",
+    "historical_outcome": "Spotify beat Q1 2025 consensus on revenue and gross margin but issued Q2 2025 guidance ~4% below analyst expectations. The stock fell approximately 10% on the day and continued drifting to roughly -7% net over 10 trading days before recovering to pre-earnings levels around day 31. The guide miss was driven by FX headwinds and Q2 seasonality rather than structural subscriber deceleration.",
+    "sources": [
+      {
+        "title": "Spotify Q1 2025 Earnings Press Release",
+        "publisher": "Spotify Technology S.A.",
+        "url": "https://investors.spotify.com/financials/press-releases/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Spotify's stock trajectory after a Q1 beat paired with a weak Q2 guidance print.",
+      "focus_entities": [
+        "Spotify",
+        "Institutional investors",
+        "Sell-side analysts"
+      ],
+      "current_development": "Spotify beats Q1 2025 consensus on revenue and gross margin but Q2 guidance comes in ~4% below analyst expectations. Stock drops ~10% after hours.",
+      "current_stage": "trigger",
+      "time_horizon": "30d",
+      "known_constraints": [
+        "Q2 is seasonally Spotify's weakest quarter for subscriber net adds",
+        "Management has a documented history of conservative guidance followed by beats"
+      ],
+      "known_unknowns": [
+        "Whether the guide miss reflects FX and seasonality or structural subscriber deceleration",
+        "Whether major sell-side banks downgrade to Sell in days 1-3"
+      ],
+      "suggested_entities": [
+        "Institutional investors",
+        "Sell-side analysts",
+        "Options market"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "The Q2 guide miss is primarily FX and seasonal rather than structural",
+        "No major bank downgrades to Sell in the first 72 hours"
+      ],
+      "suggested_actors": [
+        "Institutional investors",
+        "Sell-side analysts",
+        "Options market"
+      ]
+    },
+    "documents": {
+      "spotify-q1-beat.md": "Spotify reported Q1 2025 revenue and gross margin above consensus. Management cited FX headwinds and seasonal softness for the Q2 guidance miss.",
+      "spotify-q2-guide.md": "Spotify Q2 2025 guidance came in approximately 4% below analyst consensus on revenue. The stock dropped roughly 10% after hours and drifted to -7% net over 10 trading days before recovering to pre-earnings levels around day 31."
+    },
+    "expected_top_branch": "Stakeholder reset",
+    "expected_root_strategy": "Stakeholder reset",
+    "expected_evidence_sources": [
+      "spotify-q1-beat",
+      "spotify-q2-guide"
+    ],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
+  },
+  {
+    "run_id": "enphase-inventory-crisis-2023",
+    "domain_pack": "company-action",
+    "case_title": "Enphase Q3 2023 inventory crisis peak and operational reset",
+    "time_anchor": "2023-10",
+    "historical_outcome": "Enphase's Q3 2023 earnings revealed the full depth of the installer channel inventory crisis. Revenue of $551M missed consensus and Q4 2023 guidance of $300-350M was far below the ~$500M expectation. The stock fell approximately 17% on the day. Enphase responded with headcount cuts, renegotiated manufacturing commitments with contract partners, and tightened distributor inventory controls. Cash runway and operational stability were the binding constraints; management prioritized cost preservation and production recovery over strategic repositioning. Recovery to pre-crisis price levels took over six months.",
+    "sources": [
+      {
+        "title": "Enphase Energy Q3 2023 Earnings Press Release",
+        "publisher": "Enphase Energy",
+        "url": "https://investor.enphase.com/news-releases/"
+      }
+    ],
+    "intake": {
+      "event_framing": "Assess Enphase strategy after the Q3 2023 earnings miss and severe Q4 guidance cut revealed the full extent of the installer channel inventory crisis.",
+      "focus_entities": [
+        "Enphase",
+        "Sunrun",
+        "Institutional investors"
+      ],
+      "current_development": "Enphase reports Q3 2023 revenue of $551M (miss) and guides Q4 2023 to $300-350M, far below consensus. Cash runway pressure is acute. Management must cut production costs, reduce headcount, and renegotiate manufacturing commitments to preserve liquidity while channel inventory works down.",
+      "current_stage": "trigger",
+      "time_horizon": "180d",
+      "known_constraints": [
+        "Cash runway preservation is the primary constraint — headcount and production costs must be cut immediately",
+        "Installer channel inventory must work down before sell-in can recover; production recovery depends on sell-through",
+        "High interest rates are suppressing residential solar demand organically"
+      ],
+      "known_unknowns": [
+        "How many quarters of inventory digestion remain before channel normalizes",
+        "Whether California NEM 3.0 impact compounds the inventory problem"
+      ],
+      "suggested_entities": [
+        "Sunrun",
+        "Institutional investors",
+        "Short sellers"
+      ]
+    },
+    "assumptions": {
+      "summary": [
+        "Management will prioritize cost preservation and production recovery over broad strategic repositioning",
+        "Channel inventory normalization will take at least two more quarters"
+      ],
+      "suggested_actors": [
+        "Sunrun",
+        "Institutional investors",
+        "Short sellers"
+      ]
+    },
+    "documents": {
+      "enphase-q3-miss.md": "Enphase Q3 2023 revenue of $551M missed consensus. Q4 guidance of $300-350M shocked analysts. Management confirmed that installer channel inventory remained elevated, sell-through had stalled, and cash preservation through production cost cuts was the immediate priority.",
+      "enphase-cost-reset.md": "Enphase cut headcount, renegotiated manufacturing volume commitments with Foxconn, and implemented tighter distributor inventory tracking. Management framed the response as stabilizing operations and preserving cash runway until channel inventory normalized and demand recovered."
+    },
+    "expected_top_branch": "Operational pivot",
+    "expected_root_strategy": "Operational pivot",
+    "expected_evidence_sources": [
+      "enphase-q3-miss",
+      "enphase-cost-reset"
+    ],
+    "expected_inferred_fields": [
+      "board_cohesion",
+      "brand_sentiment",
+      "cash_runway_months",
+      "operational_stability",
+      "regulatory_pressure"
+    ]
+  },
+  {
     "run_id": "intel-cost-reset-2024",
     "domain_pack": "company-action",
     "case_title": "Intel 2024 cost reduction and operating model reset",
